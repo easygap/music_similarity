@@ -19,8 +19,28 @@ const audioSummary = $("#audio-summary");
 const hitList = $("#hit-list");
 const resultsSubtitle = $("#results-subtitle");
 
+const audioPlayer = $("#audio-player");
+const audioPreview = $("#audio-preview");
+const audioPlayerTitle = $("#audio-player-title");
 const resetBtn = $("#reset-btn");
 const yearSpan = $("#year");
+
+let _audioPreviewUrl = null;
+function setAudioPreview(file) {
+  if (_audioPreviewUrl) {
+    URL.revokeObjectURL(_audioPreviewUrl);
+    _audioPreviewUrl = null;
+  }
+  if (!file) {
+    audioPreview.removeAttribute("src");
+    audioPlayer.classList.add("hidden");
+    return;
+  }
+  _audioPreviewUrl = URL.createObjectURL(file);
+  audioPreview.src = _audioPreviewUrl;
+  audioPlayerTitle.textContent = file.name;
+  audioPlayer.classList.remove("hidden");
+}
 
 if (yearSpan) yearSpan.textContent = new Date().getFullYear();
 
@@ -120,6 +140,7 @@ form.addEventListener("submit", async (e) => {
     }
 
     const data = await res.json();
+    setAudioPreview(selectedFile);
     renderResults(data);
   } catch (err) {
     stopLoadingMessages();
@@ -290,7 +311,11 @@ function renderInlineMarkdown(text) {
 // ----------------------------------------------------------------------
 resetBtn.addEventListener("click", () => {
   setFile(null);
+  setAudioPreview(null);
   fileInput.value = "";
   hideAll();
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 });
+
+// Clean up the blob URL on unload.
+window.addEventListener("beforeunload", () => setAudioPreview(null));

@@ -148,6 +148,20 @@
         <button type="button" class="ghost" id="reset-btn">새 음악 분석</button>
       </header>
 
+      <!-- Uploaded-file audio preview ------------------------------------- -->
+      <div class="audio-player card hidden" id="audio-player">
+        <div class="audio-player-meta">
+          <div class="audio-player-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="18" cy="16" r="3" fill="currentColor"/></svg>
+          </div>
+          <div>
+            <p class="audio-player-title" id="audio-player-title">업로드한 음원</p>
+            <p class="audio-player-sub">분석에 사용된 첫 30초가 동일하게 재생됩니다.</p>
+          </div>
+        </div>
+        <audio id="audio-preview" controls preload="metadata"></audio>
+      </div>
+
       <div class="audio-summary card" id="audio-summary"></div>
 
       <ol class="hit-list" id="hit-list"></ol>

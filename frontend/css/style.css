@@ -460,6 +460,50 @@ main {
   border-color: var(--accent-1);
 }
 
+/* Audio preview card */
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.audio-player-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1 1 280px;
+}
+.audio-player-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--grad-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+.audio-player-icon svg { width: 22px; height: 22px; }
+.audio-player-title {
+  margin: 0 0 2px;
+  font-weight: 600;
+  font-size: 14.5px;
+  word-break: break-all;
+}
+.audio-player-sub {
+  margin: 0;
+  color: var(--text-mute);
+  font-size: 12px;
+}
+.audio-player audio {
+  flex: 2 1 320px;
+  min-width: 220px;
+  height: 38px;
+  filter: invert(0.9) hue-rotate(180deg);
+}
+
 /* Audio summary */
 .audio-summary {
   display: grid;
