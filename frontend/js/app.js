@@ -55,6 +55,7 @@
   const copyLinkBtn = $("#copy-link-btn");
   const copyShareUrlBtn = $("#copy-share-url-btn");
   const exportJsonBtn = $("#export-json-btn");
+  const exportSvgBtn = $("#export-svg-btn");
   const yearSpan = $("#year");
 
   const themeToggleBtn = $("#theme-toggle");
@@ -128,6 +129,27 @@
     }
   }
   loadCatalogStat();
+
+  // hero stat 의 "평균 분석 시간" 을 실시간 latency P50 으로 갱신.
+  // health 엔드포인트는 ring buffer 의 P50 을 같이 내려준다 — 샘플이 없으면 0.
+  async function loadLatencyStat() {
+    const el = $("#stat-latency");
+    if (!el) return;
+    try {
+      const res = await fetch("/api/health");
+      if (!res.ok) throw new Error("offline");
+      const data = await res.json();
+      const p50 = Number(data.analyze_latency_p50_seconds) || 0;
+      if (p50 > 0) {
+        // 1초 미만이면 "0.7s", 1초 이상이면 "~3s" 식으로.
+        el.textContent = p50 < 1 ? `${p50.toFixed(1)}s` : `~${Math.round(p50)}s`;
+      }
+      // 샘플이 없으면 정적 기본값을 그대로 둔다.
+    } catch {
+      /* health 가 안 잡혀도 기본 문구 유지 */
+    }
+  }
+  loadLatencyStat();
   rebuildLocalizedSelectOptions();
   if (langToggleBtn) langToggleBtn.textContent = t("controls.langToggle");
 
@@ -956,6 +978,110 @@
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 500);
   });
+
+  // 결과 한 페이지를 SVG 카드로 떨궈주기 — SNS 공유 / 보관 용.
+  // 외부 라이브러리 없이 직접 SVG 문자열을 짜서 Blob 다운로드한다.
+  function buildResultSvg(data) {
+    if (!data || !data.results || !data.results.length) return null;
+    const w = 1200;
+    const top = data.results.slice(0, 5);
+    const padding = 56;
+    const rowH = 88;
+    const headerH = 200;
+    const tagsH = data.tags && data.tags.length ? 48 : 0;
+    const h = headerH + tagsH + top.length * rowH + padding;
+
+    function esc(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    const filename = esc(data.filename || "분석 결과");
+    const subtitle = data.results.length
+      ? `${data.catalog_size?.toLocaleString?.("ko-KR") || ""}곡과 비교 · ` +
+        `${esc(data.analyzed_at || "")}`
+      : "";
+
+    const tagsXml = (data.tags || [])
+      .slice(0, 5)
+      .map((tag, i) => {
+        const x = padding + i * 150;
+        return (
+          `<g transform="translate(${x}, ${headerH - 16})">` +
+          `<rect rx="999" ry="999" width="140" height="32" fill="#3a2470"/>` +
+          `<text x="70" y="20" text-anchor="middle" fill="#d3c8ff" ` +
+          `font-size="14" font-weight="500">${esc(tag)}</text>` +
+          `</g>`
+        );
+      })
+      .join("");
+
+    const rowsXml = top
+      .map((r, i) => {
+        const y = headerH + tagsH + i * rowH;
+        const rankColor = "#7c5cff";
+        const pct = (r.similarity_percent || 0).toFixed(1);
+        const barW = Math.max(2, Math.min(100, r.similarity_percent || 0)) * (w - padding * 2 - 220) / 100;
+        return (
+          `<g transform="translate(${padding}, ${y})">` +
+          `<text x="0" y="34" font-size="40" font-weight="800" fill="${rankColor}">${r.rank}</text>` +
+          `<text x="60" y="22" font-size="22" font-weight="700" fill="#f4f4ff">${esc(r.title)}</text>` +
+          `<text x="60" y="46" font-size="14" fill="rgba(244,244,255,0.7)">${esc(r.artist)}</text>` +
+          `<text x="${w - padding * 2}" y="34" text-anchor="end" font-size="28" ` +
+          `font-weight="800" fill="#22d3ee">${pct}%</text>` +
+          `<rect x="60" y="58" width="${w - padding * 2 - 220}" height="6" rx="3" fill="rgba(255,255,255,0.08)"/>` +
+          `<rect x="60" y="58" width="${barW}" height="6" rx="3" fill="url(#gradBar)"/>` +
+          `</g>`
+        );
+      })
+      .join("");
+
+    return (
+      `<?xml version="1.0" encoding="UTF-8"?>` +
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" font-family="Pretendard, Inter, sans-serif">` +
+      `<defs>` +
+      `<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">` +
+      `<stop offset="0" stop-color="#0b0b18"/><stop offset="1" stop-color="#1a1430"/>` +
+      `</linearGradient>` +
+      `<linearGradient id="gradBar" x1="0" y1="0" x2="1" y2="0">` +
+      `<stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#22d3ee"/>` +
+      `</linearGradient>` +
+      `<linearGradient id="gradTitle" x1="0" y1="0" x2="1" y2="0">` +
+      `<stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#22d3ee"/>` +
+      `</linearGradient>` +
+      `</defs>` +
+      `<rect width="${w}" height="${h}" fill="url(#bg)"/>` +
+      `<text x="${padding}" y="80" font-size="40" font-weight="800" fill="#f4f4ff">SoundMatch · 분석 결과</text>` +
+      `<text x="${padding}" y="118" font-size="22" font-weight="600" fill="url(#gradTitle)">${filename}</text>` +
+      `<text x="${padding}" y="148" font-size="14" fill="rgba(244,244,255,0.6)">${subtitle}</text>` +
+      tagsXml +
+      rowsXml +
+      `<text x="${w - padding}" y="${h - 16}" text-anchor="end" font-size="12" fill="rgba(244,244,255,0.4)">soundmatch · easygap/music_similarity</text>` +
+      `</svg>`
+    );
+  }
+
+  if (exportSvgBtn) {
+    exportSvgBtn.addEventListener("click", () => {
+      if (!_lastResults) return;
+      const svg = buildResultSvg(_lastResults);
+      if (!svg) return;
+      const blob = new Blob([svg], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const baseName = (_lastResults.filename || "soundmatch").replace(/\.[^.]+$/, "");
+      a.download = `${baseName}.soundmatch.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    });
+  }
 
   // ----------------------------------------------------------------------
   // 키보드 단축키

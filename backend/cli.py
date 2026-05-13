@@ -132,6 +132,79 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_validate_dataset(args: argparse.Namespace) -> int:
+    """카탈로그 CSV 가 엔진에 안전하게 로딩 가능한지 미리 점검한다.
+
+    - 필수 키 컬럼이 있는지
+    - NaN/Inf 행이 몇 개인지
+    - 분산이 0인 컬럼 (자동 drop 되는 것들) 이 몇 개인지
+    - 전체 곡 수
+    """
+
+    import numpy as np
+    import pandas as pd
+
+    csv_path = Path(args.path)
+    if not csv_path.exists():
+        print(f"error: 파일을 찾을 수 없습니다: {csv_path}", file=sys.stderr)
+        return 2
+
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception as e:  # noqa: BLE001
+        print(f"error: CSV 로딩 실패: {e}", file=sys.stderr)
+        return 3
+
+    name_col = "musicname & artist"
+    if name_col not in df.columns:
+        print(f"error: 필수 키 컬럼 누락: '{name_col}'", file=sys.stderr)
+        return 4
+
+    df = df.set_index(name_col)
+    feature_cols = [c for c in df.columns if c != "length"]
+    if not feature_cols:
+        print("error: 특성 컬럼이 하나도 없습니다.", file=sys.stderr)
+        return 5
+
+    raw = df[feature_cols].astype(float)
+    finite_mask = np.isfinite(raw.values).all(axis=1)
+    bad_rows = int((~finite_mask).sum())
+
+    col_std = raw.std(axis=0, ddof=0)
+    zero_var_cols = [c for c in feature_cols if col_std.get(c, 0.0) <= 1e-12]
+
+    duplicates = int(df.index.duplicated().sum())
+    nan_per_col = raw.isna().sum().to_dict()
+    cols_with_nan = [(c, int(n)) for c, n in nan_per_col.items() if n > 0]
+
+    print(f"# 카탈로그 검증 결과: {csv_path}")
+    print(f"  총 행: {len(df)}")
+    print(f"  특성 컬럼: {len(feature_cols)}개 (length 제외)")
+    print(f"  중복된 키: {duplicates}건")
+    print(f"  NaN/Inf 가 섞인 행: {bad_rows}건 (엔진이 자동으로 drop)")
+    print(f"  분산 0 컬럼: {len(zero_var_cols)}개 (엔진이 자동으로 drop)")
+    if cols_with_nan:
+        print("  컬럼별 NaN 갯수 (상위 5):")
+        for c, n in sorted(cols_with_nan, key=lambda x: -x[1])[:5]:
+            print(f"    - {c}: {n}")
+    if zero_var_cols:
+        print("  분산 0 컬럼 이름 (상위 5):")
+        for c in zero_var_cols[:5]:
+            print(f"    - {c}")
+
+    # 로딩이 실제로 가능한지까지 확인.
+    try:
+        engine = MusicSimilarityEngine(csv_path)
+        print(f"  ✅ 엔진 로딩 성공. 실제 사용 가능한 곡 수: {engine.catalog_size}")
+        print(f"     사용 중인 특성 컬럼: {len(engine.feature_columns)}개")
+    except Exception as e:  # noqa: BLE001
+        print(f"  ❌ 엔진 로딩 실패: {e}", file=sys.stderr)
+        return 6
+
+    # 경고만 있어도 exit 0. 실제 로딩 실패한 경우만 비정상 종료.
+    return 0
+
+
 def cmd_batch(args: argparse.Namespace) -> int:
     """폴더 안의 음원들을 한꺼번에 분석해 CSV 로 떨군다."""
     import csv
@@ -239,13 +312,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="포함할 오디오 확장자",
     )
     batch.set_defaults(func=cmd_batch)
+
+    validate = sub.add_parser("validate-dataset", help="카탈로그 CSV 가 엔진에 로딩 가능한지 점검한다.")
+    validate.add_argument("path", help="검증할 dataset.csv 경로")
+    validate.set_defaults(func=cmd_validate_dataset)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if not (1 <= args.top_n <= 20):
+    # top_n 은 analyze/batch 에서만 등장. validate-dataset 에는 없으니 hasattr 가드.
+    if hasattr(args, "top_n") and not (1 <= args.top_n <= 20):
         print("error: --top-n 은 1~20 범위", file=sys.stderr)
         return 2
     return args.func(args)

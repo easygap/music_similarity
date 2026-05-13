@@ -96,3 +96,30 @@ def test_cli_batch_missing_directory(tmp_path, synthetic_dataset, capsys):
     err = capsys.readouterr().err
     assert code != 0
     assert "찾을 수 없습니다" in err
+
+
+def test_cli_validate_dataset_happy_path(synthetic_dataset, capsys):
+    """정상 카탈로그는 검증 명령이 0으로 종료하고 통계를 stdout 에 출력해야 한다."""
+    code = main(["validate-dataset", str(synthetic_dataset)])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "카탈로그 검증 결과" in out
+    assert "총 행" in out
+    assert "엔진 로딩 성공" in out
+
+
+def test_cli_validate_dataset_missing_file(tmp_path, capsys):
+    code = main(["validate-dataset", str(tmp_path / "no.csv")])
+    err = capsys.readouterr().err
+    assert code != 0
+    assert "찾을 수 없습니다" in err
+
+
+def test_cli_validate_dataset_missing_name_column(tmp_path, capsys):
+    """필수 키 컬럼이 없는 CSV 는 에러로 종료."""
+    bad = tmp_path / "bad.csv"
+    bad.write_text("foo,bar\n1,2\n", encoding="utf-8")
+    code = main(["validate-dataset", str(bad)])
+    err = capsys.readouterr().err
+    assert code != 0
+    assert "필수 키 컬럼" in err

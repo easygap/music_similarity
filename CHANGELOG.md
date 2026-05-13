@@ -7,6 +7,16 @@
 ## [Unreleased]
 
 ### Added
+- 결과 페이지 "카드 이미지 저장" 버튼. 클라이언트에서 직접 SVG 문자열을
+  짜서 Blob 다운로드. 외부 라이브러리 없음. 다크 톤 + 그라데이션 막대 + 태그.
+- `python -m backend.cli validate-dataset <csv>` 서브커먼드. 행 수 / 중복키 /
+  NaN/Inf 행 / 분산 0 컬럼을 리포트하고 실제 엔진 로딩까지 시도.
+- Hero stat 의 "평균 분석 시간" 을 `/api/health.analyze_latency_p50_seconds`
+  로 정직화. 샘플이 없으면 기본 문구 유지.
+- 카탈로그 페이지 모달의 결과 항목에 ★ 토글 + "→" 시드 재탐색 버튼.
+  모달 안에서 깊이 탐색 가능.
+
+### Added (earlier)
 - ★ 즐겨찾기 기능 (`frontend/js/favorites.js`).
   - 카탈로그 페이지 카드 / 결과 hit 카드에 ★ 토글.
   - 메인 페이지에 "내 즐겨찾기" 섹션 (저장된 곡 있을 때만 노출).

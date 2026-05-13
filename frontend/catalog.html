@@ -160,7 +160,7 @@
     .modal-hits { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
     .modal-hits li {
       display: grid;
-      grid-template-columns: 36px 1fr auto;
+      grid-template-columns: 36px 1fr auto auto;
       gap: 12px;
       align-items: center;
       padding: 10px 12px;
@@ -168,6 +168,19 @@
       border: 1px solid var(--border);
       border-radius: 10px;
     }
+    .modal-actions { display: flex; gap: 4px; }
+    .modal-fav, .modal-seed {
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text-mute);
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-fav:hover, .modal-seed:hover { color: var(--text); border-color: var(--accent-1); }
+    .modal-fav[data-active="true"] { color: var(--accent-warn); border-color: var(--accent-warn); }
     .modal-rank {
       font-family: "JetBrains Mono", monospace;
       font-weight: 700;
@@ -459,13 +472,43 @@
           return;
         }
         modalBody.innerHTML = '<ol class="modal-hits">' + data.results.map(function (r) {
+          var fullName = r.title + " - " + r.artist;
+          var isFav = Fav ? Fav.has(fullName) : false;
           return '<li>'
             + '<span class="modal-rank">' + r.rank + '</span>'
             + '<span><span class="modal-name">' + escapeHtml(r.title) + '</span>'
             + ' · <span class="modal-artist">' + escapeHtml(r.artist) + '</span></span>'
+            + '<span class="modal-actions">'
+            + '<button type="button" class="modal-fav" data-fav-name="' + escapeHtml(fullName)
+            + '" data-fav-title="' + escapeHtml(r.title) + '" data-fav-artist="' + escapeHtml(r.artist)
+            + '" data-active="' + (isFav ? 'true' : 'false')
+            + '" aria-pressed="' + (isFav ? 'true' : 'false') + '" title="즐겨찾기 토글">★</button>'
+            + '<button type="button" class="modal-seed" data-seed="' + escapeHtml(fullName)
+            + '" title="이 곡 기준으로 다시 보기">→</button>'
+            + '</span>'
             + '<span class="modal-percent">' + r.similarity_percent.toFixed(1) + '%</span>'
             + '</li>';
         }).join("") + '</ol>';
+
+        // ★ 토글
+        modalBody.querySelectorAll(".modal-fav").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (!Fav) return;
+            var n = btn.getAttribute("data-fav-name");
+            Fav.toggle(n, btn.getAttribute("data-fav-title"), btn.getAttribute("data-fav-artist"));
+            var now = Fav.has(n);
+            btn.setAttribute("data-active", now ? "true" : "false");
+            btn.setAttribute("aria-pressed", now ? "true" : "false");
+          });
+        });
+        // 시드 재탐색 — 그 곡으로 모달 다시 열기 (재귀 호출).
+        modalBody.querySelectorAll(".modal-seed").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            openSimilarModal(btn.getAttribute("data-seed"));
+          });
+        });
       } catch (e) {
         modalBody.innerHTML = '<p class="modal-loading">불러오기에 실패했어요. 잠시 후 다시 시도해주세요.</p>';
       }

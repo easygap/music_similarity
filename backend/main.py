@@ -505,6 +505,7 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
         "env": ENV,
         "version": app.version,
         "uptime_seconds": uptime,
+        "analyze_latency_p50_seconds": round(_latency_percentile(0.50), 3),
     }
 
 

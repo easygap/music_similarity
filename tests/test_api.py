@@ -13,6 +13,8 @@ def test_health(fastapi_client):
     # 부팅 시간 이후로 흐른 시간이 보고되어야 한다.
     assert "uptime_seconds" in body
     assert body["uptime_seconds"] >= 0
+    # latency P50 도 헬스에 함께 노출 (샘플 없으면 0).
+    assert "analyze_latency_p50_seconds" in body
 
 
 def test_catalog(fastapi_client):
