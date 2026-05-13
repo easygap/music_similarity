@@ -43,6 +43,12 @@ python -m backend.cli analyze ./mysong.wav --top-n 5
 python -m backend.cli analyze ./mysong.wav --json > result.json
 ```
 
+폴더 단위로 한 번에 분석하고 결과를 CSV 로 떨구려면:
+
+```bash
+python -m backend.cli batch ./songs --out results.csv --top-n 5
+```
+
 서버를 띄우지 않고도 같은 엔진으로 동작한다 (배치 작업 / 디버깅 용).
 
 librosa / sklearn 깔지 않고 디자인만 돌려볼 때:
@@ -61,6 +67,8 @@ python preview_server.py 8765
 - 휴리스틱 태그 — "빠른 템포", "에너지 폭발", "밝은 톤" 같은 즉시 와닿는 라벨.
 - 두 곡 나란히 비교 페이지(`/compare`), 최근 분석 5건 히스토리(localStorage).
 - 카탈로그 둘러보기 페이지(`/catalog`) — 곡명·아티스트 검색 + 페이지네이션.
+  카드를 누르면 그 곡 기준 유사한 다른 곡 5건을 모달로 즉시 표시
+  (`/api/analyze/by-catalog`, librosa 호출 없음).
 - PWA `beforeinstallprompt` 이벤트를 가로채서 메인 화면에 자체 설치 배너 노출
   (한 번 닫으면 7일간 다시 안 뜸).
 - 결과 공유: 클립보드 텍스트 / JSON 다운로드 / 결과를 URL hash 에 압축해 담는
@@ -76,14 +84,15 @@ python preview_server.py 8765
 ## API
 
 ```
-POST /api/analyze         # multipart 업로드, top_n=1~20
-GET  /api/health          # 라이브니스, ?strict=1 이면 librosa/디스크까지 점검
-GET  /api/catalog         # 사용 중인 특성 컬럼
-GET  /api/catalog/sample  # 카탈로그 일부 미리보기
-GET  /api/catalog/random  # 카탈로그에서 무작위 N곡 추천
-GET  /api/catalog/search  # ?q=&page=&size= 제목/아티스트 검색 + 페이지네이션
-GET  /docs                # FastAPI 자동 Swagger UI
-GET  /metrics             # Prometheus exposition
+POST /api/analyze              # multipart 업로드, top_n=1~20
+GET  /api/analyze/by-catalog   # 카탈로그 곡끼리 즉시 비교 (librosa 호출 없음)
+GET  /api/health               # 라이브니스, ?strict=1 이면 librosa/디스크까지 점검
+GET  /api/catalog              # 사용 중인 특성 컬럼
+GET  /api/catalog/sample       # 카탈로그 일부 미리보기
+GET  /api/catalog/random       # 카탈로그에서 무작위 N곡 추천
+GET  /api/catalog/search       # ?q=&page=&size= 제목/아티스트 검색 + 페이지네이션
+GET  /docs                     # FastAPI 자동 Swagger UI
+GET  /metrics                  # Prometheus exposition
 GET  /catalog /compare /privacy /terms /sw.js /manifest.webmanifest /offline.html /404
 ```
 

@@ -55,3 +55,44 @@ def test_cli_analyze_top_n_out_of_range(tiny_wav, synthetic_dataset, capsys):
     err = capsys.readouterr().err
     assert code != 0
     assert "1~20" in err
+
+
+def test_cli_batch_writes_csv(tmp_path, tiny_wav, synthetic_dataset):
+    """batch 명령은 폴더 안 음원을 모두 분석해 CSV 로 떨궈야 한다."""
+    import csv as csv_module
+    import shutil
+
+    audio_dir = tmp_path / "songs"
+    audio_dir.mkdir()
+    shutil.copy(tiny_wav, audio_dir / "a.wav")
+    shutil.copy(tiny_wav, audio_dir / "b.wav")
+
+    out_csv = tmp_path / "out.csv"
+    code = main([
+        "batch",
+        str(audio_dir),
+        "--out", str(out_csv),
+        "--dataset", str(synthetic_dataset),
+        "--top-n", "2",
+    ])
+    assert code == 0
+    assert out_csv.exists()
+    with out_csv.open(encoding="utf-8") as fh:
+        rows = list(csv_module.DictReader(fh))
+    # 2개 파일 × top_n 2 = 4행.
+    assert len(rows) == 4
+    assert {row["filename"] for row in rows} == {"a.wav", "b.wav"}
+    for row in rows:
+        assert row["rank"] in {"1", "2"}
+        assert row["title"]
+
+
+def test_cli_batch_missing_directory(tmp_path, synthetic_dataset, capsys):
+    code = main([
+        "batch",
+        str(tmp_path / "no-such-dir"),
+        "--dataset", str(synthetic_dataset),
+    ])
+    err = capsys.readouterr().err
+    assert code != 0
+    assert "찾을 수 없습니다" in err

@@ -132,6 +132,63 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_batch(args: argparse.Namespace) -> int:
+    """폴더 안의 음원들을 한꺼번에 분석해 CSV 로 떨군다."""
+    import csv
+
+    audio_dir = Path(args.dir)
+    if not audio_dir.exists() or not audio_dir.is_dir():
+        print(f"error: 디렉토리를 찾을 수 없습니다: {audio_dir}", file=sys.stderr)
+        return 2
+
+    exts = {e.lower() for e in args.extensions}
+    files = sorted(p for p in audio_dir.iterdir() if p.is_file() and p.suffix.lower() in exts)
+    if not files:
+        print(f"warning: {audio_dir} 안에 분석할 음원이 없습니다.", file=sys.stderr)
+        return 1
+
+    dataset = Path(args.dataset)
+    try:
+        engine = MusicSimilarityEngine(dataset)
+    except Exception as e:  # noqa: BLE001
+        print(f"error: 카탈로그 로딩 실패: {e}", file=sys.stderr)
+        return 3
+
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fieldnames = ["filename", "rank", "title", "artist", "similarity_percent", "tags"]
+    failed = 0
+    rows_written = 0
+
+    with out_path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        for idx, path in enumerate(files, start=1):
+            try:
+                features = extract_features(path, max_duration=args.max_duration)
+                hits, _ = engine.find_similar(features, top_n=args.top_n)
+                tags = " / ".join(derive_tags(features))
+            except Exception as e:  # noqa: BLE001
+                print(f"  [{idx}/{len(files)}] skip {path.name}: {e}", file=sys.stderr)
+                failed += 1
+                continue
+            for hit in hits:
+                writer.writerow({
+                    "filename": path.name,
+                    "rank": hit.rank,
+                    "title": hit.name,
+                    "artist": hit.artist,
+                    "similarity_percent": f"{hit.similarity_percent:.1f}",
+                    "tags": tags,
+                })
+                rows_written += 1
+            print(f"  [{idx}/{len(files)}] {path.name}")
+
+    print(f"\n{len(files)}개 파일 중 {failed}개 실패, CSV {rows_written}행 작성: {out_path}")
+    return 0 if failed == 0 else 5
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m backend.cli",
@@ -159,6 +216,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="결과를 JSON 으로 stdout 에 출력",
     )
     analyze.set_defaults(func=cmd_analyze)
+
+    batch = sub.add_parser("batch", help="폴더 전체를 한 번에 분석해 CSV 로 떨군다.")
+    batch.add_argument("dir", help="음원이 들어있는 디렉토리")
+    batch.add_argument("--out", default="batch_results.csv", help="출력 CSV 경로")
+    batch.add_argument("--top-n", type=int, default=5, help="파일당 찾을 곡 수 (1~20)")
+    batch.add_argument(
+        "--max-duration",
+        type=float,
+        default=30.0,
+        help="각 파일을 이 초 수까지만 분석에 사용",
+    )
+    batch.add_argument(
+        "--dataset",
+        default="data/dataset.csv",
+        help="카탈로그 CSV 경로",
+    )
+    batch.add_argument(
+        "--extensions",
+        nargs="+",
+        default=[".wav", ".mp3", ".flac", ".ogg", ".m4a"],
+        help="포함할 오디오 확장자",
+    )
+    batch.set_defaults(func=cmd_batch)
     return parser
 
 

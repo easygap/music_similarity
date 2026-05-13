@@ -54,10 +54,96 @@
       flex-direction: column;
       gap: 4px;
       transition: border-color 0.18s, transform 0.18s;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      font: inherit;
+      color: inherit;
     }
-    .cat-card:hover { border-color: var(--accent-1); transform: translateY(-1px); }
+    .cat-card:hover, .cat-card:focus-visible {
+      border-color: var(--accent-1);
+      transform: translateY(-1px);
+      outline: none;
+    }
     .cat-title { font-size: 13.5px; font-weight: 600; color: var(--text); word-break: break-all; }
     .cat-artist { font-size: 12px; color: var(--text-mute); }
+
+    /* 결과 모달 — 카탈로그 카드 클릭 시 그 자리에서 유사 곡을 보여준다. */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 7, 15, 0.75);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .modal-backdrop.is-open { display: flex; }
+    .modal-card {
+      width: 100%;
+      max-width: 720px;
+      background: var(--panel-strong);
+      border: 1px solid var(--border-strong);
+      border-radius: 18px;
+      padding: 26px 28px;
+      box-shadow: var(--shadow-strong);
+    }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .modal-title { margin: 0; font-size: 20px; font-weight: 700; word-break: break-all; }
+    .modal-sub { margin: 2px 0 0; color: var(--text-mute); font-size: 13.5px; }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-mute);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .modal-tag {
+      background: rgba(124, 92, 255, 0.18);
+      border: 1px solid rgba(124, 92, 255, 0.4);
+      color: #d3c8ff;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+    :root[data-theme="light"] .modal-tag { color: #4c2bd6; }
+    .modal-hits { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .modal-hits li {
+      display: grid;
+      grid-template-columns: 36px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .modal-rank {
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
+      color: var(--accent-2);
+      text-align: center;
+    }
+    .modal-name { font-weight: 600; font-size: 14px; }
+    .modal-artist { color: var(--text-mute); font-size: 12.5px; }
+    .modal-percent {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .modal-loading { text-align: center; color: var(--text-mute); padding: 20px; }
     .cat-empty {
       grid-column: 1 / -1;
       text-align: center;
@@ -132,6 +218,23 @@
     </div>
   </main>
 
+  <!-- 카드 클릭 시 열리는 결과 모달 -->
+  <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <header class="modal-head">
+        <div>
+          <h2 class="modal-title" id="modal-title">—</h2>
+          <p class="modal-sub" id="modal-sub">—</p>
+        </div>
+        <button type="button" class="modal-close" id="modal-close" aria-label="닫기">×</button>
+      </header>
+      <div class="modal-tags" id="modal-tags"></div>
+      <div id="modal-body">
+        <p class="modal-loading">불러오는 중…</p>
+      </div>
+    </div>
+  </div>
+
   <script>
   (function () {
     var input = document.getElementById("cat-search-input");
@@ -184,11 +287,75 @@
         return;
       }
       grid.innerHTML = items.map(function (it) {
-        return '<div class="cat-card" title="' + escapeHtml(it.title) + ' – ' + escapeHtml(it.artist) + '">'
+        var key = it.title + ' - ' + it.artist;
+        return '<button type="button" class="cat-card" data-key="' + escapeHtml(key) + '"'
+          + ' title="이 곡과 유사한 다른 곡 보기">'
           + '<span class="cat-title">' + escapeHtml(it.title) + '</span>'
           + '<span class="cat-artist">' + escapeHtml(it.artist) + '</span>'
-          + '</div>';
+          + '</button>';
       }).join("");
+      grid.querySelectorAll(".cat-card").forEach(function (el) {
+        el.addEventListener("click", function () {
+          openSimilarModal(el.getAttribute("data-key"));
+        });
+      });
+    }
+
+    // -------------------- 결과 모달 --------------------
+    var modal = document.getElementById("modal-backdrop");
+    var modalTitle = document.getElementById("modal-title");
+    var modalSub = document.getElementById("modal-sub");
+    var modalBody = document.getElementById("modal-body");
+    var modalTags = document.getElementById("modal-tags");
+    var modalClose = document.getElementById("modal-close");
+    var _lastFocusedEl = null;
+
+    function closeModal() {
+      modal.classList.remove("is-open");
+      document.body.style.overflow = "";
+      if (_lastFocusedEl) _lastFocusedEl.focus();
+    }
+    modalClose.addEventListener("click", closeModal);
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) closeModal();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+    });
+
+    async function openSimilarModal(name) {
+      _lastFocusedEl = document.activeElement;
+      modal.classList.add("is-open");
+      document.body.style.overflow = "hidden";
+      modalTitle.textContent = "—";
+      modalSub.textContent = "분석 중…";
+      modalTags.innerHTML = "";
+      modalBody.innerHTML = '<p class="modal-loading">불러오는 중…</p>';
+      try {
+        var url = "/api/analyze/by-catalog?top_n=5&name=" + encodeURIComponent(name);
+        var res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var data = await res.json();
+        modalTitle.textContent = data.title;
+        modalSub.textContent = data.artist + " · " + data.catalog_size.toLocaleString("ko-KR") + "곡과 비교";
+        modalTags.innerHTML = (data.tags || []).map(function (tg) {
+          return '<span class="modal-tag">' + escapeHtml(tg) + '</span>';
+        }).join("");
+        if (!data.results || !data.results.length) {
+          modalBody.innerHTML = '<p class="modal-loading">유사한 곡을 찾지 못했어요.</p>';
+          return;
+        }
+        modalBody.innerHTML = '<ol class="modal-hits">' + data.results.map(function (r) {
+          return '<li>'
+            + '<span class="modal-rank">' + r.rank + '</span>'
+            + '<span><span class="modal-name">' + escapeHtml(r.title) + '</span>'
+            + ' · <span class="modal-artist">' + escapeHtml(r.artist) + '</span></span>'
+            + '<span class="modal-percent">' + r.similarity_percent.toFixed(1) + '%</span>'
+            + '</li>';
+        }).join("") + '</ol>';
+      } catch (e) {
+        modalBody.innerHTML = '<p class="modal-loading">불러오기에 실패했어요. 잠시 후 다시 시도해주세요.</p>';
+      }
     }
 
     input.addEventListener("input", function () {

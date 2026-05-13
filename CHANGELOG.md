@@ -7,6 +7,16 @@
 ## [Unreleased]
 
 ### Added
+- `GET /api/analyze/by-catalog?name=&top_n=` — 카탈로그에 이미 있는 곡 이름을
+  넣으면 그 곡의 raw 특성으로 즉시 유사도를 돌려준다. librosa 호출이 없어
+  체감 응답 시간은 ~10ms 수준. 1위는 자기 자신이라 자동 제외.
+- `/catalog` 페이지 카드를 클릭하면 그 곡과 유사한 다른 곡 5건을 모달로
+  바로 보여준다 (Esc / 백드롭 클릭으로 닫힘, 포커스 복귀까지 처리).
+- CLI batch 모드: `python -m backend.cli batch <폴더> --out results.csv`.
+  폴더 안 음원을 전부 분석하고 (파일 × top_n) 행짜리 CSV 출력. 실패 파일
+  스킵하면서 진행 표시.
+
+### Added (earlier)
 - 명령줄 도구 `python -m backend.cli analyze <파일> [--top-n N] [--json]`.
   서버 없이도 같은 엔진으로 카탈로그 비교를 돌릴 수 있다. 사람-가독 또는 JSON 출력.
 - `GET /api/catalog/random?n=` 엔드포인트. 메인 페이지 카탈로그 미리보기에

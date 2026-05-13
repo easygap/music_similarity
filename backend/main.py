@@ -41,7 +41,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from .audio_features import extract_features, summary_metrics
+from .audio_features import AudioFeatureVector, extract_features, summary_metrics
 from .cache import AnalysisResultCache
 from .reason_engine import explain_match, report_to_dict
 from .schemas import AnalyzeResponse, CatalogResponse, HealthResponse
@@ -612,6 +612,74 @@ def _split_catalog_name(full: str) -> dict[str, str]:
     return {"title": title.strip() or full, "artist": artist.strip() or "Unknown"}
 
 
+@app.get(
+    "/api/analyze/by-catalog",
+    summary="카탈로그 내 곡끼리 즉시 비교 (librosa 호출 없음)",
+    tags=["analysis"],
+)
+def analyze_by_catalog(
+    name: str = Query(..., min_length=1, max_length=400, description="카탈로그 곡 키 ('곡명 - 아티스트' 형식)"),  # noqa: B008
+    top_n: int = Query(5, ge=1, le=20),  # noqa: B008
+):
+    """카탈로그에 이미 있는 곡 이름을 받아서 그 곡의 raw 특성으로 분석을 돌린다.
+
+    파일 업로드도 librosa 호출도 없으므로 ``/api/analyze`` 보다 훨씬 빠르다.
+    카탈로그 페이지에서 "이 곡과 비슷한 다른 곡 보기" 액션을 위해 만들었다.
+    """
+    eng = get_engine()
+    raw = eng.catalog_row_raw(name)
+    if raw is None:
+        raise HTTPException(status_code=404, detail="카탈로그에서 해당 곡을 찾을 수 없습니다.")
+
+    features = AudioFeatureVector(name=name, values=raw)
+    hits, _ = eng.find_similar(features, top_n=top_n + 1)
+    # 1위는 자기 자신이라 제외하고 top_n 개만 노출. rank 도 1부터 다시 매긴다.
+    filtered = [h for h in hits if f"{h.name} - {h.artist}" != name][:top_n]
+
+    results: list[dict] = []
+    for idx, hit in enumerate(filtered, start=1):
+        full = f"{hit.name} - {hit.artist}"
+        cat_raw = eng.catalog_row_raw(full) or {}
+        report = explain_match(
+            query_raw=features.values,
+            catalog_raw=cat_raw,
+            distances_scaled=hit.feature_distances,
+        )
+        if cat_raw:
+            safe_cat = dict(cat_raw)
+            safe_cat.setdefault("length", 0.0)
+            match_summary = summary_metrics(AudioFeatureVector(name=full, values=safe_cat))
+        else:
+            match_summary = None
+        results.append({
+            "rank": idx,
+            "title": hit.name,
+            "artist": hit.artist,
+            "similarity": hit.similarity,
+            "similarity_percent": hit.similarity_percent,
+            "youtube_search_url": _youtube_search_url(hit.name, hit.artist),
+            "spotify_search_url": _spotify_search_url(hit.name, hit.artist),
+            "match_summary": match_summary,
+            "reason": report_to_dict(report),
+        })
+
+    title, _, artist = name.partition(" - ")
+    return JSONResponse(
+        {
+            "source": "catalog",
+            "name": name,
+            "title": title.strip() or name,
+            "artist": artist.strip() or "Unknown",
+            "summary": summary_metrics(features),
+            "tags": derive_tags(features),
+            "results": results,
+            "catalog_size": eng.catalog_size,
+            "engine_version": app.version,
+        },
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
 @app.post(
     "/api/analyze",
     dependencies=[Depends(_rate_limit)],
@@ -776,8 +844,6 @@ async def analyze(
 
             # 결과 직렬화. match_summary 는 레이더 차트에 쓰려고 함께 내려준다.
             results: list[dict] = []
-            from .audio_features import AudioFeatureVector
-
             for hit in hits:
                 catalog_full_name = f"{hit.name} - {hit.artist}"
                 catalog_raw = eng.catalog_row_raw(catalog_full_name) or {}

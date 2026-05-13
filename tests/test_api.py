@@ -243,6 +243,25 @@ def test_catalog_search_validates_size_bound(fastapi_client):
     assert r.status_code == 422
 
 
+def test_analyze_by_catalog_returns_results(fastapi_client):
+    """카탈로그 곡 이름으로 by-catalog 호출하면 자기 자신은 제외하고 응답해야 한다."""
+    r = fastapi_client.get("/api/analyze/by-catalog?name=Alpha%20-%20Tester&top_n=2")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["source"] == "catalog"
+    assert body["title"] == "Alpha"
+    assert body["artist"] == "Tester"
+    # top_n=2 만 받았으니 결과도 최대 2개. 자기 자신은 빠져야 함.
+    assert 1 <= len(body["results"]) <= 2
+    for r_ in body["results"]:
+        assert not (r_["title"] == "Alpha" and r_["artist"] == "Tester")
+
+
+def test_analyze_by_catalog_unknown_name(fastapi_client):
+    r = fastapi_client.get("/api/analyze/by-catalog?name=No%20Such%20Song")
+    assert r.status_code == 404
+
+
 def test_catalog_random(fastapi_client):
     """랜덤 추천 엔드포인트가 정상 응답하고 limit 범위 안에서 곡을 돌려준다."""
     r = fastapi_client.get("/api/catalog/random?n=2")
