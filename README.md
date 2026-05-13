@@ -33,12 +33,16 @@ Docker · Render · Fly.io 원클릭 배포까지 모두 포함되어 있어요.
 - 💡 **닮은 이유 자동 생성** — z-score 거리를 음악적 그룹으로 묶어 한국어/영어 문장으로
 - 🎚️ **업로드 음원 미리듣기 + 직접 그린 파형(Web Audio API)** — 클릭으로 탐색 가능
 - 📊 **레이더 차트** — 1위 매칭과 6축 비교 (Tempo · 에너지 · 밝기 · 거친 정도 · 화성비 · 크로마)
+- 🛈 **특성 툴팁** — 결과 페이지의 각 메트릭에 마우스 올리면 한 줄 설명
 - 🕘 **로컬 히스토리** — 최근 5건 자동 저장(localStorage), 클릭 한 번으로 결과 복원
 - 🔗 **공유 + JSON 내보내기** — 상위 3곡 텍스트 복사 / 전체 분석 결과 JSON 다운로드
+- ⌨️ **키보드 단축키** — `/` 업로드 포커스 · `Esc` 결과 닫기 · `Space` 재생/일시정지
+- 🛡️ **분석 중 이탈 경고** — `beforeunload` 로 실수 이탈 시 한 번 확인
 - 🌗 **다크/라이트 테마 토글** — OS 환경설정 자동 감지 + `prefers-reduced-motion` 존중
 - 🌐 **한국어 + 영어** i18n — 토글 한 번으로 전체 UI 교체
+- 🔍 **SEO/SNS 친화** — OG 이미지(SVG), sitemap.xml, robots.txt, 깔끔한 404 페이지
 - ⚡ **API 안정성** — 비동기 threadpool, 동시 요청 cap, IP별 rate limit, magic-byte 검증, CSP/HSTS 등 시큐어 헤더, 구조화된 JSON 로그
-- 🧪 **pytest 31개 케이스** + ruff lint + GitHub Actions CI + Docker multi-stage + Python 3.11/3.12 매트릭스
+- 🧪 **pytest 32개 케이스** + ruff lint + GitHub Actions CI + Docker multi-stage + Python 3.11/3.12 매트릭스
 
 ---
 
@@ -199,9 +203,13 @@ curl -X POST http://localhost:8000/api/analyze \
 
 | 엔드포인트 | 설명 |
 | --- | --- |
-| `GET /api/health` | 라이브니스 — 카탈로그 사이즈 + 환경 + 버전 |
+| `GET /api/health` | 라이브니스 — 카탈로그 사이즈 + 환경 + 버전 (카탈로그 로드 실패 시 503) |
 | `GET /api/catalog` | 카탈로그 크기 + 사용 중인 특성 컬럼 |
 | `POST /api/analyze` | 음원 업로드 + 유사도 분석 (`top_n`은 1~20) |
+| `GET /robots.txt` | 검색 봇 정책 (Allow: all + sitemap 위치) |
+| `GET /sitemap.xml` | 단일 페이지 사이트맵 (SEO 수집용) |
+| `GET /og-image.svg` | SNS 공유 카드용 1200×630 OpenGraph 이미지 |
+| `GET /404` | 잘못된 경로 접근 시 안내 페이지 (`frontend/404.html`) |
 
 모든 응답은 `X-Request-ID` 헤더를 포함하며 클라이언트가 보낸 헤더를 우선합니다.
 

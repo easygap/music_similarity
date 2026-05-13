@@ -1,0 +1,9 @@
+# 코드 오너 — 모든 변경은 @easygap 의 리뷰 대상.
+*       @easygap
+
+# 보안/배포 민감 영역은 같은 사람이 다시 한 번.
+/.github/        @easygap
+/Dockerfile      @easygap
+/render.yaml     @easygap
+/fly.toml        @easygap
+/backend/main.py @easygap

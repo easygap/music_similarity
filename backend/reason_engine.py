@@ -1,20 +1,20 @@
-"""Human-readable similarity-reason generator.
+"""사용자에게 보여줄 "닮은 이유" 문장을 만들어주는 모듈.
 
-Given a query song's scaled feature vector, the catalog row it matched
-against (raw + scaled), and the per-feature scaled distance map, this
-module returns short Korean sentences that explain *why* the two songs
-came out similar.
+입력:
+    - 쿼리 곡의 raw 특성값
+    - 매칭된 카탈로그 행의 raw 특성값
+    - 두 곡 사이의 특성별 표준화 공간(z-score) 거리 맵
 
-The idea: features that contributed most to the cosine similarity — i.e.
-features where the two songs are closest in the scaled space — get
-translated into musical concepts the user can actually picture.
+코사인 유사도에 기여도가 높았던 특성 — 즉 두 곡이 표준화 공간에서 가까웠던
+특성을 — 음악적인 개념(템포, 음색, 화성 등)으로 묶어 한국어 문장으로 풀어
+돌려준다.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Feature -> (human label, unit, friendly explanation template)
-# The template receives `q` (query value) and `c` (catalog value).
+# 특성 컬럼 -> (사용자에게 보여줄 라벨, 단위) 매핑.
+# UI 문구를 한 번에 손볼 수 있도록 한 곳에 모아둔다.
 FEATURE_LABELS: dict[str, tuple[str, str]] = {
     "bpm": ("템포", "BPM"),
     "rms_mean": ("평균 음량(에너지)", ""),
@@ -35,7 +35,7 @@ FEATURE_LABELS: dict[str, tuple[str, str]] = {
     "chroma_frequencies_var": ("음정 색채 변화", ""),
 }
 
-# Group features into musical concepts so we summarise rather than dump 58 lines.
+# 58개 특성을 그대로 나열하면 사용자가 못 읽으니 음악적 개념으로 묶어준다.
 FEATURE_GROUPS: dict[str, list[str]] = {
     "템포 & 리듬": ["bpm", "rms_mean", "rms_var"],
     "음색 (밝기)": [
@@ -66,25 +66,27 @@ FEATURE_GROUPS: dict[str, list[str]] = {
 
 @dataclass
 class ReasonGroup:
+    """음악적 개념 단위(예: 템포&리듬)로 묶은 부분 보고."""
+
     label: str
-    match_score: float          # 0..1, 1 = very close on this concept
-    summary: str                # short sentence the UI shows
-    detail: list[str]           # per-feature bullet points
+    match_score: float  # 0..1, 1에 가까울수록 해당 개념에서 가까움.
+    summary: str        # UI 카드에 노출되는 한 줄 요약.
+    detail: list[str]   # 그룹 내 가장 비슷했던 특성에 대한 자세한 비교 문구.
 
 
 @dataclass
 class ReasonReport:
-    summary: str                # 1–2 sentence top-level explanation
-    groups: list[ReasonGroup]   # ranked best-matching musical concepts
+    """매칭 한 건에 대한 전체 설명. 위쪽 요약 + 그룹별 디테일."""
+
+    summary: str               # 1~2문장짜리 최상위 요약.
+    groups: list[ReasonGroup]  # match_score 내림차순으로 정렬된 그룹들.
 
 
 def _concept_score(distances: dict[str, float], cols: list[str]) -> float:
-    """Average scaled distance over the concept's columns -> closeness score.
+    """그룹 컬럼들의 평균 거리(z-score)를 closeness 점수로 변환한다.
 
-    Distances are in z-score units; a distance of 0 means the two songs are
-    indistinguishable on that feature, ~1 means one standard deviation apart.
-    We map distance d -> closeness exp(-d) so 0 stays at 1.0 and large
-    distances asymptote to 0.
+    거리 0은 같은 곡, 거리 1은 표준편차 1만큼 떨어진 정도다.
+    ``exp(-d)`` 로 매핑해서 거리 0 -> 1.0, 거리가 커지면 0에 수렴하도록 한다.
     """
     import math
 
@@ -96,19 +98,20 @@ def _concept_score(distances: dict[str, float], cols: list[str]) -> float:
 
 
 def _has_final_jongseong(text: str) -> bool:
-    """Return True if the last Korean syllable of ``text`` has a final consonant.
+    """문자열의 마지막 한글 음절에 받침이 있는지 판별한다.
 
-    Used to pick the right particle ('이' vs '가', '은' vs '는', etc.). For
-    non-Korean trailing characters (e.g. ')'), we fall back to assuming no
-    final consonant, which produces grammatically safer output.
+    조사("이/가", "은/는" 등) 선택에 사용. 한글이 아닌 문자(괄호 등)는
+    더 거슬러 올라가서 한글 음절을 찾는다. 끝까지 한글이 없으면 받침 없음으로
+    가정한다 (문법 안전 측면에서 보수적).
     """
     for ch in reversed(text):
         code = ord(ch)
         if 0xAC00 <= code <= 0xD7A3:
+            # 한글 음절: (코드 - 0xAC00) % 28 != 0 이면 받침 있음.
             return (code - 0xAC00) % 28 != 0
         if ch.isalnum():
-            # Latin letters/digits inside a Korean sentence: treat the digit
-            # case carefully — '0','1','3','6','7','8' are read with 받침.
+            # 한글 사이에 라틴 알파벳/숫자가 끝에 붙는 경우 처리.
+            # 숫자는 발음상 받침 유무가 다르다 (예: "0번"=영번, "1번"=일번).
             if ch.isdigit():
                 return ch in {"0", "1", "3", "6", "7", "8"}
             return False
@@ -116,20 +119,20 @@ def _has_final_jongseong(text: str) -> bool:
 
 
 def _i_ga(text: str) -> str:
-    """Return '이' or '가' for the subject particle, depending on the trailing letter."""
+    """문자열 끝 발음에 맞춰 주격 조사 '이' 또는 '가' 를 반환."""
     return "이" if _has_final_jongseong(text) else "가"
 
 
 def _phrase_compare(query: float, catalog: float, label: str, unit: str) -> str:
-    """Return a short Korean sentence comparing two raw feature values."""
+    """두 raw 특성값을 비교해 한 줄짜리 한국어 문장을 반환한다."""
     if abs(query - catalog) < 1e-9:
         return f"{label}{_i_ga(label)} 거의 동일합니다 ({query:.2f}{unit})."
-    # Use absolute values for ratio so negative-valued features (e.g. mfcc
-    # means, harmony_mean) don't produce misleading "ratio" interpretations.
+    # mfcc 평균이나 harmony_mean 처럼 음수가 자연스러운 특성이 있으므로
+    # 비율은 절댓값으로 계산한다. 안 그러면 부호 차이 때문에 문장이 이상해진다.
     abs_q, abs_c = abs(query), abs(catalog)
     higher, lower = (abs_q, abs_c) if abs_q > abs_c else (abs_c, abs_q)
     if lower < 1e-9:
-        # Both effectively zero on the magnitude axis — fall through to "비슷한 값".
+        # 두 값 다 0에 가까우면 "비슷한 값" 으로 안전하게 묶는다.
         ratio = 1.0
     else:
         ratio = higher / lower
@@ -153,17 +156,16 @@ def explain_match(
     top_groups: int = 3,
     top_detail_per_group: int = 2,
 ) -> ReasonReport:
-    """Build a human-readable explanation for a single match.
+    """매칭 한 건에 대한 사람-가독 설명을 만든다.
 
-    `distances_scaled` is the per-feature absolute distance in the
-    StandardScaler space — small values mean the two songs are close on
-    that feature.
+    ``distances_scaled`` 는 StandardScaler 공간에서의 특성별 절대 거리.
+    값이 작을수록 두 곡이 해당 특성에서 가깝다는 의미다.
     """
     group_scores: list[ReasonGroup] = []
     for group_label, cols in FEATURE_GROUPS.items():
         score = _concept_score(distances_scaled, cols)
 
-        # Pick the most-similar features inside this group for the detail list.
+        # 그룹 안에서도 가장 가까웠던 특성 몇 개만 디테일 줄에 노출한다.
         eligible = [(c, distances_scaled.get(c, float("inf"))) for c in cols]
         eligible.sort(key=lambda x: x[1])
 
@@ -178,7 +180,8 @@ def explain_match(
                 )
 
         if not detail_lines and group_label == "음색 디테일 (MFCC)":
-            # MFCCs are abstract; mention the closeness numerically.
+            # MFCC는 추상적이라 raw 값을 보여줘봐야 안 와닿는다.
+            # 평균 거리만 숫자로 보여줘서 "가까웠다/멀었다" 만 전달.
             mfcc_dists = [distances_scaled.get(c, 0.0) for c in cols]
             avg = sum(mfcc_dists) / max(1, len(mfcc_dists))
             detail_lines.append(
@@ -211,6 +214,7 @@ def explain_match(
 
 
 def _group_summary(label: str, score: float) -> str:
+    """closeness 점수를 사람 말로 변환한다."""
     if score > 0.9:
         adv = "거의 같은"
     elif score > 0.75:
@@ -226,6 +230,7 @@ def _group_summary(label: str, score: float) -> str:
 
 
 def report_to_dict(report: ReasonReport) -> dict:
+    """ReasonReport 를 JSON 직렬화 가능한 dict 로 평탄화한다."""
     return {
         "summary": report.summary,
         "groups": [

@@ -1,4 +1,4 @@
-"""End-to-end FastAPI route tests using the TestClient + a synthetic dataset."""
+"""FastAPI 라우트 e2e 테스트. TestClient + 합성 데이터셋 조합."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -21,6 +21,7 @@ def test_catalog(fastapi_client):
 
 
 def test_security_headers_on_index(fastapi_client):
+    """프론트엔드(HTML) 응답에 시큐어 헤더가 붙어야 한다."""
     r = fastapi_client.get("/")
     assert r.headers.get("X-Content-Type-Options") == "nosniff"
     assert r.headers.get("X-Frame-Options") == "DENY"
@@ -28,6 +29,7 @@ def test_security_headers_on_index(fastapi_client):
 
 
 def test_request_id_round_trips(fastapi_client):
+    """클라이언트가 보낸 X-Request-ID 가 응답에서도 동일하게 돌아와야 한다."""
     r = fastapi_client.get("/api/health", headers={"X-Request-ID": "abc-123"})
     assert r.headers.get("X-Request-ID") == "abc-123"
 
@@ -50,6 +52,7 @@ def test_analyze_rejects_empty_file(fastapi_client):
 
 
 def test_analyze_rejects_disguised_html(fastapi_client):
+    """확장자만 mp3 인 HTML 파일은 매직 바이트 검증에서 잡혀야 한다."""
     r = fastapi_client.post(
         "/api/analyze",
         files={"file": ("evil.mp3", b"<html>nope</html>", "audio/mpeg")},
@@ -59,6 +62,7 @@ def test_analyze_rejects_disguised_html(fastapi_client):
 
 
 def test_analyze_top_n_out_of_range(fastapi_client, tiny_wav):
+    """top_n 이 범위를 벗어나면 FastAPI Query validator 가 422 를 돌려야 한다."""
     with tiny_wav.open("rb") as f:
         r = fastapi_client.post(
             "/api/analyze?top_n=999",
@@ -68,7 +72,7 @@ def test_analyze_top_n_out_of_range(fastapi_client, tiny_wav):
 
 
 def test_analyze_happy_path(fastapi_client, tiny_wav):
-    """Full pipeline against the synthetic dataset returns ranked results."""
+    """합성 데이터셋 대상 정상 분석 흐름."""
     with tiny_wav.open("rb") as f:
         r = fastapi_client.post(
             "/api/analyze?top_n=3",
@@ -91,13 +95,13 @@ def test_analyze_happy_path(fastapi_client, tiny_wav):
 
 
 def test_analyze_oversized_payload_via_content_length(fastapi_client):
-    huge = "audio/wav"
+    """Content-Length 만 거대해도 사전 차단되어야 한다."""
     r = fastapi_client.post(
         "/api/analyze",
-        files={"file": ("big.wav", b"RIFF" + b"\x00" * 1024, huge)},
+        files={"file": ("big.wav", b"RIFF" + b"\x00" * 1024, "audio/wav")},
         headers={"Content-Length": str(100 * 1024 * 1024)},
     )
-    # Either rejected up front (413) or after streaming (also 413 / 400).
+    # 사전 차단(413) 이거나 스트리밍 도중 차단(413/400) 모두 허용.
     assert r.status_code in (400, 413)
 
 
@@ -105,10 +109,17 @@ def test_robots_txt(fastapi_client):
     r = fastapi_client.get("/robots.txt")
     assert r.status_code == 200
     assert "User-agent" in r.text
+    assert "Sitemap" in r.text
 
 
-def test_temp_upload_directory_is_empty_after_request(fastapi_client, tiny_wav, tmp_path):
-    """Successful analyze should not leave files behind."""
+def test_sitemap_xml(fastapi_client):
+    r = fastapi_client.get("/sitemap.xml")
+    assert r.status_code == 200
+    assert "<urlset" in r.text
+
+
+def test_temp_upload_directory_is_empty_after_request(fastapi_client, tiny_wav):
+    """정상 분석 후 임시 파일이 디스크에 남아있지 않아야 한다."""
     with tiny_wav.open("rb") as f:
         fastapi_client.post(
             "/api/analyze",
@@ -116,4 +127,4 @@ def test_temp_upload_directory_is_empty_after_request(fastapi_client, tiny_wav, 
         )
     upload_dir = Path(__import__("os").environ["MUSIC_UPLOAD_DIR"])
     leftovers = [p for p in upload_dir.iterdir() if p.is_file()]
-    assert not leftovers, f"Temp uploads were not cleaned: {leftovers}"
+    assert not leftovers, f"임시 업로드 파일이 정리되지 않았습니다: {leftovers}"

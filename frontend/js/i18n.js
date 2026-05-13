@@ -1,6 +1,7 @@
-// Tiny i18n layer ----------------------------------------------------------
-// Loads translations and exposes window.i18n.t(key) for static and dynamic
-// content. Persists the chosen language in localStorage.
+// 간단한 i18n 레이어 ------------------------------------------------------
+// translations 사전을 들고 있다가 window.i18n.t(key) 로 호출하면 현재 언어의
+// 문자열을 돌려준다. 사용자가 고른 언어는 localStorage 에 저장해서 새로고침
+// 이후에도 유지.
 
 (function () {
   const STORAGE_KEY = "soundmatch.lang";
@@ -36,6 +37,7 @@
         title: "오디오 특성을 추출하는 중…",
         elapsed: (s) => `${s}초 경과`,
         late: "조금만 더 기다려주세요. 큰 파일은 시간이 더 걸릴 수 있어요.",
+        leaveWarn: "분석이 진행 중입니다. 페이지를 떠나면 다시 처음부터 분석해야 합니다.",
         steps: [
           "librosa · 오디오 디코딩",
           "RMS · BPM · 제로 크로싱 추출",
@@ -58,7 +60,7 @@
         subtitleSeconds: "초 소요",
         newAnalysis: "새 음악 분석",
         share: "결과 공유",
-        copyLink: "링크 복사",
+        copyLink: "결과 복사",
         copied: "복사됨!",
         exportJson: "JSON 다운로드",
         emptyTitle: "유사한 곡을 찾지 못했습니다.",
@@ -77,14 +79,21 @@
         empty: "아직 분석한 기록이 없어요.",
         clear: "기록 지우기",
         confirm: "히스토리를 모두 지울까요?",
+        view: "보기",
       },
       summary: {
         tempo: "Tempo",
+        tempoHelp: "분당 비트 수. 빠른 곡일수록 큰 값.",
         energy: "에너지 (RMS)",
+        energyHelp: "평균 음량. 1에 가까울수록 큰 소리.",
         brightness: "밝기",
+        brightnessHelp: "스펙트럴 센트로이드(Hz). 높을수록 고음역 중심의 밝은 톤.",
         noisiness: "거친 정도",
+        noisinessHelp: "Zero-Crossing Rate. 노이즈/마찰음이 많은 록·메탈에서 높게 나옴.",
         harmony: "화성/타악기 비율",
+        harmonyHelp: "1보다 크면 멜로디 성분이, 작으면 타악기 성분이 우세.",
         chroma: "크로마",
+        chromaHelp: "12음 분포 평균. 화성적인 색채감.",
       },
       info: {
         howTitle: "어떻게 동작하나요?",
@@ -108,6 +117,7 @@
       controls: {
         themeToggle: "테마 전환",
         langToggle: "Language: English",
+        shortcuts: "단축키: / 업로드 포커스 · Esc 결과 닫기 · Space 재생",
       },
     },
     en: {
@@ -139,6 +149,7 @@
         title: "Extracting audio features…",
         elapsed: (s) => `${s}s elapsed`,
         late: "Hang tight — large files take a little longer.",
+        leaveWarn: "Analysis is still running. Leaving will discard the result.",
         steps: [
           "librosa · decoding audio",
           "RMS · BPM · zero crossings",
@@ -161,7 +172,7 @@
         subtitleSeconds: "s total",
         newAnalysis: "Analyze another",
         share: "Share",
-        copyLink: "Copy link",
+        copyLink: "Copy result",
         copied: "Copied!",
         exportJson: "Download JSON",
         emptyTitle: "No similar songs found.",
@@ -180,14 +191,21 @@
         empty: "No analyses yet.",
         clear: "Clear history",
         confirm: "Clear all history?",
+        view: "View",
       },
       summary: {
         tempo: "Tempo",
+        tempoHelp: "Beats per minute. Higher means faster.",
         energy: "Energy (RMS)",
+        energyHelp: "Average loudness. Closer to 1 = louder.",
         brightness: "Brightness",
+        brightnessHelp: "Spectral centroid (Hz). Higher = brighter, treble-heavy tone.",
         noisiness: "Roughness",
+        noisinessHelp: "Zero-Crossing Rate. Higher in rock/metal — more friction.",
         harmony: "Harmony/Percussive ratio",
+        harmonyHelp: ">1 means melodic dominance; <1 means percussion dominance.",
         chroma: "Chroma",
+        chromaHelp: "Average 12-pitch distribution — harmonic flavor.",
       },
       info: {
         howTitle: "How does it work?",
@@ -210,12 +228,14 @@
       },
       controls: {
         themeToggle: "Toggle theme",
-        langToggle: "Language: 한국어",
+        langToggle: "언어: 한국어",
+        shortcuts: "Shortcuts: / focus upload · Esc close result · Space play",
       },
     },
   };
 
   function detectInitial() {
+    // 저장된 값이 있으면 우선 사용, 없으면 브라우저 언어로 추론.
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && dict[stored]) return stored;
     const nav = (navigator.language || FALLBACK).toLowerCase();
@@ -227,6 +247,7 @@
   let current = detectInitial();
 
   function get(path) {
+    // dot path 로 사전을 깊이 탐색. 현재 언어에서 못 찾으면 폴백 언어로 한 번 더 시도.
     const parts = path.split(".");
     let cur = dict[current];
     for (const p of parts) {
@@ -260,6 +281,7 @@
     localStorage.setItem(STORAGE_KEY, next);
     document.documentElement.setAttribute("lang", next);
     apply();
+    // 외부에서 언어 변경에 반응할 수 있도록 커스텀 이벤트 한 번 쏘아준다.
     window.dispatchEvent(new CustomEvent("i18n:change", { detail: { lang: next } }));
   }
 
@@ -268,7 +290,8 @@
   }
 
   function apply(root = document) {
-    // data-i18n="key" -> textContent
+    // data-i18n="키"  →  텍스트 콘텐츠로 주입.
+    // data-i18n-html 속성이 함께 있으면 HTML 로 주입(서식 포함).
     root.querySelectorAll("[data-i18n]").forEach((el) => {
       const v = get(el.dataset.i18n);
       if (typeof v === "string") {
@@ -279,7 +302,7 @@
         }
       }
     });
-    // data-i18n-attr="aria-label:key,placeholder:key2"
+    // data-i18n-attr="aria-label:키,placeholder:키2" 형태로 속성 단위 번역 지원.
     root.querySelectorAll("[data-i18n-attr]").forEach((el) => {
       const spec = el.dataset.i18nAttr;
       spec.split(",").forEach((pair) => {
@@ -292,7 +315,7 @@
 
   window.i18n = { t, lang, setLang, toggle, apply };
 
-  // Apply on first paint if DOM is already ready, else on DOMContentLoaded.
+  // DOM 이 이미 준비됐으면 즉시 적용, 아니면 DOMContentLoaded 까지 대기.
   if (document.readyState !== "loading") {
     apply();
     document.documentElement.setAttribute("lang", current);

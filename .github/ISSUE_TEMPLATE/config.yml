@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 보안 이슈 비공개 신고
+    url: https://github.com/easygap/music_similarity/security/advisories/new
+    about: "보안 관련 문제는 공개 이슈 대신 GitHub Security Advisory 를 이용해 주세요."
+  - name: README 의 환경 변수 표 참고
+    url: https://github.com/easygap/music_similarity#%EF%B8%8F-%ED%99%98%EA%B2%BD-%EB%B3%80%EC%88%98
+    about: "설정/배포 관련 질문은 README 환경 변수 표를 먼저 확인해 주세요."

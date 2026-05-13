@@ -1,10 +1,8 @@
-"""Local preview server.
+"""디자인 전용 로컬 프리뷰 서버.
 
-Serves the static frontend from `frontend/` so the design can be inspected
-without installing the full backend stack (librosa/sklearn).
-
-It also stubs `/api/catalog` and `/api/analyze` with canned data so the UI
-can be exercised end-to-end visually. NOT for production.
+librosa/sklearn 같은 무거운 의존성을 깔지 않고도 ``frontend/`` 정적 파일을
+띄워볼 수 있게 한다. ``/api/catalog`` 와 ``/api/analyze`` 는 더미 응답을 돌려
+줘서 결과 화면까지 전부 그려볼 수 있다. 프로덕션 용도가 아니다.
 """
 from __future__ import annotations
 

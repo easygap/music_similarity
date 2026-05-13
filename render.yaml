@@ -1,5 +1,5 @@
-# Render.com Blueprint — one-click deploy for SoundMatch.
-# Push this repo to GitHub then click "New > Blueprint" on Render.
+# Render.com Blueprint — 원클릭 배포용.
+# 사용법: 이 레포를 GitHub 에 푸시한 뒤 Render 에서 "New > Blueprint" 선택.
 
 services:
   - type: web
@@ -19,6 +19,6 @@ services:
       - key: MUSIC_RATE_LIMIT_PER_MIN
         value: "30"
       - key: MUSIC_ALLOWED_ORIGINS
-        # Comma-separated list of origins allowed for /api requests. Leave
-        # empty in production to disable CORS entirely (same-origin only).
+        # /api 요청을 허용할 origin 을 콤마로 구분해 입력.
+        # 비워두면 CORS 자체를 끄고 same-origin 만 허용한다.
         value: ""

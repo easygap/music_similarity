@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>찾을 수 없는 페이지 · SoundMatch</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/style.css" />
+  <script>
+    // 초기 깜빡임 방지용: 저장된 테마를 즉시 반영한다.
+    try {
+      var t = localStorage.getItem("soundmatch.theme")
+        || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
+  <style>
+    .not-found-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 32px;
+      gap: 20px;
+    }
+    .nf-code {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 96px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      line-height: 1;
+    }
+    .nf-title { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
+    .nf-sub   { margin: 0; max-width: 480px; color: var(--text-dim); }
+    .nf-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: 12px;
+      background: var(--grad-primary);
+      color: white;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(124, 92, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="noise"></div>
+  </div>
+
+  <main class="not-found-wrap">
+    <p class="nf-code">404</p>
+    <h1 class="nf-title">요청하신 페이지를 찾을 수 없어요</h1>
+    <p class="nf-sub">
+      주소가 잘못되었거나 페이지가 이동된 것 같습니다. 메인 화면에서 음악을 업로드하면
+      유사한 곡을 다시 찾아드릴게요.
+    </p>
+    <a class="nf-home" href="/">
+      메인으로 돌아가기
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M5 12h14m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+  </main>
+</body>
+</html>

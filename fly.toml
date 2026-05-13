@@ -1,12 +1,12 @@
-# Fly.io deployment config.
-# Usage:
-#   fly launch --no-deploy            (first-time)
+# Fly.io 배포 설정.
+# 사용 예:
+#   fly launch --no-deploy   # 최초 1회
 #   fly deploy
 #
-# The app is single-region; bump `min_machines_running` if traffic grows.
+# 단일 리전 구성이고, 트래픽이 늘면 min_machines_running 을 올려라.
 
 app = "music-similarity"
-primary_region = "nrt"  # Tokyo — closest to KR users; change as needed.
+primary_region = "nrt"  # Tokyo — 한국 사용자 기준 가장 가까움.
 
 [build]
   dockerfile = "Dockerfile"
@@ -26,6 +26,7 @@ primary_region = "nrt"  # Tokyo — closest to KR users; change as needed.
   min_machines_running = 0
   processes = ["app"]
 
+# 헬스체크 — /api/health 가 카탈로그 로드 실패 시 503 을 돌려준다.
 [[http_service.checks]]
   type = "http"
   interval = "30s"

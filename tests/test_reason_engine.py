@@ -1,4 +1,4 @@
-"""Tests for the human-readable reason engine."""
+"""사용자 가독 reason 엔진 테스트."""
 from __future__ import annotations
 
 from backend.reason_engine import (
@@ -11,7 +11,7 @@ from backend.reason_engine import (
 
 
 def _make_features():
-    """Realistic-ish feature dicts so the engine has something to compare."""
+    """엔진이 비교할 거리감이 있는 현실적인 raw 특성 두 벌을 만든다."""
     q = {
         "bpm": 128.0,
         "rms_mean": 0.31,
@@ -41,12 +41,12 @@ def _make_features():
 
 
 def test_jongseong_detection():
-    # Korean syllable with final consonant.
-    assert _has_final_jongseong("템포") is False  # 포 has no jongseong
-    assert _has_final_jongseong("음악") is True  # 악 has jongseong
-    # Trailing parens fall through to next Korean char.
+    # 받침이 없는 한글 음절.
+    assert _has_final_jongseong("템포") is False  # 포 → 받침 없음
+    assert _has_final_jongseong("음악") is True   # 악 → 받침 있음
+    # 괄호 같은 비한글 문자가 끝에 붙어도 직전 한글 음절을 봐야 한다.
     assert _has_final_jongseong("거친 정도(노이즈성)") is True
-    # Non-Korean trailing alphabetics are treated as no-jongseong.
+    # 영문/숫자만 들어 있으면 받침 없음으로 보수적으로 처리.
     assert _has_final_jongseong("BPM") is False
 
 
@@ -63,12 +63,12 @@ def test_explain_match_returns_summary_and_groups():
 
     report = explain_match(q, c, distances)
     assert report.summary
-    assert "**" in report.summary, "Summary should bold the top-matching concept"
+    assert "**" in report.summary, "최상위 요약에 강조(**) 표시가 있어야 한다"
     assert 1 <= len(report.groups) <= 3
-    # All groups must be sorted by descending match_score.
+    # 그룹은 match_score 내림차순으로 정렬되어야 한다.
     scores = [g.match_score for g in report.groups]
     assert scores == sorted(scores, reverse=True)
-    # Each group has a non-empty summary; most have detail bullets.
+    # 각 그룹은 비어있지 않은 summary 와 디테일 리스트를 가져야 한다.
     for g in report.groups:
         assert g.label in FEATURE_GROUPS
         assert g.summary
@@ -76,7 +76,7 @@ def test_explain_match_returns_summary_and_groups():
 
 
 def test_explain_match_handles_negative_values():
-    """Negative-valued features (mfcc, harmony) shouldn't make ratio go weird."""
+    """mfcc, harmony 처럼 음수가 자연스러운 특성에서도 비율이 이상하게 나오지 않아야."""
     q, c = _make_features()
     q["mfcc1_mean"] = -24.5
     c["mfcc1_mean"] = -23.1
@@ -85,7 +85,7 @@ def test_explain_match_handles_negative_values():
 
     report = explain_match(q, c, distances)
     text = " ".join(d for g in report.groups for d in g.detail)
-    # No negative ratios or NaN substrings should leak into Korean output.
+    # 출력 한국어 안에 nan/inf 같은 단어가 새어 나오면 안 됨.
     assert "nan" not in text.lower()
     assert "inf" not in text.lower()
 
@@ -97,15 +97,14 @@ def test_report_to_dict_is_json_safe():
     payload = report_to_dict(report)
     import json
 
-    # Should serialise round-trip without surprises.
+    # 라운드트립으로 직렬화가 깔끔하게 되는지 확인.
     json.loads(json.dumps(payload, ensure_ascii=False))
 
 
 def test_explain_match_identical_features():
-    """Identical query/catalog vectors should produce 'very close' summaries."""
+    """쿼리 = 매칭이면 최상위 그룹의 match_score 가 1.0 에 가까워야 한다."""
     q, c = _make_features()
-    c = dict(q)  # exact copy
+    c = dict(q)  # 완전 동일한 복사본
     distances = {k: 0.0 for k in q}
     report = explain_match(q, c, distances)
-    # The top group's score is near 1.0.
     assert report.groups[0].match_score > 0.95

@@ -1,7 +1,8 @@
 /* ===================================================================
-   SoundMatch · design system
-   Dark-first with a polished light counterpart. WCAG AA targeted for
-   body copy. Respects prefers-reduced-motion.
+   SoundMatch · 디자인 시스템
+   다크모드를 기본으로 잡고, 라이트모드는 같은 톤으로 재맞춤.
+   본문 텍스트는 WCAG AA 대비를 목표로 잡았고,
+   prefers-reduced-motion 환경에선 모든 애니메이션을 멈춘다.
    =================================================================== */
 
 :root,
@@ -140,7 +141,7 @@ button { font-family: inherit; cursor: pointer; }
 
 .hidden { display: none !important; }
 
-/* ---------------- Background ----------------- */
+/* ---------------- 배경 데코 ------------------ */
 .bg-canvas {
   position: fixed;
   inset: 0;
@@ -196,7 +197,7 @@ button { font-family: inherit; cursor: pointer; }
   }
 }
 
-/* ---------------- Top nav ----------------- */
+/* ---------------- 상단 내비게이션 ------------ */
 .site-nav {
   display: flex;
   align-items: center;
@@ -268,7 +269,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .ghost-pill:hover { background: rgba(255, 255, 255, 0.06); border-color: var(--accent-1); }
 
-/* ---------------- Layout ----------------- */
+/* ---------------- 공통 레이아웃 ------------- */
 main {
   max-width: 1200px;
   margin: 0 auto;
@@ -284,7 +285,7 @@ main {
   box-shadow: var(--shadow-soft);
 }
 
-/* ---------------- Hero ----------------- */
+/* ---------------- 히어로 영역 --------------- */
 .hero {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
@@ -366,7 +367,7 @@ main {
   letter-spacing: 0.01em;
 }
 
-/* ---------------- Upload card ----------------- */
+/* ---------------- 업로드 카드 --------------- */
 .upload-card {
   background: var(--panel-strong);
   border: 1px solid var(--border-strong);
@@ -517,7 +518,7 @@ main {
 }
 .lock-icon { width: 14px; height: 14px; flex-shrink: 0; color: var(--accent-success); }
 
-/* ---------------- Loading ----------------- */
+/* ---------------- 로딩 표시 ----------------- */
 .loading-card {
   margin: 24px 0;
   padding: 32px;
@@ -562,7 +563,7 @@ main {
   font-family: "JetBrains Mono", monospace;
 }
 
-/* ---------------- Error ----------------- */
+/* ---------------- 에러 카드 ----------------- */
 .error-card {
   margin: 24px 0;
   padding: 22px 26px;
@@ -577,7 +578,7 @@ main {
 :root[data-theme="light"] .error-card strong { color: #b91c1c; }
 .error-card p { margin: 0; color: var(--text-dim); font-size: 14px; }
 
-/* ---------------- Results ----------------- */
+/* ---------------- 결과 영역 ----------------- */
 .results { margin-top: 28px; }
 .results-header {
   display: flex;
@@ -618,7 +619,7 @@ main {
 }
 .link-ghost:hover { color: var(--text); }
 
-/* Audio player with waveform */
+/* 업로드 음원 미리듣기 + 파형 */
 .audio-player {
   padding: 18px 22px;
   margin-bottom: 16px;
@@ -663,7 +664,7 @@ main {
   cursor: pointer;
 }
 
-/* Audio summary */
+/* 오디오 요약 메트릭 (Tempo / 에너지 / 밝기 등) */
 .audio-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -684,7 +685,25 @@ main {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
+/* 메트릭 라벨 옆 작은 ? 배지. title 속성으로 툴팁이 뜬다. */
+.audio-summary .metric-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-mute);
+  cursor: help;
+}
+.audio-summary .metric { cursor: help; }
 .audio-summary .metric-value {
   font-size: 22px;
   font-weight: 700;
@@ -696,7 +715,7 @@ main {
 }
 .audio-summary .metric-unit { color: var(--text-mute); font-size: 12px; font-weight: 500; margin-left: 4px; }
 
-/* Radar chart */
+/* 레이더 차트 */
 .radar-card { padding: 24px; margin-bottom: 20px; }
 .radar-head {
   display: flex;
@@ -734,7 +753,7 @@ main {
 .radar-query { fill: rgba(34, 211, 238, 0.18); stroke: var(--accent-2); }
 .radar-match { fill: rgba(124, 92, 255, 0.22); stroke: var(--accent-1); }
 
-/* Hit list */
+/* 매칭 결과 카드 리스트 */
 .hit-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; }
 .hit {
   background: var(--panel);
@@ -868,7 +887,7 @@ main {
 .link-btn[data-link="yt"] svg { color: #ff0033; }
 .link-btn[data-link="sp"] svg { color: #1db954; }
 
-/* Empty results */
+/* 결과가 비었을 때 보여줄 카드 */
 .empty-results {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -879,7 +898,7 @@ main {
 }
 .empty-results strong { color: var(--text); display: block; font-size: 17px; margin-bottom: 6px; }
 
-/* Skeleton loader */
+/* 스켈레톤 로더 (결과 도착 전 자리 잡기용) */
 .skel-block {
   background: var(--panel-skel);
   border-radius: 8px;
@@ -904,7 +923,7 @@ main {
   50%      { opacity: 0.8; }
 }
 
-/* History sidebar */
+/* 최근 분석 히스토리 */
 .history {
   margin-top: 28px;
   background: var(--panel);
@@ -942,7 +961,7 @@ main {
   font-weight: 600;
 }
 
-/* ---------------- Info sections ----------------- */
+/* ---------------- 안내(How/Features) 섹션 ---- */
 .info { margin-top: 80px; }
 .info-title { font-size: 26px; letter-spacing: -0.01em; margin: 0 0 22px; }
 .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
@@ -988,7 +1007,7 @@ main {
 }
 .feature-pills span:hover { background: rgba(124, 92, 255, 0.18); color: var(--text); }
 
-/* ---------------- Toast ----------------- */
+/* ---------------- 토스트 -------------------- */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -1011,12 +1030,12 @@ main {
   transform: translateX(-50%) translateY(0);
 }
 
-/* ---------------- Footer ----------------- */
+/* ---------------- 푸터 ---------------------- */
 .site-foot { text-align: center; padding: 40px 20px 60px; color: var(--text-mute); font-size: 13px; max-width: 720px; margin: 0 auto; }
 .site-foot .muted { color: var(--text-faint); font-size: 12px; margin-top: 8px; }
 .site-foot a { color: var(--text-dim); }
 
-/* ---------------- Responsive ----------------- */
+/* ---------------- 반응형 -------------------- */
 @media (max-width: 900px) {
   .hero {
     grid-template-columns: 1fr;

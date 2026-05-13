@@ -1,4 +1,4 @@
-"""Tests for the librosa feature extraction layer."""
+"""librosa 특성 추출 레이어 테스트."""
 from __future__ import annotations
 
 import math
@@ -15,29 +15,29 @@ from backend.audio_features import (
 
 
 def test_feature_columns_layout():
-    """The canonical column list matches the original capstone CSV."""
-    # 18 base + 20 mfccs * 2 (mean+var) = 58 columns total.
+    """표준 컬럼 순서가 원본 캡스톤 CSV와 동일해야 한다."""
+    # 18개 기본 + 20개 MFCC * 2(mean+var) = 58.
     assert len(FEATURE_COLUMNS) == 58
-    # Order: length first, then RMS/BPM/...
+    # 순서: length, rms_mean, rms_var, bpm, ...
     assert FEATURE_COLUMNS[0] == "length"
     assert FEATURE_COLUMNS[3] == "bpm"
-    # Last 40 are MFCCs.
+    # 마지막 40개가 MFCC.
     assert FEATURE_COLUMNS[-40:] == [
         f"mfcc{i}_{stat}" for i in range(1, 21) for stat in ("mean", "var")
     ]
 
 
 def test_extract_features_synthetic_wav(tiny_wav):
-    """All declared columns are present and finite for a clean sine wave."""
+    """클린한 사인파 wav 에 대해 58개 특성이 전부 finite 값으로 나와야 한다."""
     vec = extract_features(tiny_wav)
     assert isinstance(vec, AudioFeatureVector)
     assert set(vec.values) == set(FEATURE_COLUMNS)
     arr = np.array([vec.values[c] for c in FEATURE_COLUMNS], dtype=float)
-    assert np.isfinite(arr).all(), "Feature extraction produced non-finite values"
+    assert np.isfinite(arr).all(), "특성 추출 결과에 non-finite 값이 섞여 있음"
 
 
 def test_extract_features_short_clip(tmp_path):
-    """librosa should still return a usable vector for a 0.5s clip."""
+    """0.5초 짜리 짧은 클립도 librosa 가 처리할 수 있어야 한다."""
     import wave
 
     sr = 22050
@@ -58,7 +58,7 @@ def test_extract_features_short_clip(tmp_path):
 
 
 def test_extract_features_rejects_empty_audio(tmp_path):
-    """A 0-byte 'audio' file should raise rather than silently return zeros."""
+    """0바이트 오디오는 조용히 0을 돌려주지 않고 예외를 던져야 한다."""
     import wave
 
     path = tmp_path / "empty.wav"
@@ -72,6 +72,7 @@ def test_extract_features_rejects_empty_audio(tmp_path):
 
 
 def test_summary_metrics_shape(tiny_wav):
+    """summary_metrics 의 6개 필드가 모두 finite 값으로 나와야 한다."""
     vec = extract_features(tiny_wav)
     s = summary_metrics(vec)
     for k in (

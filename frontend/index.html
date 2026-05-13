@@ -6,23 +6,30 @@
   <meta name="description" content="음악을 업로드하면 sklearn 코사인 유사도로 가장 닮은 곡을 찾아주고, 왜 닮았는지까지 설명해주는 AI 음악 유사도 분석 서비스." />
   <meta name="theme-color" content="#0b0b18" />
 
-  <!-- OpenGraph / Twitter -->
+  <!-- SNS 공유 카드용 메타 (OpenGraph / Twitter) -->
   <meta property="og:title" content="SoundMatch · AI 음악 유사도 분석" />
   <meta property="og:description" content="업로드한 음악과 가장 닮은 곡을 sklearn + librosa 기반으로 찾아주고, 닮은 이유까지 설명합니다." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://github.com/easygap/music_similarity" />
+  <meta property="og:image" content="/og-image.svg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:locale:alternate" content="en_US" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="/og-image.svg" />
 
   <title>SoundMatch · AI 음악 유사도 분석</title>
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="canonical" href="/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet"
   />
-  <!-- Pretendard via the official CDN; Inter is the fallback. -->
+  <!-- 한글 본문은 Pretendard 가 가장 깔끔. 영문 폴백으로 Inter 를 둔다. -->
   <link
     rel="stylesheet"
     as="style"
@@ -30,7 +37,7 @@
   />
   <link rel="stylesheet" href="/style.css" />
 
-  <!-- Prevent flash of wrong theme. -->
+  <!-- 첫 페인트에서 테마가 튀는 걸 막기 위해 저장된 값을 인라인으로 먼저 적용. -->
   <script>
     (function () {
       try {
@@ -44,9 +51,9 @@
   </script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="#main">본문으로 건너뛰기</a>
 
-  <!-- Animated background ---------------------------------------- -->
+  <!-- 배경 데코 (블러된 그라데이션 orb 3개 + 노이즈) -->
   <div class="bg-canvas" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
@@ -54,7 +61,7 @@
     <div class="noise"></div>
   </div>
 
-  <!-- Top nav ------------------------------------------------------ -->
+  <!-- 상단 내비게이션 ------------------------------------------------ -->
   <header class="site-nav">
     <a class="brand" href="/">
       <svg viewBox="0 0 32 32" class="brand-mark" aria-hidden="true">
@@ -83,7 +90,7 @@
     </nav>
   </header>
 
-  <!-- Hero -------------------------------------------------------- -->
+  <!-- 히어로 영역 (왼쪽 카피 + 오른쪽 업로드 카드) ----------------- -->
   <main id="main">
     <section class="hero">
       <div class="hero-copy">
@@ -116,7 +123,7 @@
         </div>
       </div>
 
-      <!-- Upload card --------------------------------------------- -->
+      <!-- 업로드 카드 -------------------------------------------------- -->
       <form id="upload-form" class="upload-card" autocomplete="off" novalidate>
         <h2 data-i18n="upload.title">지금 분석해보기</h2>
         <p class="upload-sub" data-i18n="upload.subtitle">.mp3 · .wav · .flac · .ogg · .m4a (25MB 이하)</p>
@@ -159,7 +166,7 @@
       </form>
     </section>
 
-    <!-- Loading state ----------------------------------------------- -->
+    <!-- 분석 진행 표시 ----------------------------------------------- -->
     <section id="loading" class="card loading-card hidden" aria-live="polite" role="status">
       <span class="sr-only" data-i18n="loading.title">오디오 특성을 추출하는 중…</span>
       <div class="loading-bars" aria-hidden="true">
@@ -170,14 +177,14 @@
       <p class="loading-elapsed" id="loading-elapsed"></p>
     </section>
 
-    <!-- Error state ------------------------------------------------- -->
+    <!-- 에러 표시 ---------------------------------------------------- -->
     <section id="error" class="card error-card hidden" role="alert">
       <strong data-i18n="error.title">분석에 실패했습니다.</strong>
       <p id="error-message"></p>
       <button type="button" class="ghost" id="error-retry" data-i18n="error.retry">다시 시도</button>
     </section>
 
-    <!-- Results ----------------------------------------------------- -->
+    <!-- 결과 영역 ---------------------------------------------------- -->
     <section id="results" class="results hidden" aria-live="polite">
       <header class="results-header">
         <div>
@@ -197,7 +204,7 @@
         </div>
       </header>
 
-      <!-- Uploaded-file audio preview with waveform ---------------- -->
+      <!-- 업로드 음원 미리듣기 (HTML5 audio + 파형) ------------------ -->
       <div class="audio-player card hidden" id="audio-player">
         <div class="audio-player-head">
           <div class="audio-player-meta">
@@ -237,7 +244,7 @@
       <ol class="hit-list" id="hit-list"></ol>
     </section>
 
-    <!-- History sidebar --------------------------------------------- -->
+    <!-- 최근 분석 히스토리 ------------------------------------------ -->
     <aside class="history hidden" id="history">
       <header class="history-head">
         <h3 data-i18n="history.title">최근 분석</h3>
@@ -246,7 +253,7 @@
       <ol class="history-list" id="history-list"></ol>
     </aside>
 
-    <!-- How-it-works ----------------------------------------------- -->
+    <!-- 동작 설명 ---------------------------------------------------- -->
     <section id="how" class="info">
       <h2 class="info-title" data-i18n="info.howTitle">어떻게 동작하나요?</h2>
       <div class="info-grid">
@@ -294,10 +301,10 @@
     <p class="muted" data-i18n="footer.notice">서버에 음원을 영구 저장하지 않습니다.</p>
   </footer>
 
-  <!-- Toast --------------------------------------------------------- -->
+  <!-- 토스트 알림 -------------------------------------------------- -->
   <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
 
-  <!-- Result-card template ------------------------------------------------- -->
+  <!-- 결과 카드 템플릿 --------------------------------------------- -->
   <template id="hit-template">
     <li class="hit">
       <div class="hit-rank" aria-hidden="true">
@@ -339,7 +346,7 @@
     </li>
   </template>
 
-  <!-- Skeleton card template ------------------------------------------------ -->
+  <!-- 스켈레톤 카드 템플릿 (로딩 중 자리 잡기용) ------------------- -->
   <template id="skeleton-template">
     <li class="hit skel">
       <div class="hit-rank"><div class="skel-block w-30 h-30"></div></div>

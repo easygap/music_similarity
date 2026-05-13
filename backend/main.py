@@ -1,13 +1,15 @@
-"""FastAPI application entry point.
+"""FastAPI 진입점.
 
-Serves the frontend (static files) and exposes the music similarity API.
+정적 프론트엔드를 서빙하면서 음악 유사도 API를 노출한다.
 
-Endpoints
+엔드포인트
 ---------
-GET  /              -> frontend index.html
-GET  /api/catalog   -> catalog size and feature column list
-POST /api/analyze   -> multipart file upload; returns similarity ranking
-GET  /api/health    -> liveness probe
+GET  /              -> 프론트엔드 index.html
+GET  /api/catalog   -> 카탈로그 크기 + 사용 중인 특성 컬럼
+POST /api/analyze   -> 멀티파트 업로드 후 유사도 순위 반환
+GET  /api/health    -> 라이브니스 프로브
+GET  /sitemap.xml   -> SEO용 사이트맵
+GET  /robots.txt    -> 검색 봇 정책
 """
 from __future__ import annotations
 
@@ -42,7 +44,7 @@ from .reason_engine import explain_match, report_to_dict
 from .similarity import MusicSimilarityEngine
 
 # ----------------------------------------------------------------------
-# Path setup
+# 경로 / 설정
 # ----------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
 DATASET_PATH = Path(os.environ.get("MUSIC_DATASET_PATH", ROOT / "data" / "dataset.csv"))
@@ -53,7 +55,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a"}
 MAX_UPLOAD_BYTES = int(os.environ.get("MUSIC_MAX_UPLOAD_BYTES", 25 * 1024 * 1024))  # 25 MB
 
-# Magic byte sniffing so we don't trust filename extensions blindly.
+# 매직 바이트 시그니처. 확장자만 믿고 받지 않도록 첫 16바이트와 대조한다.
 # (sig_bytes, accepted_extensions)
 _MAGIC_SIGNATURES: list[tuple[bytes, frozenset[str]]] = [
     (b"RIFF", frozenset({".wav"})),
@@ -63,7 +65,7 @@ _MAGIC_SIGNATURES: list[tuple[bytes, frozenset[str]]] = [
     (b"\xff\xf2", frozenset({".mp3"})),
     (b"fLaC", frozenset({".flac"})),
     (b"OggS", frozenset({".ogg"})),
-    # MP4/M4A boxes (ftyp at offset 4)
+    # MP4/M4A 컨테이너는 offset 4의 'ftyp' 박스로 검출(아래 _sniff_audio 참고)
 ]
 
 ENV = os.environ.get("MUSIC_ENV", "development")
@@ -74,12 +76,13 @@ ALLOWED_ORIGINS: list[str] = (
     else (["*"] if ENV != "production" else [])
 )
 
-# Concurrency cap: librosa decode is CPU-bound; even on threadpool we don't
-# want a single client to spin up unbounded threads.
+# librosa 디코드는 CPU bound 이라 threadpool로 빠지더라도 한 클라이언트가
+# 스레드를 무제한 소비하면 다른 요청이 죽는다. 동시 분석 수를 제한한다.
 MAX_CONCURRENT_ANALYSES = int(os.environ.get("MUSIC_MAX_CONCURRENT", 4))
 _analysis_semaphore = asyncio.Semaphore(MAX_CONCURRENT_ANALYSES)
 
-# Simple in-process rate limiter (per IP, sliding window).
+# 간단한 in-process rate limiter (IP별 sliding window).
+# 트래픽이 더 커지면 redis 백엔드 limiter 로 옮기는 게 좋음.
 RATE_LIMIT_PER_MIN = int(os.environ.get("MUSIC_RATE_LIMIT_PER_MIN", 12))
 _rate_state: dict[str, list[float]] = {}
 _rate_lock = asyncio.Lock()
@@ -87,12 +90,13 @@ _rate_lock = asyncio.Lock()
 logger = logging.getLogger("music_similarity")
 
 # ----------------------------------------------------------------------
-# Engine — load lazily so worker startup doesn't crash on bad CSV
+# 엔진 — CSV가 깨져 있어도 worker 시작은 살아있게 lazy 로딩한다
 # ----------------------------------------------------------------------
 _engine: MusicSimilarityEngine | None = None
 
 
 def get_engine() -> MusicSimilarityEngine:
+    """엔진 싱글톤 접근자. 최초 호출 시점에 카탈로그를 로딩한다."""
     global _engine
     if _engine is None:
         _engine = MusicSimilarityEngine(DATASET_PATH)
@@ -105,12 +109,14 @@ def get_engine() -> MusicSimilarityEngine:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Configure logging once at startup.
+    # 애플리케이션 부팅 시 한 번만 로깅을 구성.
     if not logging.getLogger().handlers:
         logging.basicConfig(
             level=os.environ.get("MUSIC_LOG_LEVEL", "INFO"),
             format='{"ts":"%(asctime)s","level":"%(levelname)s","logger":"%(name)s","msg":"%(message)s"}',
         )
+    # 부팅 시점에 카탈로그 로딩을 시도해본다. 실패해도 worker 자체는 죽이지 않음
+    # (health 가 503을 돌려주도록 함).
     try:
         get_engine()
     except Exception:  # noqa: BLE001
@@ -119,24 +125,24 @@ async def lifespan(app: FastAPI):
 
 
 # ----------------------------------------------------------------------
-# App
+# FastAPI 앱
 # ----------------------------------------------------------------------
 app = FastAPI(
     title="SoundMatch · Music Similarity API",
-    description="Upload a song and find the most acoustically similar tracks from the catalog.",
-    version="1.1.0",
+    description="음원을 업로드하면 카탈로그에서 가장 닮은 곡을 찾아 순위와 함께 돌려준다.",
+    version="1.2.0",
     lifespan=lifespan,
 )
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Apply hardening headers to every response."""
+    """모든 응답에 시큐어 헤더를 일괄 적용한다."""
 
     CSP = (
         "default-src 'self'; "
         "img-src 'self' data:; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+        "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
         "media-src 'self' blob:; "
         "connect-src 'self'; "
         "frame-ancestors 'none'; "
@@ -150,7 +156,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "microphone=(), camera=(), geolocation=()")
-        # CSP for HTML responses only — JSON/SVG/etc are fine.
+        # CSP는 HTML 응답에만. JSON/SVG 등에 끼우면 데브툴에서 시끄러워진다.
         if response.headers.get("content-type", "").startswith("text/html"):
             response.headers.setdefault("Content-Security-Policy", self.CSP)
         if ENV == "production":
@@ -161,9 +167,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RequestLogMiddleware(BaseHTTPMiddleware):
+    """요청별로 request_id 를 부여하고 종료 후 구조화된 로그를 남긴다."""
+
     async def dispatch(self, request: Request, call_next):
+        # 클라이언트가 보낸 X-Request-ID가 있으면 그대로 사용 (분산 추적용).
         request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
-        # Attach to request state so handlers can pull it.
         request.state.request_id = request_id
         t0 = time.perf_counter()
         try:
@@ -198,10 +206,10 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestLogMiddleware)
 
-# CORS: when no explicit origins are configured in production, the middleware
-# is omitted entirely. Same-origin requests work without CORS.
+# CORS: 프로덕션에서 명시적 origin이 없으면 미들웨어 자체를 끼우지 않는다.
+# 같은 origin 요청은 CORS 미들웨어 없이도 동작.
 if ALLOWED_ORIGINS:
-    # We never enable credentials with a wildcard origin (browser rejects it).
+    # 와일드카드 origin과 credentials 조합은 브라우저가 거부하므로 차단.
     allow_credentials = "*" not in ALLOWED_ORIGINS
     app.add_middleware(
         CORSMiddleware,
@@ -214,9 +222,10 @@ if ALLOWED_ORIGINS:
 
 
 # ----------------------------------------------------------------------
-# Helpers
+# 보조 함수
 # ----------------------------------------------------------------------
 def _client_ip(request: Request) -> str:
+    """리버스 프록시 뒤에 있을 수 있으니 X-Forwarded-For 의 첫 IP를 우선 사용."""
     fwd = request.headers.get("x-forwarded-for")
     if fwd:
         return fwd.split(",", 1)[0].strip()
@@ -224,13 +233,13 @@ def _client_ip(request: Request) -> str:
 
 
 async def _rate_limit(request: Request) -> None:
-    """Per-IP sliding-window limiter (RATE_LIMIT_PER_MIN in 60s)."""
+    """IP별 sliding-window rate limiter (RATE_LIMIT_PER_MIN / 60s)."""
     ip = _client_ip(request)
     now = time.time()
     window = 60.0
     async with _rate_lock:
         history = _rate_state.setdefault(ip, [])
-        # Drop entries older than window.
+        # 윈도우 밖의 오래된 항목은 정리.
         cutoff = now - window
         history[:] = [t for t in history if t > cutoff]
         if len(history) >= RATE_LIMIT_PER_MIN:
@@ -244,20 +253,20 @@ async def _rate_limit(request: Request) -> None:
 
 
 def _sniff_audio(head: bytes, ext: str) -> bool:
+    """첫 바이트로 실제 오디오 컨테이너인지 가볍게 확인한다."""
     if len(head) < 4:
         return False
     for sig, accepted in _MAGIC_SIGNATURES:
         if head.startswith(sig) and ext in accepted:
             return True
-    # MP4/M4A: 'ftyp' box at offset 4
+    # MP4/M4A: 4바이트 size + 'ftyp' 박스 헤더
     if ext == ".m4a" and len(head) >= 12 and head[4:8] == b"ftyp":
         return True
-    # OGG handled above; FLAC handled above.
     return False
 
 
 def _safe_filename(name: str | None) -> str:
-    """Strip directory components and dangerous characters from a display name."""
+    """디렉토리 구분자와 NUL 같은 위험 문자를 잘라낸 표시용 파일명."""
     if not name:
         return "upload"
     base = os.path.basename(name).replace("\x00", "")
@@ -265,15 +274,17 @@ def _safe_filename(name: str | None) -> str:
 
 
 def _all_finite(values: Iterable[float]) -> bool:
+    """반복자의 모든 값이 finite 인지 확인."""
     arr = np.asarray(list(values), dtype=float)
     return bool(np.isfinite(arr).all())
 
 
 # ----------------------------------------------------------------------
-# Routes
+# 라우트
 # ----------------------------------------------------------------------
 @app.get("/api/health")
 def health():
+    """라이브니스 프로브. 카탈로그를 못 읽었으면 503으로 응답한다."""
     try:
         size = get_engine().catalog_size
     except Exception:  # noqa: BLE001
@@ -283,6 +294,7 @@ def health():
 
 @app.get("/api/catalog")
 def catalog_info():
+    """카탈로그 크기와 사용 중인 특성 컬럼을 돌려준다."""
     eng = get_engine()
     return {
         "catalog_size": eng.catalog_size,
@@ -295,9 +307,10 @@ def catalog_info():
 async def analyze(
     request: Request,
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),  # noqa: B008 — FastAPI dep-injection pattern
+    file: UploadFile = File(...),  # noqa: B008 — FastAPI 의존성 주입 패턴
     top_n: int = Query(5, ge=1, le=20),  # noqa: B008
 ):
+    """업로드된 음원을 분석해 상위 N개 유사 곡을 반환한다."""
     request_id = getattr(request.state, "request_id", uuid.uuid4().hex)
     safe_name = _safe_filename(file.filename)
     ext = Path(safe_name).suffix.lower()
@@ -308,7 +321,8 @@ async def analyze(
             detail=f"지원하지 않는 파일 형식입니다. ({', '.join(sorted(ALLOWED_EXTENSIONS))})",
         )
 
-    # Pre-flight size check via Content-Length if the client provided it.
+    # 클라이언트가 Content-Length 를 보내면 사전에 거른다. 25MB 초과면 디스크 I/O
+    # 자체를 일으키지 않음. 약간의 여유(+4KB)는 multipart 헤더 분량.
     cl = request.headers.get("content-length")
     if cl and cl.isdigit() and int(cl) > MAX_UPLOAD_BYTES + 4096:
         raise HTTPException(
@@ -318,7 +332,7 @@ async def analyze(
 
     dest = UPLOAD_DIR / f"{request_id}{ext}"
 
-    # Drop temp file even on cancellation / handler exception.
+    # 핸들러가 어떤 식으로 끝나더라도 임시 파일은 지운다.
     def _cleanup(path: Path) -> None:
         try:
             os.remove(path)
@@ -329,7 +343,7 @@ async def analyze(
 
     try:
         async with _analysis_semaphore:
-            # Stream upload to disk with running size cap, sniff first 16 bytes.
+            # 스트리밍 업로드. 누적 사이즈를 체크하면서 첫 16바이트로 매직 시그니처를 확인한다.
             written = 0
             head_bytes = b""
             with dest.open("wb") as out:
@@ -351,15 +365,15 @@ async def analyze(
                     detail="파일 내용이 오디오 형식과 일치하지 않습니다. 확장자를 확인해주세요.",
                 )
 
-            # Feature extraction is sync/CPU-bound — push to threadpool so the
-            # event loop stays free for other requests.
+            # librosa.load 는 동기/CPU bound 이므로 threadpool 로 넘긴다.
+            # 이벤트 루프를 점유하면 health 체크나 다른 정적 파일 요청도 같이 막힌다.
             t0 = time.perf_counter()
             try:
                 features = await run_in_threadpool(extract_features, dest)
             except HTTPException:
                 raise
             except (ValueError, RuntimeError) as e:
-                # librosa raises these for malformed audio.
+                # 손상된 오디오/너무 짧은 파일 등에서 librosa 가 던지는 오류들.
                 logger.warning(
                     "feature_extraction_failed",
                     extra={"request_id": request_id, "error": str(e)},
@@ -369,6 +383,7 @@ async def analyze(
                     detail="오디오 분석에 실패했습니다. 손상된 파일이거나 너무 짧을 수 있습니다.",
                 ) from e
             except Exception as e:  # noqa: BLE001
+                # 그 외 예외는 내부 오류로 처리. 자세한 traceback 은 서버 로그로.
                 logger.exception(
                     "feature_extraction_crashed",
                     extra={"request_id": request_id},
@@ -379,6 +394,7 @@ async def analyze(
             feature_seconds = time.perf_counter() - t0
 
             if not _all_finite(features.values.values()):
+                # NaN/Inf 가 섞이면 코사인 유사도가 깨지므로 분석 진행 차단.
                 logger.warning(
                     "non_finite_features",
                     extra={"request_id": request_id},
@@ -400,13 +416,14 @@ async def analyze(
             similarity_seconds = time.perf_counter() - t1
 
             if hits and hits[0].similarity < 0:
-                # Defensive — if the top match is negative, something is
-                # numerically off (e.g. all-NaN catalog row). Log loudly.
+                # 1위 유사도가 음수면 카탈로그가 의심스러운 상태(예: NaN 행 통과).
+                # 사용자에게는 그대로 보여주되 운영 로그에 큰 소리로 남긴다.
                 logger.error(
                     "negative_top_similarity",
                     extra={"request_id": request_id, "top": hits[0].similarity},
                 )
 
+            # 결과 직렬화. match_summary 는 레이더 차트에 쓰려고 함께 내려준다.
             results: list[dict] = []
             from .audio_features import AudioFeatureVector
 
@@ -419,11 +436,8 @@ async def analyze(
                     distances_scaled=hit.feature_distances,
                 )
 
-                # Reuse summary_metrics on the catalog row so the radar chart
-                # has comparable axes for query vs. each hit.
+                # summary_metrics 는 length 키를 참조하므로 안전 디폴트를 채워둔다.
                 if catalog_raw:
-                    # `length` may not be present in feature_columns; provide a
-                    # safe default so summary_metrics never KeyErrors.
                     safe_catalog = dict(catalog_raw)
                     safe_catalog.setdefault("length", 0.0)
                     match_summary = summary_metrics(
@@ -473,12 +487,12 @@ async def analyze(
                 }
             )
     finally:
-        # Force-cleanup synchronously too, so disk is freed before the
-        # background task runs (covers cases where the task is cancelled).
+        # 동기적으로 한 번 더 정리. BackgroundTask 가 취소된 경우 대비.
         _cleanup(dest)
 
 
 def _youtube_search_url(title: str, artist: str) -> str:
+    """YouTube 검색 결과 페이지로 향하는 URL 생성."""
     import urllib.parse
 
     q = urllib.parse.quote_plus(f"{title} {artist}")
@@ -486,6 +500,7 @@ def _youtube_search_url(title: str, artist: str) -> str:
 
 
 def _spotify_search_url(title: str, artist: str) -> str:
+    """Spotify 검색 결과 페이지로 향하는 URL 생성."""
     import urllib.parse
 
     q = urllib.parse.quote_plus(f"{title} {artist}")
@@ -493,13 +508,13 @@ def _spotify_search_url(title: str, artist: str) -> str:
 
 
 # ----------------------------------------------------------------------
-# Frontend (static)
+# 프론트엔드 정적 서빙
 # ----------------------------------------------------------------------
 def _cached_file_response(path: Path, *, immutable: bool = False) -> FileResponse:
-    """Serve a file with a sensible Cache-Control header.
+    """캐시 헤더가 붙은 FileResponse 헬퍼.
 
-    immutable=True is for fingerprinted/static assets that never change;
-    other paths get a short revalidation window.
+    immutable=True 는 파비콘처럼 절대 안 바뀌는 자산용,
+    그 외에는 짧게(5분) 잡고 revalidate 시킨다.
     """
     if immutable:
         cache = "public, max-age=31536000, immutable"
@@ -519,10 +534,10 @@ if FRONTEND_DIR.exists():
     def index():
         index_html = FRONTEND_DIR / "index.html"
         if not index_html.exists():
-            raise HTTPException(status_code=404, detail="Frontend not built.")
+            raise HTTPException(status_code=404, detail="프론트엔드 빌드 결과를 찾지 못했습니다.")
         return _cached_file_response(index_html, immutable=False)
 
-    # Asset shortcuts so the HTML can write <link href="/style.css"> etc.
+    # HTML 에서 <link href="/style.css"> 식으로 짧게 쓰기 위한 단축 라우트들.
     @app.get("/style.css", include_in_schema=False)
     def style_css():
         return _cached_file_response(FRONTEND_DIR / "css" / "style.css")
@@ -543,10 +558,46 @@ if FRONTEND_DIR.exists():
     def favicon():
         return _cached_file_response(FRONTEND_DIR / "assets" / "favicon.svg", immutable=True)
 
+    @app.get("/og-image.svg", include_in_schema=False)
+    def og_image():
+        """SNS 공유용 OpenGraph 이미지 (SVG)."""
+        return _cached_file_response(FRONTEND_DIR / "assets" / "og-image.svg", immutable=True)
+
     @app.get("/robots.txt", include_in_schema=False)
     def robots():
+        body = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
         return Response(
-            "User-agent: *\nAllow: /\n",
+            body,
             media_type="text/plain",
             headers={"Cache-Control": "public, max-age=86400"},
         )
+
+    @app.get("/sitemap.xml", include_in_schema=False)
+    def sitemap():
+        """단일 페이지 SPA 라 sitemap도 단출하다. 봇 친화 + last-modified 정도."""
+        from datetime import date
+
+        body = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            f"<url><loc>/</loc><lastmod>{date.today().isoformat()}</lastmod>"
+            "<changefreq>weekly</changefreq><priority>1.0</priority></url>"
+            "</urlset>"
+        )
+        return Response(
+            body,
+            media_type="application/xml",
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
+
+    @app.get("/404", include_in_schema=False)
+    def not_found_page():
+        """존재하지 않는 경로 처리용 페이지."""
+        nf = FRONTEND_DIR / "404.html"
+        if nf.exists():
+            return FileResponse(
+                str(nf),
+                status_code=404,
+                headers={"Cache-Control": "no-store"},
+            )
+        return Response("Not Found", status_code=404, media_type="text/plain")
