@@ -36,6 +36,15 @@ uvicorn backend.main:app --reload --port 8000
 
 Docker 가 편하면 `docker compose up --build`.
 
+명령줄에서 한 파일만 분석해보고 싶다면:
+
+```bash
+python -m backend.cli analyze ./mysong.wav --top-n 5
+python -m backend.cli analyze ./mysong.wav --json > result.json
+```
+
+서버를 띄우지 않고도 같은 엔진으로 동작한다 (배치 작업 / 디버깅 용).
+
 librosa / sklearn 깔지 않고 디자인만 돌려볼 때:
 
 ```bash
@@ -71,6 +80,7 @@ POST /api/analyze         # multipart 업로드, top_n=1~20
 GET  /api/health          # 라이브니스, ?strict=1 이면 librosa/디스크까지 점검
 GET  /api/catalog         # 사용 중인 특성 컬럼
 GET  /api/catalog/sample  # 카탈로그 일부 미리보기
+GET  /api/catalog/random  # 카탈로그에서 무작위 N곡 추천
 GET  /api/catalog/search  # ?q=&page=&size= 제목/아티스트 검색 + 페이지네이션
 GET  /docs                # FastAPI 자동 Swagger UI
 GET  /metrics             # Prometheus exposition
@@ -100,6 +110,7 @@ curl -X POST http://localhost:8000/api/analyze \
 | `MUSIC_RATE_LIMIT_PER_MIN` | `12` | IP당 분당 요청 한도 |
 | `MUSIC_CACHE_TTL_SECONDS` | `600` | 결과 캐시 TTL (10분) |
 | `MUSIC_CACHE_MAX_ENTRIES` | `64` | 결과 캐시 최대 항목 수 |
+| `MUSIC_SKIP_WARMUP` | "" | `1` 이면 부팅 시 librosa 워밍업 생략 (cold-start 측정 / 테스트용) |
 | `MUSIC_ALLOWED_ORIGINS` | "" (개발은 `*`) | CORS 허용 origin, 콤마 구분 |
 | `MUSIC_LOG_LEVEL` | `INFO` | JSON 로그 레벨 |
 | `PORT` | `8000` | 리스닝 포트 (Fly.io 등 PaaS 호환) |

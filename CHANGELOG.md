@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- 명령줄 도구 `python -m backend.cli analyze <파일> [--top-n N] [--json]`.
+  서버 없이도 같은 엔진으로 카탈로그 비교를 돌릴 수 있다. 사람-가독 또는 JSON 출력.
+- `GET /api/catalog/random?n=` 엔드포인트. 메인 페이지 카탈로그 미리보기에
+  "다른 곡 보기" 버튼 신설 — 누르면 무작위 12곡으로 교체.
+- 부팅 시점 librosa / numba 워밍업. 짧은 사인파 한 번 흘려서 첫 사용자
+  분석 latency 를 줄임. `MUSIC_SKIP_WARMUP=1` 로 비활성화 가능.
+
+### Added (earlier)
 - 카탈로그 검색 + 페이지네이션 API (`GET /api/catalog/search?q=&page=&size=`).
   곡명/아티스트 부분 일치(대소문자 무시) + has_more 플래그 포함.
 - `/catalog` 페이지. 검색창 (한글 IME 280ms 디바운스) + 카드 그리드 + 페이지네이션.

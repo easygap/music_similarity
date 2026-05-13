@@ -131,11 +131,13 @@
   if (langToggleBtn) langToggleBtn.textContent = t("controls.langToggle");
 
   // 카탈로그 일부 미리보기 — 메인 페이지 하단 정보용.
-  async function loadCatalogPreview() {
+  // 첫 로드만 /sample 로 정렬된 12곡, 그 후 "다른 곡 보기" 누르면 /random 으로 무작위.
+  async function loadCatalogPreview({ randomize = false } = {}) {
     const host = document.getElementById("catalog-list");
     if (!host) return;
     try {
-      const res = await fetch("/api/catalog/sample?limit=12");
+      const url = randomize ? "/api/catalog/random?n=12" : "/api/catalog/sample?limit=12";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("fail");
       const data = await res.json();
       if (!Array.isArray(data.items) || !data.items.length) {
@@ -156,7 +158,11 @@
     }
   }
   loadCatalogPreview();
-  window.addEventListener("i18n:change", loadCatalogPreview);
+  window.addEventListener("i18n:change", () => loadCatalogPreview());
+  const catalogReloadBtn = document.getElementById("catalog-reload");
+  if (catalogReloadBtn) {
+    catalogReloadBtn.addEventListener("click", () => loadCatalogPreview({ randomize: true }));
+  }
 
   // ----------------------------------------------------------------------
   // 토스트

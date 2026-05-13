@@ -1112,6 +1112,15 @@ main {
 .feature-pills span:hover { background: rgba(124, 92, 255, 0.18); color: var(--text); }
 
 /* 카탈로그 미리보기 */
+.catalog-preview-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.catalog-preview-head .info-title { margin: 0; }
 .catalog-preview-sub { color: var(--text-mute); margin: 0 0 16px; max-width: 640px; font-size: 14.5px; }
 .catalog-list {
   display: grid;

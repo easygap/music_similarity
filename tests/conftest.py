@@ -103,6 +103,7 @@ def fastapi_client(monkeypatch, synthetic_dataset, tmp_path):
     monkeypatch.setenv("MUSIC_UPLOAD_DIR", str(upload_dir))
     monkeypatch.setenv("MUSIC_RATE_LIMIT_PER_MIN", "100")  # 테스트에서 rate limit 안 걸리게.
     monkeypatch.setenv("MUSIC_ENV", "test")
+    monkeypatch.setenv("MUSIC_SKIP_WARMUP", "1")  # 워밍업으로 테스트 시간 늘리지 않기.
 
     # 모듈 레벨 상수들이 새 환경변수를 읽도록 backend 모듈을 다시 임포트.
     for mod in list(sys.modules):

@@ -158,7 +158,59 @@ async def lifespan(app: FastAPI):
         get_engine()
     except Exception:  # noqa: BLE001
         logger.exception("engine_load_failed")
+
+    # librosa / sklearn / numba JIT 워밍업.
+    # 첫 사용자 분석이 1.5~2초 걸리는 이유의 상당 부분이 BLAS / numba 첫 호출이라
+    # 부팅 시점에 짧은 더미 신호 한 번 흘려두면 첫 응답이 빨라진다.
+    # MUSIC_SKIP_WARMUP=1 환경변수로 비활성화 가능 (테스트나 cold-start 측정용).
+    if os.environ.get("MUSIC_SKIP_WARMUP") != "1":
+        try:
+            # 0.4초 짜리 사인파를 임시 파일에 써서 extract_features 한 바퀴 돌려둔다.
+            # 호출 자체로 librosa 가 로드되고 numba JIT 가 워밍된다.
+            await run_in_threadpool(_warmup_pipeline)
+            logger.info("warmup_done")
+        except Exception:  # noqa: BLE001
+            logger.exception("warmup_failed")
+
     yield
+
+
+def _warmup_pipeline() -> None:
+    """librosa / numba JIT 를 짧은 사인파로 미리 돌려둔다.
+
+    여기서 발생한 예외는 lifespan 에서 잡아 로그만 남기고 무시한다 — 워밍업
+    실패가 서비스 자체를 막아선 안 된다.
+    """
+    import math
+    import wave
+
+    import numpy as np
+
+    from .audio_features import extract_features
+
+    sr = 22050
+    duration = 0.4
+    nframes = int(sr * duration)
+    tmp = UPLOAD_DIR / ".warmup.wav"
+    try:
+        with wave.open(str(tmp), "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(sr)
+            frames = bytearray()
+            for n in range(nframes):
+                v = int(8000 * math.sin(2 * math.pi * 330 * n / sr))
+                frames.extend(v.to_bytes(2, "little", signed=True))
+            w.writeframes(bytes(frames))
+        # 결과는 버린다. 임포트 + JIT + BLAS 한 번씩만 돌려보는 게 목적.
+        _ = extract_features(tmp, max_duration=duration)
+        # numpy / similarity 도 한 번 가볍게 두드린다.
+        _ = np.linalg.norm(np.zeros(8))
+    finally:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
 
 
 # ----------------------------------------------------------------------
@@ -489,6 +541,31 @@ def catalog_sample(limit: int = Query(12, ge=1, le=50)):  # noqa: B008
     return JSONResponse(
         {"total": eng.catalog_size, "items": items},
         headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@app.get(
+    "/api/catalog/random",
+    summary="카탈로그에서 무작위 곡 추천",
+    tags=["system"],
+)
+def catalog_random(n: int = Query(6, ge=1, le=24)):  # noqa: B008
+    """카탈로그에서 N곡을 무작위로 뽑아 돌려준다.
+
+    프론트엔드 메인 페이지의 "카탈로그 미리보기" 새로고침 버튼이 이 엔드포인트를
+    호출한다. 매번 다른 결과라서 캐시는 짧게 (60초).
+    """
+    import random
+
+    eng = get_engine()
+    names = eng.iter_catalog_names()
+    if not names:
+        return JSONResponse({"total": 0, "items": []})
+    picked = random.sample(names, k=min(n, len(names)))
+    items = [_split_catalog_name(n) for n in picked]
+    return JSONResponse(
+        {"total": eng.catalog_size, "items": items},
+        headers={"Cache-Control": "public, max-age=60"},
     )
 
 

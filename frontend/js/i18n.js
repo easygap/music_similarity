@@ -115,6 +115,7 @@
           "분석 시 비교 대상이 되는 카탈로그의 일부를 보여드려요. 같은 장르 / 음색의 곡을 올리면 더 정확한 매칭이 가능합니다.",
         catalogPreviewLoading: "카탈로그를 불러오는 중…",
         catalogPreviewFail: "카탈로그 미리보기를 불러올 수 없어요. 잠시 후 다시 시도해주세요.",
+        catalogReload: "다른 곡 보기",
       },
       footer: {
         notice:
@@ -242,6 +243,7 @@
           "A peek at the songs your upload is compared against. Tracks with a similar genre/timbre will match more accurately.",
         catalogPreviewLoading: "Loading catalog…",
         catalogPreviewFail: "Couldn't load the catalog preview. Try again later.",
+        catalogReload: "Shuffle",
       },
       footer: {
         notice:

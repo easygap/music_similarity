@@ -243,6 +243,22 @@ def test_catalog_search_validates_size_bound(fastapi_client):
     assert r.status_code == 422
 
 
+def test_catalog_random(fastapi_client):
+    """랜덤 추천 엔드포인트가 정상 응답하고 limit 범위 안에서 곡을 돌려준다."""
+    r = fastapi_client.get("/api/catalog/random?n=2")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 3  # 합성 카탈로그 사이즈
+    assert len(body["items"]) == 2
+    for it in body["items"]:
+        assert "title" in it and "artist" in it
+
+
+def test_catalog_random_validates_bounds(fastapi_client):
+    r = fastapi_client.get("/api/catalog/random?n=999")
+    assert r.status_code == 422
+
+
 def test_catalog_page_renders(fastapi_client):
     r = fastapi_client.get("/catalog")
     assert r.status_code == 200
