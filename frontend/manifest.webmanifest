@@ -1,0 +1,39 @@
+{
+  "name": "SoundMatch · AI 음악 유사도 분석",
+  "short_name": "SoundMatch",
+  "description": "음원을 올리면 sklearn 코사인 유사도로 가장 닮은 곡을 찾고, 그 이유까지 알려주는 PWA.",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0b0b18",
+  "background_color": "#0b0b18",
+  "categories": ["music", "utilities", "entertainment"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "음악 업로드",
+      "short_name": "업로드",
+      "description": "메인 화면의 업로드 카드로 바로 이동",
+      "url": "/#main",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.svg",
+      "sizes": "1200x630",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "SoundMatch 메인 히어로"
+    }
+  ]
+}

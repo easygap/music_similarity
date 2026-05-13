@@ -34,15 +34,19 @@ Docker · Render · Fly.io 원클릭 배포까지 모두 포함되어 있어요.
 - 🎚️ **업로드 음원 미리듣기 + 직접 그린 파형(Web Audio API)** — 클릭으로 탐색 가능
 - 📊 **레이더 차트** — 1위 매칭과 6축 비교 (Tempo · 에너지 · 밝기 · 거친 정도 · 화성비 · 크로마)
 - 🛈 **특성 툴팁** — 결과 페이지의 각 메트릭에 마우스 올리면 한 줄 설명
+- 🎛 **멜 스펙트로그램** — 백엔드에서 직접 SVG 로 그려서 응답에 첨부 (matplotlib 없이 numpy 만)
 - 🕘 **로컬 히스토리** — 최근 5건 자동 저장(localStorage), 클릭 한 번으로 결과 복원
-- 🔗 **공유 + JSON 내보내기** — 상위 3곡 텍스트 복사 / 전체 분석 결과 JSON 다운로드
+- 🔗 **공유 + JSON 내보내기** — Web Share API (모바일 네이티브 공유 시트) + 상위 3곡 텍스트 복사 + 전체 결과 JSON 다운로드
 - ⌨️ **키보드 단축키** — `/` 업로드 포커스 · `Esc` 결과 닫기 · `Space` 재생/일시정지
 - 🛡️ **분석 중 이탈 경고** — `beforeunload` 로 실수 이탈 시 한 번 확인
 - 🌗 **다크/라이트 테마 토글** — OS 환경설정 자동 감지 + `prefers-reduced-motion` 존중
 - 🌐 **한국어 + 영어** i18n — 토글 한 번으로 전체 UI 교체
 - 🔍 **SEO/SNS 친화** — OG 이미지(SVG), sitemap.xml, robots.txt, 깔끔한 404 페이지
+- 📱 **PWA 지원** — `manifest.webmanifest` + Service Worker + 오프라인 폴백 (`offline.html`). 모바일에서 "홈 화면에 추가" 가능
+- 🧯 **글로벌 JS 에러 boundary** — 사이드 스크립트가 깨져도 사용자에게 친절한 토스트만 보이고 사이트는 계속 동작
+- 📜 **OpenAPI 응답 모델** — `/docs` Swagger UI 에서 모든 응답 타입을 깔끔히 확인 가능
 - ⚡ **API 안정성** — 비동기 threadpool, 동시 요청 cap, IP별 rate limit, magic-byte 검증, CSP/HSTS 등 시큐어 헤더, 구조화된 JSON 로그
-- 🧪 **pytest 32개 케이스** + ruff lint + GitHub Actions CI + Docker multi-stage + Python 3.11/3.12 매트릭스
+- 🧪 **pytest 37개 케이스** + ruff lint + GitHub Actions CI + Docker multi-stage + Python 3.11/3.12 매트릭스
 
 ---
 
@@ -68,12 +72,17 @@ Docker · Render · Fly.io 원클릭 배포까지 모두 포함되어 있어요.
 | `backend/audio_features.py` | librosa로 58개 특성 추출 (BPM·RMS·spectral·chroma·MFCC) |
 | `backend/similarity.py` | `StandardScaler` + `cosine_similarity` (NaN 차단, zero-variance 컬럼 drop) |
 | `backend/reason_engine.py` | 그룹별 z-score 거리 → 한국어/영어 문장 |
+| `backend/spectrogram.py` | 멜 스펙트로그램 → 가벼운 SVG (matplotlib 의존성 없이) |
+| `backend/schemas.py` | OpenAPI 응답 모델 (HealthResponse / CatalogResponse / AnalyzeResponse 등) |
 | `backend/main.py` | FastAPI 엔드포인트 + 미들웨어 + 정적 프론트엔드 + 캐시 헤더 |
-| `frontend/index.html` | SPA 단일 페이지 — 시맨틱 HTML, ARIA, skip-link |
+| `frontend/index.html` | SPA 단일 페이지 — 시맨틱 HTML, ARIA, skip-link, 글로벌 JS 에러 boundary |
 | `frontend/css/style.css` | 다크/라이트 디자인 시스템, focus-visible, 반응형, reduced-motion |
-| `frontend/js/app.js` | 메인 컨트롤러 (업로드/결과/히스토리/공유/테마) |
+| `frontend/js/app.js` | 메인 컨트롤러 (업로드/결과/히스토리/공유/테마/단축키) |
 | `frontend/js/i18n.js` | 한국어/영어 사전 + 토글 |
 | `frontend/js/visualizers.js` | Web Audio 파형 + SVG 레이더 차트 |
+| `frontend/sw.js` | Service Worker (정적 리소스 캐시 + 오프라인 폴백) |
+| `frontend/manifest.webmanifest` | PWA manifest |
+| `frontend/offline.html` · `frontend/404.html` | 오프라인 / 잘못된 경로용 폴백 페이지 |
 | `data/dataset.csv` | 곡 카탈로그 + 사전 추출된 특성값 |
 
 ---
@@ -205,7 +214,11 @@ curl -X POST http://localhost:8000/api/analyze \
 | --- | --- |
 | `GET /api/health` | 라이브니스 — 카탈로그 사이즈 + 환경 + 버전 (카탈로그 로드 실패 시 503) |
 | `GET /api/catalog` | 카탈로그 크기 + 사용 중인 특성 컬럼 |
-| `POST /api/analyze` | 음원 업로드 + 유사도 분석 (`top_n`은 1~20) |
+| `POST /api/analyze` | 음원 업로드 + 유사도 분석 (`top_n`은 1~20). 응답에 멜 스펙트로그램 SVG 포함 |
+| `GET /docs` · `/openapi.json` | FastAPI 자동 생성 API 문서. 모든 응답 모델이 타입까지 정의되어 있음 |
+| `GET /manifest.webmanifest` | PWA manifest (홈 화면 추가 / 단축키 메타) |
+| `GET /sw.js` | Service Worker. 같은 출처 정적 리소스를 stale-while-revalidate 로 캐시 |
+| `GET /offline.html` | 네트워크가 끊겼을 때 보여주는 폴백 페이지 |
 | `GET /robots.txt` | 검색 봇 정책 (Allow: all + sitemap 위치) |
 | `GET /sitemap.xml` | 단일 페이지 사이트맵 (SEO 수집용) |
 | `GET /og-image.svg` | SNS 공유 카드용 1200×630 OpenGraph 이미지 |

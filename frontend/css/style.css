@@ -715,6 +715,23 @@ main {
 }
 .audio-summary .metric-unit { color: var(--text-mute); font-size: 12px; font-weight: 500; margin-left: 4px; }
 
+/* 멜 스펙트로그램 카드 (백엔드 SVG 렌더 결과) */
+.spectrogram-card { padding: 24px; margin-bottom: 20px; }
+.spectrogram-card .radar-head h3 { margin: 0; font-size: 17px; letter-spacing: -0.01em; }
+.spectrogram-sub {
+  margin: 4px 0 0;
+  color: var(--text-mute);
+  font-size: 12.5px;
+}
+.spectrogram-host {
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0b0b18;
+  border: 1px solid var(--border);
+}
+.spectrogram-host svg { width: 100%; height: auto; display: block; }
+
 /* 레이더 차트 */
 .radar-card { padding: 24px; margin-bottom: 20px; }
 .radar-head {

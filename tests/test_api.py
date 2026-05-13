@@ -118,6 +118,59 @@ def test_sitemap_xml(fastapi_client):
     assert "<urlset" in r.text
 
 
+def test_pwa_manifest(fastapi_client):
+    """PWA manifest 가 정상 JSON 으로 서빙되어야 한다."""
+    r = fastapi_client.get("/manifest.webmanifest")
+    assert r.status_code == 200
+    assert "application/manifest+json" in r.headers.get("content-type", "")
+    data = r.json()
+    assert data["name"]
+    assert data["start_url"] == "/"
+    assert isinstance(data["icons"], list)
+
+
+def test_service_worker(fastapi_client):
+    """SW 는 캐싱되면 안 되고 Service-Worker-Allowed 헤더가 붙어야 한다."""
+    r = fastapi_client.get("/sw.js")
+    assert r.status_code == 200
+    assert "no-store" in r.headers.get("cache-control", "")
+    assert r.headers.get("service-worker-allowed") == "/"
+
+
+def test_offline_page(fastapi_client):
+    r = fastapi_client.get("/offline.html")
+    assert r.status_code == 200
+    assert "오프라인" in r.text
+
+
+def test_analyze_returns_spectrogram_svg(fastapi_client, tiny_wav):
+    """정상 분석 결과에 멜 스펙트로그램 SVG 가 함께 내려와야 한다."""
+    with tiny_wav.open("rb") as f:
+        r = fastapi_client.post(
+            "/api/analyze?top_n=3",
+            files={"file": ("tone.wav", f.read(), "audio/wav")},
+        )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert "spectrogram_svg" in body
+    svg = body["spectrogram_svg"]
+    # 빈 문자열은 시각화 실패 시의 폴백이라 허용. 정상 분석에선 SVG 가 들어와야 한다.
+    assert svg.startswith("<svg ")
+    assert "</svg>" in svg
+
+
+def test_openapi_docs_available(fastapi_client):
+    """/docs 와 /openapi.json 가 서빙되는지 가벼운 확인."""
+    spec = fastapi_client.get("/openapi.json")
+    assert spec.status_code == 200
+    data = spec.json()
+    # 우리가 등록한 엔드포인트가 스펙에 들어 있어야 한다.
+    paths = data.get("paths", {})
+    assert "/api/health" in paths
+    assert "/api/catalog" in paths
+    assert "/api/analyze" in paths
+
+
 def test_temp_upload_directory_is_empty_after_request(fastapi_client, tiny_wav):
     """정상 분석 후 임시 파일이 디스크에 남아있지 않아야 한다."""
     with tiny_wav.open("rb") as f:

@@ -41,7 +41,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from .audio_features import extract_features, summary_metrics
 from .reason_engine import explain_match, report_to_dict
+from .schemas import AnalyzeResponse, CatalogResponse, HealthResponse
 from .similarity import MusicSimilarityEngine
+from .spectrogram import build_mel_spectrogram_svg
 
 # ----------------------------------------------------------------------
 # 경로 / 설정
@@ -140,11 +142,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     CSP = (
         "default-src 'self'; "
+        # 인라인 SW 등록 + 글로벌 에러 boundary 가 index.html 에 inline script 로
+        # 들어 있어 'unsafe-inline' 이 필요. 외부 JS 는 같은 출처만 허용한다.
+        "script-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
         "media-src 'self' blob:; "
         "connect-src 'self'; "
+        "worker-src 'self'; "
+        "manifest-src 'self'; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self'"
@@ -282,17 +289,30 @@ def _all_finite(values: Iterable[float]) -> bool:
 # ----------------------------------------------------------------------
 # 라우트
 # ----------------------------------------------------------------------
-@app.get("/api/health")
+@app.get(
+    "/api/health",
+    response_model=HealthResponse,
+    summary="라이브니스 / 카탈로그 로딩 상태",
+    tags=["system"],
+)
 def health():
     """라이브니스 프로브. 카탈로그를 못 읽었으면 503으로 응답한다."""
     try:
         size = get_engine().catalog_size
     except Exception:  # noqa: BLE001
-        return JSONResponse({"status": "degraded", "catalog_size": 0}, status_code=503)
+        return JSONResponse(
+            {"status": "degraded", "catalog_size": 0, "env": ENV, "version": app.version},
+            status_code=503,
+        )
     return {"status": "ok", "catalog_size": size, "env": ENV, "version": app.version}
 
 
-@app.get("/api/catalog")
+@app.get(
+    "/api/catalog",
+    response_model=CatalogResponse,
+    summary="카탈로그 메타데이터",
+    tags=["system"],
+)
 def catalog_info():
     """카탈로그 크기와 사용 중인 특성 컬럼을 돌려준다."""
     eng = get_engine()
@@ -303,7 +323,13 @@ def catalog_info():
     }
 
 
-@app.post("/api/analyze", dependencies=[Depends(_rate_limit)])
+@app.post(
+    "/api/analyze",
+    dependencies=[Depends(_rate_limit)],
+    response_model=AnalyzeResponse,
+    summary="음원 업로드 + 유사도 분석",
+    tags=["analysis"],
+)
 async def analyze(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -460,6 +486,16 @@ async def analyze(
                     }
                 )
 
+            # 보너스: 멜 스펙트로그램 SVG. 시각화 실패는 분석 자체를 막지 않는다.
+            try:
+                spectrogram_svg = await run_in_threadpool(build_mel_spectrogram_svg, dest)
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "spectrogram_failed",
+                    extra={"request_id": request_id},
+                )
+                spectrogram_svg = ""
+
             logger.info(
                 "analyze_done",
                 extra={
@@ -470,6 +506,7 @@ async def analyze(
                     "similarity_seconds": round(similarity_seconds, 3),
                     "top_sim": round(hits[0].similarity, 4) if hits else None,
                     "top_n": top_n,
+                    "has_spectrogram": bool(spectrogram_svg),
                 },
             )
 
@@ -484,6 +521,7 @@ async def analyze(
                         "similarity_seconds": round(similarity_seconds, 3),
                     },
                     "catalog_size": eng.catalog_size,
+                    "spectrogram_svg": spectrogram_svg,
                 }
             )
     finally:
@@ -562,6 +600,29 @@ if FRONTEND_DIR.exists():
     def og_image():
         """SNS 공유용 OpenGraph 이미지 (SVG)."""
         return _cached_file_response(FRONTEND_DIR / "assets" / "og-image.svg", immutable=True)
+
+    @app.get("/manifest.webmanifest", include_in_schema=False)
+    def manifest():
+        """PWA manifest. 홈 화면 추가 + 색상/단축키 메타."""
+        return FileResponse(
+            str(FRONTEND_DIR / "manifest.webmanifest"),
+            media_type="application/manifest+json",
+            headers={"Cache-Control": "public, max-age=300, must-revalidate"},
+        )
+
+    @app.get("/sw.js", include_in_schema=False)
+    def service_worker():
+        """SW 자체는 캐싱하지 않는다. 새 버전 배포 시 즉시 반영되어야 함."""
+        return FileResponse(
+            str(FRONTEND_DIR / "sw.js"),
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-store", "Service-Worker-Allowed": "/"},
+        )
+
+    @app.get("/offline.html", include_in_schema=False)
+    def offline_page():
+        """SW 캐시 미스 + 네트워크 끊김일 때 보여줄 폴백 페이지."""
+        return _cached_file_response(FRONTEND_DIR / "offline.html")
 
     @app.get("/robots.txt", include_in_schema=False)
     def robots():

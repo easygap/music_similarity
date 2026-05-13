@@ -39,6 +39,9 @@
   const radarHost = $("#radar-host");
   const hitList = $("#hit-list");
 
+  const spectrogramCard = $("#spectrogram-card");
+  const spectrogramHost = $("#spectrogram-host");
+  const shareBtn = $("#share-btn");
   const audioPlayer = $("#audio-player");
   const audioPlayerTitle = $("#audio-player-title");
   const audioPreview = $("#audio-preview");
@@ -444,6 +447,15 @@
 
     renderSummary(data.summary || {});
 
+    // 멜 스펙트로그램 SVG (백엔드가 직접 만들어줌). 빈 문자열이면 카드 숨김.
+    if (typeof data.spectrogram_svg === "string" && data.spectrogram_svg.length > 0) {
+      spectrogramHost.innerHTML = data.spectrogram_svg;
+      spectrogramCard.classList.remove("hidden");
+    } else {
+      spectrogramHost.innerHTML = "";
+      spectrogramCard.classList.add("hidden");
+    }
+
     // 결과가 0건일 때는 친절한 빈 상태 카드로 대체.
     if (!Array.isArray(data.results) || data.results.length === 0) {
       hitList.innerHTML = `
@@ -593,6 +605,31 @@
   // ----------------------------------------------------------------------
   // 공유 / 내보내기
   // ----------------------------------------------------------------------
+  // Web Share API 가 지원되면 share 버튼을 노출한다.
+  function buildShareText(data) {
+    const tracks = data.results
+      .slice(0, 3)
+      .map((r) => `${r.rank}. ${r.title} – ${r.artist} (${r.similarity_percent.toFixed(1)}%)`)
+      .join("\n");
+    return `SoundMatch · ${data.filename}\n\n${tracks}\n\n${location.origin}`;
+  }
+  if (navigator.share && shareBtn) {
+    shareBtn.classList.remove("hidden");
+    shareBtn.addEventListener("click", async () => {
+      if (!_lastResults) return;
+      try {
+        await navigator.share({
+          title: "SoundMatch · AI 음악 유사도 결과",
+          text: buildShareText(_lastResults),
+          url: location.origin,
+        });
+      } catch (e) {
+        // 사용자가 공유 시트를 취소했을 때는 굳이 알림 띄우지 않는다.
+        if (e && e.name !== "AbortError") toast(t("results.copied"));
+      }
+    });
+  }
+
   copyLinkBtn.addEventListener("click", async () => {
     if (!_lastResults) return;
     // 결과를 텍스트로 정리해 클립보드에 넣어준다 (Web Share API 가 없어도 동작).
