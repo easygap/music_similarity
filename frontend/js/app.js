@@ -51,6 +51,7 @@
 
   const resetBtn = $("#reset-btn");
   const copyLinkBtn = $("#copy-link-btn");
+  const copyShareUrlBtn = $("#copy-share-url-btn");
   const exportJsonBtn = $("#export-json-btn");
   const yearSpan = $("#year");
 
@@ -127,6 +128,34 @@
   loadCatalogStat();
   rebuildLocalizedSelectOptions();
   if (langToggleBtn) langToggleBtn.textContent = t("controls.langToggle");
+
+  // 카탈로그 일부 미리보기 — 메인 페이지 하단 정보용.
+  async function loadCatalogPreview() {
+    const host = document.getElementById("catalog-list");
+    if (!host) return;
+    try {
+      const res = await fetch("/api/catalog/sample?limit=12");
+      if (!res.ok) throw new Error("fail");
+      const data = await res.json();
+      if (!Array.isArray(data.items) || !data.items.length) {
+        host.innerHTML = `<p class="catalog-loading">${escapeHtml(t("info.catalogPreviewFail"))}</p>`;
+        return;
+      }
+      host.innerHTML = data.items
+        .map(
+          (it) => `
+            <div class="catalog-chip" title="${escapeHtml(it.title)} – ${escapeHtml(it.artist)}">
+              <span class="catalog-title">${escapeHtml(it.title)}</span>
+              <span class="catalog-artist">${escapeHtml(it.artist)}</span>
+            </div>`,
+        )
+        .join("");
+    } catch {
+      host.innerHTML = `<p class="catalog-loading">${escapeHtml(t("info.catalogPreviewFail"))}</p>`;
+    }
+  }
+  loadCatalogPreview();
+  window.addEventListener("i18n:change", loadCatalogPreview);
 
   // ----------------------------------------------------------------------
   // 토스트
@@ -603,6 +632,80 @@
   });
 
   // ----------------------------------------------------------------------
+  // 공유 가능한 URL — 결과를 압축 후 URL hash 에 직렬화
+  // ----------------------------------------------------------------------
+  // 결과 페이로드가 보통 5~10KB 라 hash 에 그대로 넣으면 URL 이 길어진다.
+  // CompressionStream("gzip") 으로 압축 후 base64url 인코딩해서 짧게 만든다.
+  // base64url 은 일반 base64 와 달리 `+/=` 를 `-_` 로 바꿔서 URL 에 안전.
+  async function encodeForShare(data) {
+    try {
+      const json = JSON.stringify(data);
+      if (typeof CompressionStream === "undefined") {
+        // 구형 브라우저: 압축 없이 base64. 약간 길어지지만 동작은 됨.
+        return base64UrlEncode(new TextEncoder().encode(json));
+      }
+      const stream = new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"));
+      const buf = await new Response(stream).arrayBuffer();
+      return base64UrlEncode(new Uint8Array(buf));
+    } catch {
+      return null;
+    }
+  }
+
+  async function decodeFromShare(token) {
+    try {
+      const bytes = base64UrlDecode(token);
+      if (typeof DecompressionStream === "undefined") {
+        // 구형 브라우저는 압축 안 한 경로로 직접 디코드.
+        return JSON.parse(new TextDecoder().decode(bytes));
+      }
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      const text = await new Response(stream).text();
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  }
+
+  function base64UrlEncode(uint8) {
+    let s = "";
+    for (let i = 0; i < uint8.length; i++) s += String.fromCharCode(uint8[i]);
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function base64UrlDecode(str) {
+    const pad = str.length % 4 === 0 ? "" : "=".repeat(4 - (str.length % 4));
+    const b64 = str.replace(/-/g, "+").replace(/_/g, "/") + pad;
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  // 페이지 로드 시 hash 에 결과가 들어있으면 자동 복원.
+  // 형식: #r=<base64url-gzip-json>
+  async function tryRestoreFromHash() {
+    const m = (location.hash || "").match(/^#r=(.+)$/);
+    if (!m) return;
+    const restored = await decodeFromShare(m[1]);
+    if (restored && Array.isArray(restored.results)) {
+      _lastResults = restored;
+      _lastFile = null;
+      audioPlayer.classList.add("hidden");
+      renderResults(restored, /* preserveFile */ true);
+      // 복원 사실을 토스트로 알려준다.
+      toast(t("results.restored"));
+    }
+  }
+
+  // 페이지 첫 로드 시 한 번 시도. DOM 이 그려진 후에 결과 카드를 채워야 안전.
+  if (document.readyState !== "loading") {
+    tryRestoreFromHash();
+  } else {
+    document.addEventListener("DOMContentLoaded", tryRestoreFromHash);
+  }
+
+  // ----------------------------------------------------------------------
   // 공유 / 내보내기
   // ----------------------------------------------------------------------
   // Web Share API 가 지원되면 share 버튼을 노출한다.
@@ -646,6 +749,29 @@
       toast(shareText);
     }
   });
+
+  // "공유 가능한 링크 복사" — 결과를 hash 에 담은 URL 을 클립보드에 넣어준다.
+  if (copyShareUrlBtn) {
+    copyShareUrlBtn.addEventListener("click", async () => {
+      if (!_lastResults) return;
+      const token = await encodeForShare(_lastResults);
+      if (!token) {
+        toast(t("results.shareUrlFailed"));
+        return;
+      }
+      const url = `${location.origin}/#r=${token}`;
+      // URL 이 너무 길면(약 10KB+) 브라우저/주소창이 까다로워질 수 있어 경고만 한 번.
+      if (url.length > 12000) {
+        console.warn("Share URL is unusually long:", url.length);
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+        toast(t("results.copied"));
+      } catch {
+        toast(url);
+      }
+    });
+  }
 
   exportJsonBtn.addEventListener("click", () => {
     if (!_lastResults) return;

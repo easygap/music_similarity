@@ -36,17 +36,22 @@ Docker · Render · Fly.io 원클릭 배포까지 모두 포함되어 있어요.
 - 🛈 **특성 툴팁** — 결과 페이지의 각 메트릭에 마우스 올리면 한 줄 설명
 - 🎛 **멜 스펙트로그램** — 백엔드에서 직접 SVG 로 그려서 응답에 첨부 (matplotlib 없이 numpy 만)
 - 🕘 **로컬 히스토리** — 최근 5건 자동 저장(localStorage), 클릭 한 번으로 결과 복원
-- 🔗 **공유 + JSON 내보내기** — Web Share API (모바일 네이티브 공유 시트) + 상위 3곡 텍스트 복사 + 전체 결과 JSON 다운로드
+- 🔗 **공유 가능한 URL** — 분석 결과를 gzip+base64url 로 압축해 URL hash 에 직렬화. 같은 URL 을 열면 별도 분석 없이 결과가 자동 복원
+- 📤 **다양한 공유 방식** — Web Share API (모바일 네이티브 공유 시트) · 상위 3곡 텍스트 복사 · 결과 JSON 다운로드 · 공유 링크 복사
 - ⌨️ **키보드 단축키** — `/` 업로드 포커스 · `Esc` 결과 닫기 · `Space` 재생/일시정지
 - 🛡️ **분석 중 이탈 경고** — `beforeunload` 로 실수 이탈 시 한 번 확인
 - 🌗 **다크/라이트 테마 토글** — OS 환경설정 자동 감지 + `prefers-reduced-motion` 존중
 - 🌐 **한국어 + 영어** i18n — 토글 한 번으로 전체 UI 교체
 - 🔍 **SEO/SNS 친화** — OG 이미지(SVG), sitemap.xml, robots.txt, 깔끔한 404 페이지
+- 📑 **정책 페이지** — `/privacy`, `/terms` 정적 페이지를 같은 디자인 시스템으로 제공
+- 🧾 **카탈로그 미리보기** — `/api/catalog/sample` + 메인 페이지 하단 카드
 - 📱 **PWA 지원** — `manifest.webmanifest` + Service Worker + 오프라인 폴백 (`offline.html`). 모바일에서 "홈 화면에 추가" 가능
 - 🧯 **글로벌 JS 에러 boundary** — 사이드 스크립트가 깨져도 사용자에게 친절한 토스트만 보이고 사이트는 계속 동작
 - 📜 **OpenAPI 응답 모델** — `/docs` Swagger UI 에서 모든 응답 타입을 깔끔히 확인 가능
 - ⚡ **API 안정성** — 비동기 threadpool, 동시 요청 cap, IP별 rate limit, magic-byte 검증, CSP/HSTS 등 시큐어 헤더, 구조화된 JSON 로그
-- 🧪 **pytest 37개 케이스** + ruff lint + GitHub Actions CI + Docker multi-stage + Python 3.11/3.12 매트릭스
+- 🧪 **pytest 43개 케이스** + ruff lint + GitHub Actions CI + Docker multi-stage + Python 3.11/3.12 매트릭스
+- 🤖 **Dependabot** 으로 pip / GitHub Actions / Docker 의존성 자동 PR
+- 📜 **CHANGELOG / SECURITY / CODE_OF_CONDUCT** 까지 갖춘 협업 인프라
 
 ---
 
@@ -219,6 +224,8 @@ curl -X POST http://localhost:8000/api/analyze \
 | `GET /manifest.webmanifest` | PWA manifest (홈 화면 추가 / 단축키 메타) |
 | `GET /sw.js` | Service Worker. 같은 출처 정적 리소스를 stale-while-revalidate 로 캐시 |
 | `GET /offline.html` | 네트워크가 끊겼을 때 보여주는 폴백 페이지 |
+| `GET /api/catalog/sample` | 카탈로그 일부 미리보기 (limit 1~50, 기본 12). `Cache-Control: max-age=300` |
+| `GET /privacy` · `/terms` | 개인정보 처리방침 / 이용약관 (같은 디자인 시스템) |
 | `GET /robots.txt` | 검색 봇 정책 (Allow: all + sitemap 위치) |
 | `GET /sitemap.xml` | 단일 페이지 사이트맵 (SEO 수집용) |
 | `GET /og-image.svg` | SNS 공유 카드용 1200×630 OpenGraph 이미지 |

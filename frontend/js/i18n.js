@@ -61,7 +61,10 @@
         newAnalysis: "새 음악 분석",
         share: "결과 공유",
         copyLink: "결과 복사",
+        copyShareUrl: "공유 링크 복사",
         copied: "복사됨!",
+        restored: "공유된 분석 결과를 불러왔어요.",
+        shareUrlFailed: "공유 링크 생성에 실패했습니다. 다시 시도해주세요.",
         exportJson: "JSON 다운로드",
         emptyTitle: "유사한 곡을 찾지 못했습니다.",
         emptyHint: "다른 곡으로 다시 시도해보세요.",
@@ -107,11 +110,18 @@
         step3Body:
           "특성별 거리(z-score)를 그룹화해 <strong>음색·템포·리듬·화성</strong> 중 어디가 닮았는지 한국어 문장으로 풀어드립니다.",
         featuresTitle: "SoundMatch가 분석하는 항목",
+        catalogPreviewTitle: "카탈로그에 어떤 곡들이 있나요?",
+        catalogPreviewSub:
+          "분석 시 비교 대상이 되는 카탈로그의 일부를 보여드려요. 같은 장르 / 음색의 곡을 올리면 더 정확한 매칭이 가능합니다.",
+        catalogPreviewLoading: "카탈로그를 불러오는 중…",
+        catalogPreviewFail: "카탈로그 미리보기를 불러올 수 없어요. 잠시 후 다시 시도해주세요.",
       },
       footer: {
         notice:
           "서버에 음원을 영구 저장하지 않습니다. 분석 결과는 학술/취미 용도로만 사용해주세요.",
         repoLink: "GitHub",
+        privacy: "개인정보 처리방침",
+        terms: "이용약관",
         tagline: "졸업작품에서 출발해, 시중 서비스급으로 끝까지 다듬은 프로젝트",
       },
       controls: {
@@ -173,7 +183,10 @@
         newAnalysis: "Analyze another",
         share: "Share",
         copyLink: "Copy result",
+        copyShareUrl: "Copy shareable link",
         copied: "Copied!",
+        restored: "Loaded a shared analysis result.",
+        shareUrlFailed: "Failed to build a share link. Try again.",
         exportJson: "Download JSON",
         emptyTitle: "No similar songs found.",
         emptyHint: "Try a different file.",
@@ -219,11 +232,18 @@
         step3Body:
           "Per-feature distances (z-scores) are grouped into musical concepts — <strong>timbre, tempo, rhythm, harmony</strong> — and turned into plain sentences.",
         featuresTitle: "Audio features extracted",
+        catalogPreviewTitle: "What's in the catalog?",
+        catalogPreviewSub:
+          "A peek at the songs your upload is compared against. Tracks with a similar genre/timbre will match more accurately.",
+        catalogPreviewLoading: "Loading catalog…",
+        catalogPreviewFail: "Couldn't load the catalog preview. Try again later.",
       },
       footer: {
         notice:
           "No audio is permanently stored. Results are for academic / personal use.",
         repoLink: "GitHub",
+        privacy: "Privacy",
+        terms: "Terms",
         tagline: "Started as a capstone project, polished into a production-ready service.",
       },
       controls: {

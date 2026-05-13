@@ -206,6 +206,11 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
             <span data-i18n="results.copyLink">결과 복사</span>
           </button>
+          <button type="button" class="ghost" id="copy-share-url-btn"
+                  title="결과 데이터가 포함된 링크를 복사합니다 (URL 만으로 같은 결과 복원 가능)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 8-8h2M20 12a8 8 0 0 1-8 8h-2M9 8h6v8H9z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="results.copyShareUrl">공유 링크 복사</span>
+          </button>
           <button type="button" class="ghost" id="export-json-btn">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 18h16" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span data-i18n="results.exportJson">JSON 다운로드</span>
@@ -296,6 +301,17 @@
       </div>
     </section>
 
+    <!-- 카탈로그에 어떤 곡들이 들어있는지 가볍게 보여줌 -->
+    <section id="catalog-preview" class="info">
+      <h2 class="info-title" data-i18n="info.catalogPreviewTitle">카탈로그에 어떤 곡들이 있나요?</h2>
+      <p class="catalog-preview-sub" data-i18n="info.catalogPreviewSub">
+        분석 시 비교 대상이 되는 카탈로그의 일부를 보여드려요. 같은 장르 / 음색의 곡을 올리면 더 정확한 매칭이 가능합니다.
+      </p>
+      <div class="catalog-list" id="catalog-list">
+        <p class="catalog-loading" data-i18n="info.catalogPreviewLoading">카탈로그를 불러오는 중…</p>
+      </div>
+    </section>
+
     <section id="features" class="info">
       <h2 class="info-title" data-i18n="info.featuresTitle">SoundMatch가 분석하는 항목</h2>
       <div class="feature-pills">
@@ -317,6 +333,8 @@
     <p data-i18n="footer.tagline">졸업작품에서 출발해, 시중 서비스급으로 끝까지 다듬은 프로젝트</p>
     <p class="muted">
       © <span id="year"></span> SoundMatch ·
+      <a href="/privacy" data-i18n="footer.privacy">개인정보 처리방침</a> ·
+      <a href="/terms" data-i18n="footer.terms">이용약관</a> ·
       <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="footer.repoLink">GitHub</a>
     </p>
     <p class="muted" data-i18n="footer.notice">서버에 음원을 영구 저장하지 않습니다.</p>

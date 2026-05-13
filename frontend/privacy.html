@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>개인정보 처리 방침 · SoundMatch</title>
+  <meta name="description" content="SoundMatch 가 사용자 음원과 분석 결과를 어떻게 다루는지에 대한 안내." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/style.css" />
+  <script>
+    try {
+      var t = localStorage.getItem("soundmatch.theme")
+        || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
+  <style>
+    .legal-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 80px 24px 120px;
+      line-height: 1.7;
+    }
+    .legal-wrap h1 { font-size: 36px; letter-spacing: -0.02em; margin: 0 0 8px; }
+    .legal-wrap .lead { color: var(--text-mute); margin: 0 0 32px; }
+    .legal-wrap h2 {
+      font-size: 20px;
+      margin: 36px 0 8px;
+      letter-spacing: -0.01em;
+    }
+    .legal-wrap p, .legal-wrap li { color: var(--text-dim); font-size: 15.5px; }
+    .legal-wrap ul { padding-left: 22px; }
+    .legal-wrap a.back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      color: var(--text-mute);
+      font-size: 13.5px;
+    }
+    .legal-wrap a.back:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="noise"></div>
+  </div>
+
+  <main class="legal-wrap">
+    <a class="back" href="/">← 메인으로</a>
+    <h1>개인정보 처리 방침</h1>
+    <p class="lead">최종 업데이트: 2026-05-13</p>
+
+    <p>
+      SoundMatch (이하 "서비스") 는 사용자의 음악 파일을 받아 유사도 분석을 제공하는
+      도구입니다. 본 문서는 서비스 운영 과정에서 어떤 정보를 받고, 어떻게 처리하는지
+      투명하게 안내하기 위해 작성되었습니다.
+    </p>
+
+    <h2>1. 수집하는 정보</h2>
+    <ul>
+      <li><strong>업로드된 음원 파일</strong>: 분석을 위해 일시적으로 서버 디스크에 저장합니다.</li>
+      <li><strong>요청 메타데이터</strong>: 요청 ID, 접속 IP, 사용된 브라우저(User-Agent), 응답 시간 등 운영 로그에 남는 정보.</li>
+      <li><strong>분석 결과</strong>: 응답으로 사용자에게 즉시 반환되며 서버에 보관되지 않습니다.</li>
+    </ul>
+
+    <h2>2. 보관 기간</h2>
+    <p>
+      업로드된 음원은 <strong>분석이 끝나는 즉시 서버에서 자동 삭제</strong>됩니다.
+      운영 로그(요청 ID, 처리 시간 등)는 장애 분석을 위해 최대 30일까지 유지되며,
+      그 이후 자동 폐기됩니다.
+    </p>
+
+    <h2>3. 이용 목적</h2>
+    <ul>
+      <li>업로드된 음원에 대한 유사도 분석 결과 제공</li>
+      <li>서비스 안정성/성능 모니터링 및 장애 대응</li>
+      <li>이상 트래픽/남용 차단 (Rate limit 등)</li>
+    </ul>
+
+    <h2>4. 제3자 제공 / 학습 사용</h2>
+    <p>
+      업로드된 음원은 <strong>제3자에게 제공되지 않으며, 어떤 형태의 머신러닝
+      모델 학습이나 카탈로그 확장에도 사용되지 않습니다.</strong>
+      유사도 비교에 쓰이는 카탈로그(<code>data/dataset.csv</code>)는 사전 추출된
+      특성값으로만 구성되어 있고, 사용자 업로드와는 무관합니다.
+    </p>
+
+    <h2>5. 쿠키 / 로컬 저장소</h2>
+    <p>
+      서비스는 별도의 추적용 쿠키를 사용하지 않습니다. 다만 사용자 편의를 위해
+      다음 항목을 <strong>브라우저의 localStorage</strong> 에 저장합니다:
+    </p>
+    <ul>
+      <li>선택한 테마(다크/라이트), 언어 (ko/en)</li>
+      <li>최근 분석 결과 5건 (히스토리 사이드바에 사용)</li>
+    </ul>
+    <p>
+      이 정보는 사용자의 브라우저 안에만 존재하며 서버로 전송되지 않습니다.
+      브라우저의 사이트 데이터를 지우면 모두 삭제됩니다.
+    </p>
+
+    <h2>6. 권리 행사 / 문의</h2>
+    <p>
+      서비스 이용 과정에서 추가 문의 사항이 있다면 GitHub
+      <a href="https://github.com/easygap/music_similarity/issues" target="_blank" rel="noopener">Issues</a>
+      또는 보안 관련 사안의 경우
+      <a href="https://github.com/easygap/music_similarity/security/advisories/new" target="_blank" rel="noopener">Security Advisory</a>
+      로 비공개 신고해 주세요.
+    </p>
+
+    <h2>7. 변경 이력</h2>
+    <p>
+      방침이 바뀌면 본 페이지의 "최종 업데이트" 날짜를 갱신하고, 중요한 변경의 경우
+      메인 화면에 공지합니다.
+    </p>
+  </main>
+</body>
+</html>

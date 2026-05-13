@@ -323,6 +323,29 @@ def catalog_info():
     }
 
 
+@app.get(
+    "/api/catalog/sample",
+    summary="카탈로그 일부 미리보기",
+    tags=["system"],
+)
+def catalog_sample(limit: int = Query(12, ge=1, le=50)):  # noqa: B008
+    """카탈로그에 어떤 곡들이 들어 있는지 사용자가 가볍게 훑어볼 수 있게 일부만 반환.
+
+    랜덤이 아니라 사전식 정렬 기준 앞쪽을 그대로 돌려준다 — 매번 같은 결과가
+    나오므로 캐시도 잘 먹고 사용자가 "또 봐도 같은 곡들이 있다" 는 신뢰감을 받는다.
+    """
+    eng = get_engine()
+    names = sorted(eng._catalog_index)[:limit]  # noqa: SLF001 — 내부 접근 의도적
+    items = []
+    for full in names:
+        title, _, artist = full.partition(" - ")
+        items.append({"title": title.strip() or full, "artist": artist.strip() or "Unknown"})
+    return JSONResponse(
+        {"total": eng.catalog_size, "items": items},
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
 @app.post(
     "/api/analyze",
     dependencies=[Depends(_rate_limit)],
@@ -623,6 +646,16 @@ if FRONTEND_DIR.exists():
     def offline_page():
         """SW 캐시 미스 + 네트워크 끊김일 때 보여줄 폴백 페이지."""
         return _cached_file_response(FRONTEND_DIR / "offline.html")
+
+    @app.get("/privacy", include_in_schema=False)
+    def privacy_page():
+        """개인정보 처리 방침. 시중 서비스 신뢰감을 위해 가시화."""
+        return _cached_file_response(FRONTEND_DIR / "privacy.html")
+
+    @app.get("/terms", include_in_schema=False)
+    def terms_page():
+        """이용 약관."""
+        return _cached_file_response(FRONTEND_DIR / "terms.html")
 
     @app.get("/robots.txt", include_in_schema=False)
     def robots():

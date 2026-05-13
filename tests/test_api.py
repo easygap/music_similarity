@@ -159,6 +159,35 @@ def test_analyze_returns_spectrogram_svg(fastapi_client, tiny_wav):
     assert "</svg>" in svg
 
 
+def test_privacy_page(fastapi_client):
+    r = fastapi_client.get("/privacy")
+    assert r.status_code == 200
+    assert "개인정보 처리 방침" in r.text
+
+
+def test_terms_page(fastapi_client):
+    r = fastapi_client.get("/terms")
+    assert r.status_code == 200
+    assert "이용 약관" in r.text
+
+
+def test_catalog_sample(fastapi_client):
+    """카탈로그 미리보기 엔드포인트가 정상 동작하는지 확인."""
+    r = fastapi_client.get("/api/catalog/sample?limit=2")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] >= 1
+    assert len(body["items"]) <= 2
+    if body["items"]:
+        item = body["items"][0]
+        assert "title" in item and "artist" in item
+
+
+def test_catalog_sample_validates_limit(fastapi_client):
+    r = fastapi_client.get("/api/catalog/sample?limit=9999")
+    assert r.status_code == 422
+
+
 def test_openapi_docs_available(fastapi_client):
     """/docs 와 /openapi.json 가 서빙되는지 가벼운 확인."""
     spec = fastapi_client.get("/openapi.json")
