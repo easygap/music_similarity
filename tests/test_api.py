@@ -196,6 +196,64 @@ def test_metrics_includes_cache_counters(fastapi_client, tiny_wav):
     assert "soundmatch_cache_entries" in body
 
 
+def test_health_strict_mode(fastapi_client):
+    """strict=1 모드에서도 정상 응답이면 200 + status=ok 를 돌려준다."""
+    r = fastapi_client.get("/api/health?strict=1")
+    assert r.status_code == 200
+    assert r.json()["status"] == "ok"
+
+
+def test_catalog_search_default(fastapi_client):
+    r = fastapi_client.get("/api/catalog/search")
+    assert r.status_code == 200
+    body = r.json()
+    # 합성 카탈로그는 3곡이라서 기본 페이지에 다 들어와야 한다.
+    assert body["total"] == 3
+    assert body["page"] == 1
+    assert body["size"] == 24
+    assert body["has_more"] is False
+    assert len(body["items"]) == 3
+
+
+def test_catalog_search_query_filters(fastapi_client):
+    """q 파라미터가 부분 일치(대소문자 무시) 로 동작해야 한다."""
+    r = fastapi_client.get("/api/catalog/search?q=alpha")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 1
+    assert body["items"][0]["title"].lower() == "alpha"
+
+
+def test_catalog_search_pagination(fastapi_client):
+    """size=1 이면 페이지마다 한 곡씩 잘려서 has_more 가 올바르게 나와야 한다."""
+    r = fastapi_client.get("/api/catalog/search?size=1&page=1")
+    body = r.json()
+    assert body["total"] == 3
+    assert len(body["items"]) == 1
+    assert body["has_more"] is True
+
+    r2 = fastapi_client.get("/api/catalog/search?size=1&page=3")
+    body2 = r2.json()
+    assert len(body2["items"]) == 1
+    assert body2["has_more"] is False
+
+
+def test_catalog_search_validates_size_bound(fastapi_client):
+    r = fastapi_client.get("/api/catalog/search?size=9999")
+    assert r.status_code == 422
+
+
+def test_catalog_page_renders(fastapi_client):
+    r = fastapi_client.get("/catalog")
+    assert r.status_code == 200
+    assert "카탈로그 둘러보기" in r.text
+
+
+def test_metrics_includes_inflight_gauge(fastapi_client):
+    r = fastapi_client.get("/metrics")
+    assert "soundmatch_inflight_analyses" in r.text
+
+
 def test_health_head_method(fastapi_client):
     """모니터링 도구가 자주 사용하는 HEAD /api/health 가 200 으로 응답해야 한다."""
     r = fastapi_client.head("/api/health")
@@ -205,11 +263,11 @@ def test_health_head_method(fastapi_client):
 
 
 def test_sitemap_lists_static_pages(fastapi_client):
-    """sitemap.xml 에 /, /compare, /privacy, /terms 가 모두 포함되어야 한다."""
+    """sitemap.xml 에 정적 페이지들이 모두 포함되어야 한다."""
     r = fastapi_client.get("/sitemap.xml")
     assert r.status_code == 200
     body = r.text
-    for path in ("/", "/compare", "/privacy", "/terms"):
+    for path in ("/", "/catalog", "/compare", "/privacy", "/terms"):
         assert f"<loc>{path}</loc>" in body
 
 

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>카탈로그 둘러보기 · SoundMatch</title>
+  <meta name="description" content="SoundMatch 분석의 비교 대상이 되는 곡 카탈로그를 검색해볼 수 있습니다." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/style.css" />
+  <script>
+    try {
+      var t = localStorage.getItem("soundmatch.theme")
+        || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
+  <style>
+    .cat-wrap { max-width: 1100px; margin: 0 auto; padding: 56px 24px 120px; }
+    .cat-head { margin-bottom: 24px; }
+    .cat-head h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.02em; }
+    .cat-head p { margin: 0; color: var(--text-mute); }
+    .cat-search-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin: 24px 0 18px;
+    }
+    .cat-search {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 15px;
+    }
+    :root[data-theme="light"] .cat-search { background: white; }
+    .cat-search:focus {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 2px;
+    }
+    .cat-meta { color: var(--text-mute); font-size: 13px; }
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .cat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: border-color 0.18s, transform 0.18s;
+    }
+    .cat-card:hover { border-color: var(--accent-1); transform: translateY(-1px); }
+    .cat-title { font-size: 13.5px; font-weight: 600; color: var(--text); word-break: break-all; }
+    .cat-artist { font-size: 12px; color: var(--text-mute); }
+    .cat-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--text-mute);
+      padding: 40px 20px;
+    }
+    .cat-pager {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .cat-pager button {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13.5px;
+    }
+    .cat-pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .cat-pager .cat-page-label {
+      font-family: "JetBrains Mono", monospace;
+      color: var(--text-mute);
+      font-size: 13px;
+    }
+    .cat-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-mute);
+      font-size: 13.5px;
+      margin-bottom: 16px;
+    }
+    .cat-back:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="noise"></div>
+  </div>
+
+  <main class="cat-wrap">
+    <a class="cat-back" href="/">← 메인으로</a>
+    <header class="cat-head">
+      <h1>카탈로그 둘러보기</h1>
+      <p>업로드한 음원이 비교되는 카탈로그입니다. 같은 장르 / 음색의 곡이 보이면 매칭이 더 잘 됩니다.</p>
+    </header>
+
+    <div class="cat-search-row">
+      <input
+        type="search"
+        class="cat-search"
+        id="cat-search-input"
+        placeholder="제목이나 아티스트로 검색"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <span class="cat-meta" id="cat-meta">불러오는 중…</span>
+    </div>
+
+    <div class="cat-grid" id="cat-grid"></div>
+
+    <div class="cat-pager">
+      <button type="button" id="cat-prev">← 이전</button>
+      <span class="cat-page-label" id="cat-page-label">1</span>
+      <button type="button" id="cat-next">다음 →</button>
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    var input = document.getElementById("cat-search-input");
+    var grid = document.getElementById("cat-grid");
+    var meta = document.getElementById("cat-meta");
+    var prev = document.getElementById("cat-prev");
+    var next = document.getElementById("cat-next");
+    var pageLabel = document.getElementById("cat-page-label");
+
+    var state = { q: "", page: 1, size: 24, total: 0, hasMore: false };
+    var debounceTimer = null;
+
+    function escapeHtml(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    async function load() {
+      meta.textContent = "불러오는 중…";
+      try {
+        var url = "/api/catalog/search?q=" + encodeURIComponent(state.q)
+          + "&page=" + state.page + "&size=" + state.size;
+        var res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var data = await res.json();
+        state.total = data.total;
+        state.hasMore = data.has_more;
+        render(data.items);
+        var rangeStart = (state.page - 1) * state.size + 1;
+        var rangeEnd = Math.min(rangeStart + data.items.length - 1, data.total);
+        if (data.total === 0) {
+          meta.textContent = "결과 없음";
+        } else {
+          meta.textContent = data.total.toLocaleString("ko-KR") + "곡 중 "
+            + rangeStart + "–" + rangeEnd;
+        }
+        pageLabel.textContent = "p. " + state.page;
+        prev.disabled = state.page <= 1;
+        next.disabled = !state.hasMore;
+      } catch (e) {
+        meta.textContent = "불러오기에 실패했어요";
+        grid.innerHTML = '<p class="cat-empty">잠시 후 다시 시도해주세요.</p>';
+      }
+    }
+
+    function render(items) {
+      if (!items || !items.length) {
+        grid.innerHTML = '<p class="cat-empty">해당하는 곡이 없어요. 다른 키워드로 검색해보세요.</p>';
+        return;
+      }
+      grid.innerHTML = items.map(function (it) {
+        return '<div class="cat-card" title="' + escapeHtml(it.title) + ' – ' + escapeHtml(it.artist) + '">'
+          + '<span class="cat-title">' + escapeHtml(it.title) + '</span>'
+          + '<span class="cat-artist">' + escapeHtml(it.artist) + '</span>'
+          + '</div>';
+      }).join("");
+    }
+
+    input.addEventListener("input", function () {
+      // 입력 직후 바로 fetch 하면 한글 IME 입력마다 호출되므로 280ms 디바운스.
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () {
+        state.q = input.value.trim();
+        state.page = 1;
+        load();
+      }, 280);
+    });
+    prev.addEventListener("click", function () { if (state.page > 1) { state.page--; load(); } });
+    next.addEventListener("click", function () { if (state.hasMore) { state.page++; load(); } });
+
+    load();
+  })();
+  </script>
+</body>
+</html>

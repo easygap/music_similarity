@@ -269,6 +269,35 @@ button { font-family: inherit; cursor: pointer; }
 }
 .ghost-pill:hover { background: rgba(255, 255, 255, 0.06); border-color: var(--accent-1); }
 
+/* PWA 설치 배너 */
+.install-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 14px clamp(20px, 5vw, 60px) 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.18), rgba(34, 211, 238, 0.1));
+  border: 1px solid rgba(124, 92, 255, 0.4);
+  color: var(--text);
+  font-size: 13.5px;
+  flex-wrap: wrap;
+}
+.install-banner-text { min-width: 0; }
+.install-banner-text strong { font-weight: 600; margin-right: 4px; }
+.install-banner-actions { display: flex; align-items: center; gap: 8px; }
+.install-dismiss {
+  background: transparent;
+  border: none;
+  color: var(--text-mute);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.install-dismiss:hover { color: var(--text); }
+
 /* ---------------- 공통 레이아웃 ------------- */
 main {
   max-width: 1200px;

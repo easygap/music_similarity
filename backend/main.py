@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import threading
 import time
 import uuid
 from collections.abc import Iterable
@@ -116,6 +117,10 @@ _metrics_counters: dict[str, int] = {
     "soundmatch_cache_hits_total": 0,
     "soundmatch_cache_misses_total": 0,
 }
+
+# 현재 동시에 처리 중인 분석 요청 수. 게이지로 노출.
+_inflight_analyses = 0
+_inflight_lock = threading.Lock()
 
 
 def _bump(name: str, delta: int = 1) -> None:
@@ -359,8 +364,13 @@ def _all_finite(values: Iterable[float]) -> bool:
     tags=["system"],
     operation_id="health",
 )
-def health():
-    """라이브니스 프로브. 카탈로그를 못 읽었으면 503으로 응답한다."""
+def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임포트 + 업로드 디렉토리 쓰기까지 검사")):  # noqa: B008
+    """라이브니스 프로브.
+
+    기본 모드는 카탈로그가 메모리에 떠 있는지만 확인한다. ``strict=true``
+    이면 librosa/sklearn 임포트가 가능한지, 업로드 디렉토리에 쓰기 권한이
+    있는지까지 점검한다 — Render/Fly 같은 PaaS 에 readiness probe 로 쓸 만하다.
+    """
     try:
         size = get_engine().catalog_size
     except Exception:  # noqa: BLE001
@@ -368,6 +378,28 @@ def health():
             {"status": "degraded", "catalog_size": 0, "env": ENV, "version": app.version},
             status_code=503,
         )
+
+    if strict:
+        # librosa / sklearn 이 정말로 임포트 되는지 확인. 무거운 워밍업까진 안 함.
+        try:
+            import librosa  # noqa: F401
+            import sklearn  # noqa: F401
+        except Exception:  # noqa: BLE001
+            return JSONResponse(
+                {"status": "degraded", "catalog_size": size, "env": ENV, "version": app.version},
+                status_code=503,
+            )
+        # 업로드 디렉토리에 임시 파일 쓰기 / 삭제까지 가능한지.
+        probe = UPLOAD_DIR / f".healthcheck-{uuid.uuid4().hex}"
+        try:
+            probe.write_bytes(b"ok")
+            probe.unlink()
+        except OSError:
+            return JSONResponse(
+                {"status": "degraded", "catalog_size": size, "env": ENV, "version": app.version},
+                status_code=503,
+            )
+
     return {"status": "ok", "catalog_size": size, "env": ENV, "version": app.version}
 
 
@@ -426,6 +458,11 @@ def metrics():
     lines.append("# HELP soundmatch_cache_entries 현재 결과 캐시에 들어 있는 항목 수")
     lines.append("# TYPE soundmatch_cache_entries gauge")
     lines.append(f"soundmatch_cache_entries {_result_cache.size}")
+    with _inflight_lock:
+        inflight = _inflight_analyses
+    lines.append("# HELP soundmatch_inflight_analyses 지금 동시 처리 중인 분석 수")
+    lines.append("# TYPE soundmatch_inflight_analyses gauge")
+    lines.append(f"soundmatch_inflight_analyses {inflight}")
 
     body = "\n".join(lines) + "\n"
     return Response(
@@ -447,15 +484,55 @@ def catalog_sample(limit: int = Query(12, ge=1, le=50)):  # noqa: B008
     나오므로 캐시도 잘 먹고 사용자가 "또 봐도 같은 곡들이 있다" 는 신뢰감을 받는다.
     """
     eng = get_engine()
-    names = sorted(eng._catalog_index)[:limit]  # noqa: SLF001 — 내부 접근 의도적
-    items = []
-    for full in names:
-        title, _, artist = full.partition(" - ")
-        items.append({"title": title.strip() or full, "artist": artist.strip() or "Unknown"})
+    names = eng.iter_catalog_names()[:limit]
+    items = [_split_catalog_name(n) for n in names]
     return JSONResponse(
         {"total": eng.catalog_size, "items": items},
         headers={"Cache-Control": "public, max-age=300"},
     )
+
+
+@app.get(
+    "/api/catalog/search",
+    summary="카탈로그 검색 + 페이지네이션",
+    tags=["system"],
+)
+def catalog_search(
+    q: str = Query("", description="제목/아티스트 부분 일치(대소문자 무시). 빈 값이면 전체 목록."),  # noqa: B008
+    page: int = Query(1, ge=1, le=10_000),  # noqa: B008
+    size: int = Query(24, ge=1, le=100),  # noqa: B008
+):
+    """카탈로그 곡 목록을 검색/페이지네이션 형태로 돌려준다.
+
+    매번 카탈로그 전체를 메모리에서 필터링한다. 곡 수가 십수만 이상으로
+    커지면 별도 인덱스(예: SQLite FTS) 가 필요하지만, 현재 1000곡 규모에선
+    이 정도로 충분히 빠르다.
+    """
+    eng = get_engine()
+    needle = (q or "").strip().lower()
+    names = eng.iter_catalog_names()
+    if needle:
+        names = [n for n in names if needle in n.lower()]
+    total = len(names)
+    start = (page - 1) * size
+    end = start + size
+    items = [_split_catalog_name(n) for n in names[start:end]]
+    return JSONResponse(
+        {
+            "total": total,
+            "page": page,
+            "size": size,
+            "has_more": end < total,
+            "items": items,
+        },
+        headers={"Cache-Control": "public, max-age=120"},
+    )
+
+
+def _split_catalog_name(full: str) -> dict[str, str]:
+    """"곡명 - 아티스트" 키를 title/artist 딕셔너리로 안전 분리."""
+    title, _, artist = full.partition(" - ")
+    return {"title": title.strip() or full, "artist": artist.strip() or "Unknown"}
 
 
 @app.post(
@@ -502,8 +579,14 @@ async def analyze(
 
     background_tasks.add_task(_cleanup, dest)
 
+    # in-flight 카운터를 증가/감소하기 위해 함수 진입 직후에 global 선언.
+    global _inflight_analyses
+
     try:
         async with _analysis_semaphore:
+            # in-flight 카운터 증가. /metrics 에서 게이지로 노출된다.
+            with _inflight_lock:
+                _inflight_analyses += 1
             # 스트리밍 업로드. 누적 사이즈를 체크하면서 첫 16바이트로 매직 시그니처를 확인한다.
             # 동시에 SHA-256 해시도 계산해서 결과 캐시 키로 쓴다 — raw 바이트는 저장 안 함.
             import hashlib
@@ -705,6 +788,10 @@ async def analyze(
     finally:
         # 동기적으로 한 번 더 정리. BackgroundTask 가 취소된 경우 대비.
         _cleanup(dest)
+        # in-flight 카운터 차감. 0 미만으로는 떨어지지 않게 가드.
+        with _inflight_lock:
+            if _inflight_analyses > 0:
+                _inflight_analyses -= 1
 
 
 def _youtube_search_url(title: str, artist: str) -> str:
@@ -817,6 +904,11 @@ if FRONTEND_DIR.exists():
         """두 분석 결과를 나란히 비교하는 페이지. 데이터는 localStorage 히스토리에서."""
         return _cached_file_response(FRONTEND_DIR / "compare.html")
 
+    @app.get("/catalog", include_in_schema=False)
+    def catalog_page():
+        """카탈로그 전체를 검색/페이지네이션으로 탐색하는 페이지."""
+        return _cached_file_response(FRONTEND_DIR / "catalog.html")
+
     @app.get("/robots.txt", include_in_schema=False)
     def robots():
         body = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
@@ -838,6 +930,7 @@ if FRONTEND_DIR.exists():
         # (loc, priority, changefreq)
         entries = [
             ("/", "1.0", "weekly"),
+            ("/catalog", "0.7", "weekly"),
             ("/compare", "0.6", "monthly"),
             ("/privacy", "0.4", "yearly"),
             ("/terms", "0.4", "yearly"),

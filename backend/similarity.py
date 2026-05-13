@@ -183,3 +183,11 @@ class MusicSimilarityEngine:
         if name not in self._catalog_index:
             return None
         return self._catalog_raw.loc[name].to_dict()
+
+    def iter_catalog_names(self) -> list[str]:
+        """카탈로그의 곡 키 전체를 사전식 정렬해서 돌려준다.
+
+        UI 카탈로그 페이지에서 검색/페이지네이션에 사용. 내부 인덱스는
+        그대로 유지하면서 안전한 사본을 반환한다.
+        """
+        return sorted(self._catalog_index)

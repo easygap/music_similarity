@@ -843,6 +843,63 @@
   });
 
   // ----------------------------------------------------------------------
+  // PWA 설치 배너 — beforeinstallprompt 이벤트를 가로채서 사용자가 원할 때 띄움
+  // ----------------------------------------------------------------------
+  const INSTALL_DISMISS_KEY = "soundmatch.installDismissedAt";
+  const INSTALL_DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7일
+
+  let _installPrompt = null;
+  const installBanner = document.getElementById("install-banner");
+  const installAcceptBtn = document.getElementById("install-accept");
+  const installDismissBtn = document.getElementById("install-dismiss");
+
+  function shouldHideInstallBanner() {
+    try {
+      const dismissedAt = parseInt(localStorage.getItem(INSTALL_DISMISS_KEY) || "0", 10);
+      if (!dismissedAt) return false;
+      return Date.now() - dismissedAt < INSTALL_DISMISS_TTL_MS;
+    } catch {
+      return false;
+    }
+  }
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    // Chrome / Edge 가 자체 설치 prompt 를 띄우려 하면 가로채서 우리 배너에 연결.
+    e.preventDefault();
+    _installPrompt = e;
+    if (!shouldHideInstallBanner() && installBanner) {
+      installBanner.classList.remove("hidden");
+    }
+  });
+
+  window.addEventListener("appinstalled", () => {
+    // 설치 완료되면 배너는 즉시 숨김.
+    if (installBanner) installBanner.classList.add("hidden");
+    _installPrompt = null;
+  });
+
+  if (installAcceptBtn) {
+    installAcceptBtn.addEventListener("click", async () => {
+      if (!_installPrompt) {
+        installBanner.classList.add("hidden");
+        return;
+      }
+      _installPrompt.prompt();
+      try {
+        await _installPrompt.userChoice;
+      } catch {}
+      _installPrompt = null;
+      installBanner.classList.add("hidden");
+    });
+  }
+  if (installDismissBtn) {
+    installDismissBtn.addEventListener("click", () => {
+      try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch {}
+      installBanner.classList.add("hidden");
+    });
+  }
+
+  // ----------------------------------------------------------------------
   // 최근 분석 히스토리 (localStorage)
   // ----------------------------------------------------------------------
   function readHistory() {

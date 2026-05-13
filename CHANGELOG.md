@@ -7,6 +7,16 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 검색 + 페이지네이션 API (`GET /api/catalog/search?q=&page=&size=`).
+  곡명/아티스트 부분 일치(대소문자 무시) + has_more 플래그 포함.
+- `/catalog` 페이지. 검색창 (한글 IME 280ms 디바운스) + 카드 그리드 + 페이지네이션.
+- nav 에 "카탈로그" 링크 추가 (ko/en i18n).
+- PWA `beforeinstallprompt` 가로채는 자체 설치 배너 — 7일 닫힘 기억.
+- `GET /api/health?strict=1` 모드: librosa/sklearn 임포트 + 업로드 디렉토리
+  쓰기 권한까지 점검해서 운영 환경 readiness probe 로 사용 가능.
+- `/metrics` 에 `soundmatch_inflight_analyses` gauge 추가 (동시 분석 수).
+
+### Added (earlier)
 - 분석 결과 in-memory LRU 캐시 (`backend/cache.py`). 같은 파일을 다시 올리면
   SHA-256 키로 즉시 응답. raw 음원은 들고 있지 않고 해시만. 환경변수:
   `MUSIC_CACHE_TTL_SECONDS` (기본 600), `MUSIC_CACHE_MAX_ENTRIES` (기본 64).

@@ -9,7 +9,7 @@
 
   const dict = {
     ko: {
-      nav: { how: "사용법", features: "기능", compare: "비교", github: "GitHub" },
+      nav: { how: "사용법", features: "기능", compare: "비교", catalog: "카탈로그", github: "GitHub" },
       hero: {
         eyebrow: "Sklearn · librosa · FastAPI · WebAudio",
         title: "업로드한 음악과 <span class=\"grad\">가장 닮은 곡</span>을<br/>AI가 찾아드립니다.",
@@ -129,9 +129,14 @@
         langToggle: "Language: English",
         shortcuts: "단축키: / 업로드 포커스 · Esc 결과 닫기 · Space 재생",
       },
+      install: {
+        title: "앱으로 설치",
+        body: "— 홈 화면에 추가하면 오프라인에서도 결과 페이지를 다시 열어볼 수 있어요.",
+        accept: "설치하기",
+      },
     },
     en: {
-      nav: { how: "How it works", features: "Features", compare: "Compare", github: "GitHub" },
+      nav: { how: "How it works", features: "Features", compare: "Compare", catalog: "Catalog", github: "GitHub" },
       hero: {
         eyebrow: "Sklearn · librosa · FastAPI · WebAudio",
         title: "Find the songs <span class=\"grad\">most similar</span> to yours,<br/>powered by AI.",
@@ -250,6 +255,11 @@
         themeToggle: "Toggle theme",
         langToggle: "언어: 한국어",
         shortcuts: "Shortcuts: / focus upload · Esc close result · Space play",
+      },
+      install: {
+        title: "Install as app",
+        body: "— Add to home screen to keep results available offline.",
+        accept: "Install",
       },
     },
   };
