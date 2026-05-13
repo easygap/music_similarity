@@ -990,6 +990,15 @@ main {
 .link-btn svg { width: 16px; height: 16px; }
 .link-btn[data-link="yt"] svg { color: #ff0033; }
 .link-btn[data-link="sp"] svg { color: #1db954; }
+/* "이 곡으로 다시 찾기" 버튼 — link-btn 룩 그대로 가져가되 강조색만 살짝. */
+.link-btn-seed {
+  background: rgba(124, 92, 255, 0.18);
+  border-color: rgba(124, 92, 255, 0.45);
+}
+.link-btn-seed:hover {
+  background: rgba(124, 92, 255, 0.28);
+}
+.link-btn-seed svg { color: var(--accent-1); }
 
 /* 결과가 비었을 때 보여줄 카드 */
 .empty-results {

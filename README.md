@@ -69,6 +69,9 @@ python preview_server.py 8765
 - 카탈로그 둘러보기 페이지(`/catalog`) — 곡명·아티스트 검색 + 페이지네이션.
   카드를 누르면 그 곡 기준 유사한 다른 곡 5건을 모달로 즉시 표시
   (`/api/analyze/by-catalog`, librosa 호출 없음).
+- 결과 카드의 매칭 곡에 "이 곡으로 다시 찾기" 버튼. 누르면 그 곡을 새 시드로
+  카탈로그 비교를 다시 돌려서 결과를 갱신한다. 한 번이면 "← 이전 분석으로"
+  버튼으로 되돌아갈 수도 있음.
 - PWA `beforeinstallprompt` 이벤트를 가로채서 메인 화면에 자체 설치 배너 노출
   (한 번 닫으면 7일간 다시 안 뜸).
 - 결과 공유: 클립보드 텍스트 / JSON 다운로드 / 결과를 URL hash 에 압축해 담는
@@ -92,7 +95,7 @@ GET  /api/catalog/sample       # 카탈로그 일부 미리보기
 GET  /api/catalog/random       # 카탈로그에서 무작위 N곡 추천
 GET  /api/catalog/search       # ?q=&page=&size= 제목/아티스트 검색 + 페이지네이션
 GET  /docs                     # FastAPI 자동 Swagger UI
-GET  /metrics                  # Prometheus exposition
+GET  /metrics                  # Prometheus exposition (uptime, latency P50/P95 포함)
 GET  /catalog /compare /privacy /terms /sw.js /manifest.webmanifest /offline.html /404
 ```
 

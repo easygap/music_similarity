@@ -122,6 +122,34 @@ _metrics_counters: dict[str, int] = {
 _inflight_analyses = 0
 _inflight_lock = threading.Lock()
 
+# 프로세스 부팅 시각. health/metrics uptime 계산용.
+_started_at = time.monotonic()
+
+# 최근 N 건 분석 latency (초). ring buffer 로 들고 있다가 P50/P95 노출.
+# 단순한 in-process 추적이라 worker 별로 분리됨 — 큰 트래픽이면 Prometheus
+# histogram 으로 옮겨야 하지만, 현재 규모에선 이 정도로 충분.
+_latency_buffer: list[float] = []
+_latency_buffer_max = 256
+_latency_lock = threading.Lock()
+
+
+def _record_latency(seconds: float) -> None:
+    with _latency_lock:
+        _latency_buffer.append(seconds)
+        if len(_latency_buffer) > _latency_buffer_max:
+            # 가장 오래된 샘플부터 버린다. list 슬라이싱이 가장 단순.
+            del _latency_buffer[: len(_latency_buffer) - _latency_buffer_max]
+
+
+def _latency_percentile(p: float) -> float:
+    """샘플이 있으면 p 분위수(0.0~1.0)를 반환. 없으면 0."""
+    with _latency_lock:
+        if not _latency_buffer:
+            return 0.0
+        s = sorted(_latency_buffer)
+        idx = max(0, min(len(s) - 1, int(round(p * (len(s) - 1)))))
+        return s[idx]
+
 
 def _bump(name: str, delta: int = 1) -> None:
     _metrics_counters[name] = _metrics_counters.get(name, 0) + delta
@@ -423,11 +451,18 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
     이면 librosa/sklearn 임포트가 가능한지, 업로드 디렉토리에 쓰기 권한이
     있는지까지 점검한다 — Render/Fly 같은 PaaS 에 readiness probe 로 쓸 만하다.
     """
+    uptime = round(time.monotonic() - _started_at, 1)
     try:
         size = get_engine().catalog_size
     except Exception:  # noqa: BLE001
         return JSONResponse(
-            {"status": "degraded", "catalog_size": 0, "env": ENV, "version": app.version},
+            {
+                "status": "degraded",
+                "catalog_size": 0,
+                "env": ENV,
+                "version": app.version,
+                "uptime_seconds": uptime,
+            },
             status_code=503,
         )
 
@@ -438,7 +473,13 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
             import sklearn  # noqa: F401
         except Exception:  # noqa: BLE001
             return JSONResponse(
-                {"status": "degraded", "catalog_size": size, "env": ENV, "version": app.version},
+                {
+                    "status": "degraded",
+                    "catalog_size": size,
+                    "env": ENV,
+                    "version": app.version,
+                    "uptime_seconds": uptime,
+                },
                 status_code=503,
             )
         # 업로드 디렉토리에 임시 파일 쓰기 / 삭제까지 가능한지.
@@ -448,11 +489,23 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
             probe.unlink()
         except OSError:
             return JSONResponse(
-                {"status": "degraded", "catalog_size": size, "env": ENV, "version": app.version},
+                {
+                    "status": "degraded",
+                    "catalog_size": size,
+                    "env": ENV,
+                    "version": app.version,
+                    "uptime_seconds": uptime,
+                },
                 status_code=503,
             )
 
-    return {"status": "ok", "catalog_size": size, "env": ENV, "version": app.version}
+    return {
+        "status": "ok",
+        "catalog_size": size,
+        "env": ENV,
+        "version": app.version,
+        "uptime_seconds": uptime,
+    }
 
 
 @app.get(
@@ -515,6 +568,25 @@ def metrics():
     lines.append("# HELP soundmatch_inflight_analyses 지금 동시 처리 중인 분석 수")
     lines.append("# TYPE soundmatch_inflight_analyses gauge")
     lines.append(f"soundmatch_inflight_analyses {inflight}")
+
+    uptime = round(time.monotonic() - _started_at, 3)
+    lines.append("# HELP soundmatch_uptime_seconds 프로세스 부팅 후 경과 시간(초)")
+    lines.append("# TYPE soundmatch_uptime_seconds gauge")
+    lines.append(f"soundmatch_uptime_seconds {uptime}")
+
+    # 분석 latency 분포 — ring buffer 기반 P50/P95.
+    p50 = round(_latency_percentile(0.50), 4)
+    p95 = round(_latency_percentile(0.95), 4)
+    lines.append(
+        "# HELP soundmatch_analyze_latency_p50_seconds 최근 분석 latency P50(초)"
+    )
+    lines.append("# TYPE soundmatch_analyze_latency_p50_seconds gauge")
+    lines.append(f"soundmatch_analyze_latency_p50_seconds {p50}")
+    lines.append(
+        "# HELP soundmatch_analyze_latency_p95_seconds 최근 분석 latency P95(초)"
+    )
+    lines.append("# TYPE soundmatch_analyze_latency_p95_seconds gauge")
+    lines.append(f"soundmatch_analyze_latency_p95_seconds {p95}")
 
     body = "\n".join(lines) + "\n"
     return Response(
@@ -891,6 +963,7 @@ async def analyze(
             tags = derive_tags(features)
 
             _bump("soundmatch_analyze_success_total")
+            _record_latency(feature_seconds + similarity_seconds)
             logger.info(
                 "analyze_done",
                 extra={

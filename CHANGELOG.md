@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- 결과 카드의 매칭 곡에 "이 곡으로 다시 찾기" 버튼. 누르면 그 곡을
+  `/api/analyze/by-catalog` 로 새 시드 분석한다. 결과 헤더에 "← 이전 분석으로"
+  스택 1단계 백 버튼이 함께 노출 (한 단계만 보관).
+- `/api/health` 응답에 `uptime_seconds` 필드 추가.
+- `/metrics` 에 `soundmatch_uptime_seconds`, `_analyze_latency_p50_seconds`,
+  `_analyze_latency_p95_seconds` 게이지 신규. 최근 256건 분석 latency 의 분포.
+
+### Added (earlier)
 - `GET /api/analyze/by-catalog?name=&top_n=` — 카탈로그에 이미 있는 곡 이름을
   넣으면 그 곡의 raw 특성으로 즉시 유사도를 돌려준다. librosa 호출이 없어
   체감 응답 시간은 ~10ms 수준. 1위는 자기 자신이라 자동 제외.

@@ -210,6 +210,7 @@
           <p id="results-subtitle"></p>
         </div>
         <div class="results-actions">
+          <button type="button" class="ghost hidden" id="seed-back-btn" data-i18n="results.seedBack">← 이전 분석으로</button>
           <!-- Web Share API 가 지원되는 환경(주로 모바일)에서만 노출. 그 외엔 hidden. -->
           <button type="button" class="ghost hidden" id="share-btn" aria-label="결과 공유">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0-12l-4 4m4-4l4 4M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -402,6 +403,10 @@
             </svg>
             Spotify
           </a>
+          <button type="button" class="link-btn link-btn-seed" data-action="seed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13l7 7M20 13v7h-7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="results.seedButton">이 곡으로 다시 찾기</span>
+          </button>
         </div>
         </div>
       </div>

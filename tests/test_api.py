@@ -10,6 +10,9 @@ def test_health(fastapi_client):
     body = r.json()
     assert body["status"] == "ok"
     assert body["catalog_size"] == 3
+    # 부팅 시간 이후로 흐른 시간이 보고되어야 한다.
+    assert "uptime_seconds" in body
+    assert body["uptime_seconds"] >= 0
 
 
 def test_catalog(fastapi_client):
@@ -287,6 +290,21 @@ def test_catalog_page_renders(fastapi_client):
 def test_metrics_includes_inflight_gauge(fastapi_client):
     r = fastapi_client.get("/metrics")
     assert "soundmatch_inflight_analyses" in r.text
+
+
+def test_metrics_includes_uptime_and_latency(fastapi_client, tiny_wav):
+    """/metrics 에 uptime 과 latency P50/P95 게이지가 노출되어야 한다."""
+    # 분석을 한 번 돌려서 latency 샘플이 생기게.
+    with tiny_wav.open("rb") as f:
+        fastapi_client.post(
+            "/api/analyze",
+            files={"file": ("tone.wav", f.read(), "audio/wav")},
+        )
+    r = fastapi_client.get("/metrics")
+    body = r.text
+    assert "soundmatch_uptime_seconds" in body
+    assert "soundmatch_analyze_latency_p50_seconds" in body
+    assert "soundmatch_analyze_latency_p95_seconds" in body
 
 
 def test_health_head_method(fastapi_client):

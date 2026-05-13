@@ -12,7 +12,8 @@ class HealthResponse(BaseModel):
     status: str = Field(..., examples=["ok"])
     catalog_size: int = Field(..., examples=[1006])
     env: str = Field("development", examples=["production"])
-    version: str = Field(..., examples=["1.2.0"])
+    version: str = Field(..., examples=["1.3.0"])
+    uptime_seconds: float = Field(0.0, description="프로세스 부팅 후 경과 시간(초)")
 
 
 class CatalogResponse(BaseModel):

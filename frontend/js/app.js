@@ -51,6 +51,7 @@
   const audioTime = $("#audio-time");
 
   const resetBtn = $("#reset-btn");
+  const seedBackBtn = $("#seed-back-btn");
   const copyLinkBtn = $("#copy-link-btn");
   const copyShareUrlBtn = $("#copy-share-url-btn");
   const exportJsonBtn = $("#export-json-btn");
@@ -289,6 +290,9 @@
     startLoadingMessages();
     _lastFile = file;
     _analysisInFlight = true;
+    // 새 분석 시작 시 시드 백 스택은 초기화.
+    _seedPrev = null;
+    if (seedBackBtn) seedBackBtn.classList.add("hidden");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -567,6 +571,12 @@
       li.querySelector('[data-link="yt"]').href = hit.youtube_search_url;
       li.querySelector('[data-link="sp"]').href = hit.spotify_search_url;
 
+      // "이 곡으로 다시 찾기" — by-catalog 로 연쇄 탐색.
+      const seedBtn = li.querySelector('[data-action="seed"]');
+      if (seedBtn) {
+        seedBtn.addEventListener("click", () => seedFromHit(hit));
+      }
+
       // 펼침 토글 — 1위 카드는 펼친 채로, 2위부터는 접어둔다.
       // 그래야 결과가 10개여도 첫 인상이 깔끔하고 모바일 스크롤이 짧다.
       const toggleBtn = li.querySelector(".hit-toggle");
@@ -640,6 +650,60 @@
   }
 
   // ----------------------------------------------------------------------
+  // 시드 탐색 — 결과 카드의 곡으로 카탈로그 재분석 (librosa 우회)
+  // ----------------------------------------------------------------------
+  // 1단계 스택만 유지: 시드로 들어가기 직전 결과 한 건을 보관해두고,
+  // "이전 분석으로" 버튼으로 한 번 돌아갈 수 있게 한다.
+  let _seedPrev = null;
+
+  async function seedFromHit(hit) {
+    const name = `${hit.title} - ${hit.artist}`;
+    const topN = parseInt(topNSelect.value, 10) || 5;
+    // 현재 결과를 백 스택에 저장 (직전 한 건만).
+    _seedPrev = _lastResults;
+    hideAll();
+    showSkeletonResults();
+    startLoadingMessages();
+    try {
+      const res = await fetch(
+        `/api/analyze/by-catalog?top_n=${topN}&name=${encodeURIComponent(name)}`,
+      );
+      stopLoadingMessages();
+      if (!res.ok) {
+        const text = await safeJsonOrText(res);
+        throw new Error(text || `서버 오류 (${res.status})`);
+      }
+      const data = await res.json();
+      // by-catalog 응답에는 filename / spectrogram / timing 등이 없다.
+      // renderResults 가 기대하는 형태로 살짝 보강해서 그대로 재사용.
+      const seedAdapted = Object.assign({}, data, {
+        filename: t("results.seedHeader", data.title, data.artist),
+        timing: { feature_extraction_seconds: 0, similarity_seconds: 0 },
+        spectrogram_svg: "",
+      });
+      _lastResults = seedAdapted;
+      _lastFile = null;
+      audioPlayer.classList.add("hidden");
+      renderResults(seedAdapted, /* preserveFile */ true);
+      seedBackBtn.classList.remove("hidden");
+    } catch (err) {
+      stopLoadingMessages();
+      showError(err.message || String(err));
+      // 실패 시 이전 결과를 잃지 않게 복원.
+      if (_seedPrev) _lastResults = _seedPrev;
+    }
+  }
+
+  seedBackBtn.addEventListener("click", () => {
+    if (!_seedPrev) return;
+    const prev = _seedPrev;
+    _seedPrev = null;
+    _lastResults = prev;
+    renderResults(prev, /* preserveFile */ true);
+    seedBackBtn.classList.add("hidden");
+  });
+
+  // ----------------------------------------------------------------------
   // 초기화
   // ----------------------------------------------------------------------
   resetBtn.addEventListener("click", () => {
@@ -647,6 +711,8 @@
     setAudioPreview(null);
     _lastResults = null;
     _lastFile = null;
+    _seedPrev = null;
+    if (seedBackBtn) seedBackBtn.classList.add("hidden");
     fileInput.value = "";
     hideAll();
     form.scrollIntoView({ behavior: "smooth", block: "start" });
