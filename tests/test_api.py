@@ -143,6 +143,76 @@ def test_offline_page(fastapi_client):
     assert "오프라인" in r.text
 
 
+def test_analyze_includes_metadata(fastapi_client, tiny_wav):
+    """분석 결과에 분석 시각/엔진 버전/cached 플래그가 포함되어야 한다."""
+    with tiny_wav.open("rb") as f:
+        r = fastapi_client.post(
+            "/api/analyze",
+            files={"file": ("tone.wav", f.read(), "audio/wav")},
+        )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["analyzed_at"]  # ISO-8601 문자열
+    assert "T" in body["analyzed_at"]
+    assert body["engine_version"]
+    assert body["cached"] is False  # 최초 분석은 캐시 미스
+
+
+def test_analyze_second_call_hits_cache(fastapi_client, tiny_wav):
+    """같은 파일을 두 번 올리면 두 번째는 캐시 히트가 되어야 한다."""
+    with tiny_wav.open("rb") as f:
+        payload = f.read()
+    r1 = fastapi_client.post(
+        "/api/analyze",
+        files={"file": ("tone.wav", payload, "audio/wav")},
+    )
+    assert r1.status_code == 200
+    assert r1.json()["cached"] is False
+
+    r2 = fastapi_client.post(
+        "/api/analyze",
+        files={"file": ("tone.wav", payload, "audio/wav")},
+    )
+    assert r2.status_code == 200
+    body2 = r2.json()
+    assert body2["cached"] is True
+    # 캐시 히트는 새로운 요청 ID 를 받아야 하고, 그래도 결과 자체는 동일해야 한다.
+    assert body2["request_id"] != r1.json()["request_id"]
+    assert body2["results"] == r1.json()["results"]
+
+
+def test_metrics_includes_cache_counters(fastapi_client, tiny_wav):
+    """/metrics 응답에 cache hit/miss 카운터가 노출되어야 한다."""
+    # 분석 한 번 돌려서 카운터를 채운다.
+    with tiny_wav.open("rb") as f:
+        fastapi_client.post(
+            "/api/analyze",
+            files={"file": ("tone.wav", f.read(), "audio/wav")},
+        )
+    r = fastapi_client.get("/metrics")
+    body = r.text
+    assert "soundmatch_cache_hits_total" in body
+    assert "soundmatch_cache_misses_total" in body
+    assert "soundmatch_cache_entries" in body
+
+
+def test_health_head_method(fastapi_client):
+    """모니터링 도구가 자주 사용하는 HEAD /api/health 가 200 으로 응답해야 한다."""
+    r = fastapi_client.head("/api/health")
+    assert r.status_code == 200
+    # HEAD 응답은 본문 없어야 정상.
+    assert r.content == b""
+
+
+def test_sitemap_lists_static_pages(fastapi_client):
+    """sitemap.xml 에 /, /compare, /privacy, /terms 가 모두 포함되어야 한다."""
+    r = fastapi_client.get("/sitemap.xml")
+    assert r.status_code == 200
+    body = r.text
+    for path in ("/", "/compare", "/privacy", "/terms"):
+        assert f"<loc>{path}</loc>" in body
+
+
 def test_analyze_returns_tags(fastapi_client, tiny_wav):
     """분석 결과에 휴리스틱 태그 배열이 포함되어야 한다."""
     with tiny_wav.open("rb") as f:

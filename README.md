@@ -53,6 +53,10 @@ python preview_server.py 8765
 - 두 곡 나란히 비교 페이지(`/compare`), 최근 분석 5건 히스토리(localStorage).
 - 결과 공유: 클립보드 텍스트 / JSON 다운로드 / 결과를 URL hash 에 압축해 담는
   공유 링크(같은 URL 을 다시 열면 분석 없이 결과 복원).
+- 같은 파일을 다시 올리면 SHA-256 기반 LRU 결과 캐시로 즉시 응답 (raw 음원은
+  안 들고 있고 해시만 키로 사용). 응답에 `cached: true` 로 표시.
+- 결과 카드 펼침/접힘 토글 — 1위는 펼쳐서 두고 2위부터는 접어둬서 모바일에서
+  스크롤 부담을 줄임.
 - 한국어 / 영어 토글, 다크 / 라이트 테마, PWA(오프라인 폴백).
 - 백엔드: threadpool 으로 librosa 분리, IP별 rate limit, magic-byte 검증,
   CSP / HSTS / X-Frame-Options 등 시큐어 헤더, 구조화 JSON 로그.
@@ -90,6 +94,8 @@ curl -X POST http://localhost:8000/api/analyze \
 | `MUSIC_MAX_UPLOAD_BYTES` | `26214400` | 25MB 한도 |
 | `MUSIC_MAX_CONCURRENT` | `4` | 동시 분석 처리 한도 |
 | `MUSIC_RATE_LIMIT_PER_MIN` | `12` | IP당 분당 요청 한도 |
+| `MUSIC_CACHE_TTL_SECONDS` | `600` | 결과 캐시 TTL (10분) |
+| `MUSIC_CACHE_MAX_ENTRIES` | `64` | 결과 캐시 최대 항목 수 |
 | `MUSIC_ALLOWED_ORIGINS` | "" (개발은 `*`) | CORS 허용 origin, 콤마 구분 |
 | `MUSIC_LOG_LEVEL` | `INFO` | JSON 로그 레벨 |
 | `PORT` | `8000` | 리스닝 포트 (Fly.io 등 PaaS 호환) |

@@ -561,6 +561,19 @@
       li.querySelector('[data-link="yt"]').href = hit.youtube_search_url;
       li.querySelector('[data-link="sp"]').href = hit.spotify_search_url;
 
+      // 펼침 토글 — 1위 카드는 펼친 채로, 2위부터는 접어둔다.
+      // 그래야 결과가 10개여도 첫 인상이 깔끔하고 모바일 스크롤이 짧다.
+      const toggleBtn = li.querySelector(".hit-toggle");
+      const expanded = idx === 0;
+      li.dataset.expanded = expanded ? "true" : "false";
+      toggleBtn.setAttribute("aria-expanded", expanded ? "true" : "false");
+      toggleBtn.addEventListener("click", () => {
+        const now = li.dataset.expanded === "true";
+        const next = !now;
+        li.dataset.expanded = next ? "true" : "false";
+        toggleBtn.setAttribute("aria-expanded", next ? "true" : "false");
+      });
+
       hitList.appendChild(li);
     });
 

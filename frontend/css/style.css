@@ -865,6 +865,42 @@ main {
   text-transform: uppercase;
 }
 
+/* hit 카드 헤더 전체를 토글 버튼으로 감싸서, 클릭하면 details 가 펼침/접힘. */
+.hit-toggle {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  padding: 0;
+  cursor: pointer;
+}
+.hit-toggle:hover .hit-title { color: var(--accent-2); }
+
+.hit[data-expanded="false"] .hit-details {
+  display: none;
+}
+/* 펼친 상태에선 토글 클릭이 활성화돼 있다는 걸 살짝 표시. */
+.hit[data-expanded="true"] .hit-toggle::after {
+  content: "▾";
+  position: absolute;
+  right: 28px;
+  top: 30px;
+  color: var(--text-mute);
+  pointer-events: none;
+}
+.hit[data-expanded="false"] .hit-toggle::after {
+  content: "▸";
+  position: absolute;
+  right: 28px;
+  top: 30px;
+  color: var(--text-mute);
+  pointer-events: none;
+}
+.hit { position: relative; }
+
 .hit-bar {
   height: 6px;
   background: rgba(255, 255, 255, 0.06);

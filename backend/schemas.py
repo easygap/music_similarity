@@ -70,3 +70,7 @@ class AnalyzeResponse(BaseModel):
     catalog_size: int
     # 멜 스펙트로그램 SVG 문자열. 시각화 실패 시 빈 문자열.
     spectrogram_svg: str = ""
+    # 분석 메타데이터 — 결과 JSON 을 나중에 다시 봐도 재현 가능한 정보들.
+    analyzed_at: str = Field(..., description="ISO-8601 UTC 분석 완료 시각")
+    engine_version: str = Field(..., examples=["1.2.0"])
+    cached: bool = Field(False, description="결과 캐시에서 즉시 응답된 경우 True")

@@ -349,25 +349,28 @@
 
   <!-- 결과 카드 템플릿 --------------------------------------------- -->
   <template id="hit-template">
-    <li class="hit">
+    <li class="hit" data-expanded="true">
       <div class="hit-rank" aria-hidden="true">
         <span class="rank-num"></span>
         <span class="rank-label"></span>
       </div>
       <div class="hit-body">
-        <div class="hit-head">
-          <div>
-            <h3 class="hit-title"></h3>
-            <p class="hit-artist"></p>
+        <button type="button" class="hit-toggle" aria-expanded="true" aria-controls="hit-details">
+          <div class="hit-head">
+            <div>
+              <h3 class="hit-title"></h3>
+              <p class="hit-artist"></p>
+            </div>
+            <div class="hit-percent" aria-label="similarity">
+              <span class="hit-percent-num"></span><span class="hit-percent-unit">%</span>
+              <span class="hit-percent-label"></span>
+            </div>
           </div>
-          <div class="hit-percent" aria-label="similarity">
-            <span class="hit-percent-num"></span><span class="hit-percent-unit">%</span>
-            <span class="hit-percent-label"></span>
+          <div class="hit-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+            <div class="hit-bar-fill"></div>
           </div>
-        </div>
-        <div class="hit-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-          <div class="hit-bar-fill"></div>
-        </div>
+        </button>
+        <div class="hit-details">
         <p class="hit-summary"></p>
         <ul class="hit-groups"></ul>
         <div class="hit-links">
@@ -384,6 +387,7 @@
             </svg>
             Spotify
           </a>
+        </div>
         </div>
       </div>
     </li>

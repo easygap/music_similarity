@@ -7,6 +7,19 @@
 ## [Unreleased]
 
 ### Added
+- 분석 결과 in-memory LRU 캐시 (`backend/cache.py`). 같은 파일을 다시 올리면
+  SHA-256 키로 즉시 응답. raw 음원은 들고 있지 않고 해시만. 환경변수:
+  `MUSIC_CACHE_TTL_SECONDS` (기본 600), `MUSIC_CACHE_MAX_ENTRIES` (기본 64).
+- AnalyzeResponse 에 `analyzed_at`, `engine_version`, `cached` 메타 필드.
+  결과 JSON 을 나중에 다시 봐도 어떤 엔진 버전 / 언제 분석된 결과인지 명확.
+- 결과 카드 펼침 / 접힘 토글. 1위 카드만 펼친 상태로 두고 나머지는 접어둠.
+  결과가 5~10개여도 첫 인상이 깔끔하고 모바일 스크롤이 짧다.
+- `HEAD /api/health` 메서드 지원 (UptimeRobot 같은 모니터 도구 친화).
+- `/sitemap.xml` 에 `/`, `/compare`, `/privacy`, `/terms` 가 명시적으로 포함.
+- `/metrics` 에 `soundmatch_cache_hits_total`, `_misses_total`,
+  `soundmatch_cache_entries` 추가.
+
+### Added (earlier in this cycle)
 - 휴리스틱 장르 태깅 (`backend/tagging.py`): BPM, RMS, 스펙트럴 센트로이드,
   ZCR, HPSS 비율을 보고 "빠른 템포 / 에너지 폭발 / 밝은 톤" 같은 칩을 생성.
   AnalyzeResponse 에 `tags: list[str]` 필드 추가.

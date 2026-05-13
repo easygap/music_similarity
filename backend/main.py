@@ -20,6 +20,7 @@ import time
 import uuid
 from collections.abc import Iterable
 from contextlib import asynccontextmanager
+from datetime import UTC
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +41,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .audio_features import extract_features, summary_metrics
+from .cache import AnalysisResultCache
 from .reason_engine import explain_match, report_to_dict
 from .schemas import AnalyzeResponse, CatalogResponse, HealthResponse
 from .similarity import MusicSimilarityEngine
@@ -90,6 +92,15 @@ RATE_LIMIT_PER_MIN = int(os.environ.get("MUSIC_RATE_LIMIT_PER_MIN", 12))
 _rate_state: dict[str, list[float]] = {}
 _rate_lock = asyncio.Lock()
 
+# 분석 결과 캐시 — 같은 파일을 두 번 올리면 즉시 응답.
+# raw 음원은 보관하지 않고 SHA-256 해시만 키로 쓴다.
+CACHE_TTL_SECONDS = int(os.environ.get("MUSIC_CACHE_TTL_SECONDS", 600))
+CACHE_MAX_ENTRIES = int(os.environ.get("MUSIC_CACHE_MAX_ENTRIES", 64))
+_result_cache = AnalysisResultCache(
+    max_entries=CACHE_MAX_ENTRIES,
+    ttl_seconds=CACHE_TTL_SECONDS,
+)
+
 logger = logging.getLogger("music_similarity")
 
 # ----------------------------------------------------------------------
@@ -102,6 +113,8 @@ _metrics_counters: dict[str, int] = {
     "soundmatch_analyze_success_total": 0,
     "soundmatch_analyze_failed_total": 0,
     "soundmatch_rate_limited_total": 0,
+    "soundmatch_cache_hits_total": 0,
+    "soundmatch_cache_misses_total": 0,
 }
 
 
@@ -149,7 +162,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SoundMatch · Music Similarity API",
     description="음원을 업로드하면 카탈로그에서 가장 닮은 곡을 찾아 순위와 함께 돌려준다.",
-    version="1.2.0",
+    version="1.3.0",
     lifespan=lifespan,
 )
 
@@ -338,11 +351,13 @@ def _all_finite(values: Iterable[float]) -> bool:
 # ----------------------------------------------------------------------
 # 라우트
 # ----------------------------------------------------------------------
-@app.get(
+@app.api_route(
     "/api/health",
+    methods=["GET", "HEAD"],
     response_model=HealthResponse,
     summary="라이브니스 / 카탈로그 로딩 상태",
     tags=["system"],
+    operation_id="health",
 )
 def health():
     """라이브니스 프로브. 카탈로그를 못 읽었으면 503으로 응답한다."""
@@ -393,19 +408,24 @@ def metrics():
     # Counter 들 — 누적값, monotonic.
     counter_help = {
         "soundmatch_requests_total": "전체 비즈니스 HTTP 요청 수",
-        "soundmatch_analyze_success_total": "분석이 성공한 횟수",
+        "soundmatch_analyze_success_total": "분석이 성공한 횟수 (캐시 히트 포함)",
         "soundmatch_analyze_failed_total": "분석이 실패한 횟수 (4xx/5xx)",
         "soundmatch_rate_limited_total": "rate limit 으로 차단된 요청 수",
+        "soundmatch_cache_hits_total": "결과 캐시 히트 — librosa 재실행 안 한 케이스",
+        "soundmatch_cache_misses_total": "결과 캐시 미스 — 새로 분석한 케이스",
     }
     for name, doc in counter_help.items():
         lines.append(f"# HELP {name} {doc}")
         lines.append(f"# TYPE {name} counter")
         lines.append(f"{name} {_metrics_counters.get(name, 0)}")
 
-    # Gauge: 현재 카탈로그 사이즈.
+    # Gauge: 현재 카탈로그 사이즈, 현재 캐시 항목 수.
     lines.append("# HELP soundmatch_catalog_size 현재 메모리에 적재된 카탈로그 곡 수")
     lines.append("# TYPE soundmatch_catalog_size gauge")
     lines.append(f"soundmatch_catalog_size {catalog_size}")
+    lines.append("# HELP soundmatch_cache_entries 현재 결과 캐시에 들어 있는 항목 수")
+    lines.append("# TYPE soundmatch_cache_entries gauge")
+    lines.append(f"soundmatch_cache_entries {_result_cache.size}")
 
     body = "\n".join(lines) + "\n"
     return Response(
@@ -485,6 +505,10 @@ async def analyze(
     try:
         async with _analysis_semaphore:
             # 스트리밍 업로드. 누적 사이즈를 체크하면서 첫 16바이트로 매직 시그니처를 확인한다.
+            # 동시에 SHA-256 해시도 계산해서 결과 캐시 키로 쓴다 — raw 바이트는 저장 안 함.
+            import hashlib
+
+            hasher = hashlib.sha256()
             written = 0
             head_bytes = b""
             with dest.open("wb") as out:
@@ -497,6 +521,7 @@ async def analyze(
                             status_code=413,
                             detail=f"파일이 너무 큽니다. 최대 {MAX_UPLOAD_BYTES // (1024*1024)}MB.",
                         )
+                    hasher.update(chunk)
                     out.write(chunk)
             if written == 0:
                 raise HTTPException(status_code=400, detail="빈 파일입니다.")
@@ -505,6 +530,28 @@ async def analyze(
                     status_code=400,
                     detail="파일 내용이 오디오 형식과 일치하지 않습니다. 확장자를 확인해주세요.",
                 )
+
+            # 결과 캐시 hit 이면 librosa/sklearn 다 건너뛰고 바로 응답.
+            cache_key = _result_cache.make_key(hasher.hexdigest(), top_n)
+            cached_value = _result_cache.get(cache_key)
+            if cached_value is not None:
+                _bump("soundmatch_cache_hits_total")
+                _bump("soundmatch_analyze_success_total")
+                # 동적 필드만 새 요청용으로 교체. 나머지는 그대로 재사용.
+                payload = dict(cached_value)
+                payload["request_id"] = request_id
+                payload["filename"] = safe_name
+                payload["cached"] = True
+                logger.info(
+                    "analyze_cache_hit",
+                    extra={
+                        "request_id": request_id,
+                        "filename_ext": ext,
+                        "bytes": written,
+                    },
+                )
+                return JSONResponse(payload)
+            _bump("soundmatch_cache_misses_total")
 
             # librosa.load 는 동기/CPU bound 이므로 threadpool 로 넘긴다.
             # 이벤트 루프를 점유하면 health 체크나 다른 정적 파일 요청도 같이 막힌다.
@@ -633,21 +680,28 @@ async def analyze(
                 },
             )
 
-            return JSONResponse(
-                {
-                    "request_id": request_id,
-                    "filename": safe_name,
-                    "summary": summary_metrics(features),
-                    "tags": tags,
-                    "results": results,
-                    "timing": {
-                        "feature_extraction_seconds": round(feature_seconds, 3),
-                        "similarity_seconds": round(similarity_seconds, 3),
-                    },
-                    "catalog_size": eng.catalog_size,
-                    "spectrogram_svg": spectrogram_svg,
-                }
-            )
+            from datetime import datetime
+
+            payload = {
+                "request_id": request_id,
+                "filename": safe_name,
+                "summary": summary_metrics(features),
+                "tags": tags,
+                "results": results,
+                "timing": {
+                    "feature_extraction_seconds": round(feature_seconds, 3),
+                    "similarity_seconds": round(similarity_seconds, 3),
+                },
+                "catalog_size": eng.catalog_size,
+                "spectrogram_svg": spectrogram_svg,
+                "analyzed_at": datetime.now(UTC).isoformat(),
+                "engine_version": app.version,
+                "cached": False,
+            }
+            # 다음 같은 파일 업로드를 위해 캐시에 저장. request_id 같은 동적 필드는
+            # 캐시에서 꺼낼 때 새로 갈아낀다 (위쪽 cache hit 분기 참고).
+            _result_cache.set(cache_key, payload)
+            return JSONResponse(payload)
     finally:
         # 동기적으로 한 번 더 정리. BackgroundTask 가 취소된 경우 대비.
         _cleanup(dest)
@@ -774,14 +828,29 @@ if FRONTEND_DIR.exists():
 
     @app.get("/sitemap.xml", include_in_schema=False)
     def sitemap():
-        """단일 페이지 SPA 라 sitemap도 단출하다. 봇 친화 + last-modified 정도."""
+        """정적으로 노출되는 페이지 전부를 sitemap 에 적어둔다.
+
+        결과 페이지(hash URL) 같은 동적 경로는 SEO 대상이 아니라 제외.
+        """
         from datetime import date
 
+        today = date.today().isoformat()
+        # (loc, priority, changefreq)
+        entries = [
+            ("/", "1.0", "weekly"),
+            ("/compare", "0.6", "monthly"),
+            ("/privacy", "0.4", "yearly"),
+            ("/terms", "0.4", "yearly"),
+        ]
+        url_blocks = "".join(
+            f"<url><loc>{loc}</loc><lastmod>{today}</lastmod>"
+            f"<changefreq>{cf}</changefreq><priority>{pri}</priority></url>"
+            for loc, pri, cf in entries
+        )
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-            f"<url><loc>/</loc><lastmod>{date.today().isoformat()}</lastmod>"
-            "<changefreq>weekly</changefreq><priority>1.0</priority></url>"
+            f"{url_blocks}"
             "</urlset>"
         )
         return Response(
