@@ -292,6 +292,15 @@ def test_metrics_includes_inflight_gauge(fastapi_client):
     assert "soundmatch_inflight_analyses" in r.text
 
 
+def test_favorites_js_served(fastapi_client):
+    """favorites.js 정적 라우트가 정상 응답해야 한다."""
+    r = fastapi_client.get("/favorites.js")
+    assert r.status_code == 200
+    body = r.text
+    assert "SoundMatchFavorites" in body
+    assert "soundmatch.favorites" in body
+
+
 def test_metrics_includes_uptime_and_latency(fastapi_client, tiny_wav):
     """/metrics 에 uptime 과 latency P50/P95 게이지가 노출되어야 한다."""
     # 분석을 한 번 돌려서 latency 샘플이 생기게.

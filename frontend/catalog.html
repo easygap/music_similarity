@@ -65,8 +65,46 @@
       transform: translateY(-1px);
       outline: none;
     }
+    .cat-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+    .cat-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .cat-fav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-mute);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .cat-fav-btn:hover, .cat-fav-btn[data-active="true"] {
+      color: var(--accent-warn);
+    }
+    .cat-fav-btn[data-active="true"] {
+      text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+    }
     .cat-title { font-size: 13.5px; font-weight: 600; color: var(--text); word-break: break-all; }
     .cat-artist { font-size: 12px; color: var(--text-mute); }
+    .cat-filter-row {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin: 6px 0 14px;
+      font-size: 13px;
+      color: var(--text-mute);
+    }
+    .cat-filter-row label { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 
     /* 결과 모달 — 카탈로그 카드 클릭 시 그 자리에서 유사 곡을 보여준다. */
     .modal-backdrop {
@@ -209,6 +247,13 @@
       <span class="cat-meta" id="cat-meta">불러오는 중…</span>
     </div>
 
+    <div class="cat-filter-row">
+      <label>
+        <input type="checkbox" id="cat-favorites-only">
+        즐겨찾기만 보기
+      </label>
+    </div>
+
     <div class="cat-grid" id="cat-grid"></div>
 
     <div class="cat-pager">
@@ -235,6 +280,7 @@
     </div>
   </div>
 
+  <script src="/favorites.js"></script>
   <script>
   (function () {
     var input = document.getElementById("cat-search-input");
@@ -243,9 +289,11 @@
     var prev = document.getElementById("cat-prev");
     var next = document.getElementById("cat-next");
     var pageLabel = document.getElementById("cat-page-label");
+    var favOnly = document.getElementById("cat-favorites-only");
 
-    var state = { q: "", page: 1, size: 24, total: 0, hasMore: false };
+    var state = { q: "", page: 1, size: 24, total: 0, hasMore: false, favOnly: false };
     var debounceTimer = null;
+    var Fav = window.SoundMatchFavorites;
 
     function escapeHtml(s) {
       return String(s == null ? "" : s)
@@ -255,6 +303,34 @@
 
     async function load() {
       meta.textContent = "불러오는 중…";
+
+      // 즐겨찾기 전용 모드는 백엔드 호출 없이 localStorage 만 사용한다.
+      if (state.favOnly && Fav) {
+        var favs = Fav.list().filter(function (f) {
+          if (!state.q) return true;
+          return (f.name || "").toLowerCase().indexOf(state.q.toLowerCase()) !== -1;
+        });
+        var start = (state.page - 1) * state.size;
+        var end = start + state.size;
+        var slice = favs.slice(start, end).map(function (f) {
+          return { title: f.title, artist: f.artist };
+        });
+        state.total = favs.length;
+        state.hasMore = end < favs.length;
+        render(slice);
+        if (favs.length === 0) {
+          meta.textContent = "즐겨찾기 없음";
+        } else {
+          var rs = start + 1;
+          var re = Math.min(rs + slice.length - 1, favs.length);
+          meta.textContent = favs.length.toLocaleString("ko-KR") + "곡 중 " + rs + "–" + re;
+        }
+        pageLabel.textContent = "p. " + state.page;
+        prev.disabled = state.page <= 1;
+        next.disabled = !state.hasMore;
+        return;
+      }
+
       try {
         var url = "/api/catalog/search?q=" + encodeURIComponent(state.q)
           + "&page=" + state.page + "&size=" + state.size;
@@ -283,20 +359,57 @@
 
     function render(items) {
       if (!items || !items.length) {
-        grid.innerHTML = '<p class="cat-empty">해당하는 곡이 없어요. 다른 키워드로 검색해보세요.</p>';
+        var msg = state.favOnly
+          ? '즐겨찾기에 저장된 곡이 없어요. 카탈로그 카드의 ★ 버튼으로 추가해보세요.'
+          : '해당하는 곡이 없어요. 다른 키워드로 검색해보세요.';
+        grid.innerHTML = '<p class="cat-empty">' + msg + '</p>';
         return;
       }
       grid.innerHTML = items.map(function (it) {
         var key = it.title + ' - ' + it.artist;
-        return '<button type="button" class="cat-card" data-key="' + escapeHtml(key) + '"'
-          + ' title="이 곡과 유사한 다른 곡 보기">'
-          + '<span class="cat-title">' + escapeHtml(it.title) + '</span>'
-          + '<span class="cat-artist">' + escapeHtml(it.artist) + '</span>'
-          + '</button>';
+        var isFav = Fav ? Fav.has(key) : false;
+        return '<div class="cat-card" data-key="' + escapeHtml(key) + '"'
+          + ' title="이 곡과 유사한 다른 곡 보기" tabindex="0" role="button">'
+          + '<div class="cat-card-head">'
+          +   '<div class="cat-card-body">'
+          +     '<span class="cat-title">' + escapeHtml(it.title) + '</span>'
+          +     '<span class="cat-artist">' + escapeHtml(it.artist) + '</span>'
+          +   '</div>'
+          +   '<button type="button" class="cat-fav-btn" data-fav="' + escapeHtml(key)
+          +     '" data-title="' + escapeHtml(it.title) + '" data-artist="' + escapeHtml(it.artist)
+          +     '" data-active="' + (isFav ? 'true' : 'false')
+          +     '" aria-pressed="' + (isFav ? 'true' : 'false')
+          +     '" title="' + (isFav ? '즐겨찾기 해제' : '즐겨찾기 추가') + '">★</button>'
+          + '</div>'
+          + '</div>';
       }).join("");
+
       grid.querySelectorAll(".cat-card").forEach(function (el) {
-        el.addEventListener("click", function () {
+        el.addEventListener("click", function (e) {
+          // ★ 버튼 클릭은 상위 카드 클릭과 분리.
+          if (e.target.closest(".cat-fav-btn")) return;
           openSimilarModal(el.getAttribute("data-key"));
+        });
+        el.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openSimilarModal(el.getAttribute("data-key"));
+          }
+        });
+      });
+
+      grid.querySelectorAll(".cat-fav-btn").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (!Fav) return;
+          var key = btn.getAttribute("data-fav");
+          Fav.toggle(key, btn.getAttribute("data-title"), btn.getAttribute("data-artist"));
+          var nowActive = Fav.has(key);
+          btn.setAttribute("data-active", nowActive ? "true" : "false");
+          btn.setAttribute("aria-pressed", nowActive ? "true" : "false");
+          btn.title = nowActive ? "즐겨찾기 해제" : "즐겨찾기 추가";
+          // favOnly 모드에서 마지막 항목을 풀면 화면이 비어버려야 한다.
+          if (state.favOnly) load();
         });
       });
     }
@@ -369,6 +482,15 @@
     });
     prev.addEventListener("click", function () { if (state.page > 1) { state.page--; load(); } });
     next.addEventListener("click", function () { if (state.hasMore) { state.page++; load(); } });
+    if (favOnly) {
+      favOnly.addEventListener("change", function () {
+        state.favOnly = favOnly.checked;
+        state.page = 1;
+        load();
+      });
+    }
+    // 다른 페이지에서 추가/해제 시 카탈로그 페이지도 즉시 갱신.
+    window.addEventListener("favorites:change", function () { load(); });
 
     load();
   })();

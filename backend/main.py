@@ -1073,6 +1073,10 @@ if FRONTEND_DIR.exists():
     def visualizers_js():
         return _cached_file_response(FRONTEND_DIR / "js" / "visualizers.js")
 
+    @app.get("/favorites.js", include_in_schema=False)
+    def favorites_js():
+        return _cached_file_response(FRONTEND_DIR / "js" / "favorites.js")
+
     @app.get("/favicon.svg", include_in_schema=False)
     def favicon():
         return _cached_file_response(FRONTEND_DIR / "assets" / "favicon.svg", immutable=True)

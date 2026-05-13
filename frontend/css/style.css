@@ -1000,6 +1000,30 @@ main {
 }
 .link-btn-seed svg { color: var(--accent-1); }
 
+/* 즐겨찾기 ★ 버튼. 활성 상태는 별을 채워서 표시. */
+.link-btn-fav[data-active="true"] {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: var(--text);
+}
+.link-btn-fav[data-active="true"] svg path {
+  fill: var(--accent-warn);
+  stroke: var(--accent-warn);
+}
+
+/* 메인 페이지의 즐겨찾기 카드 (catalog-chip 재사용) */
+.catalog-chip-fav {
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  color: inherit;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+.catalog-chip-fav:hover { border-color: var(--accent-warn); }
+
 /* 결과가 비었을 때 보여줄 카드 */
 .empty-results {
   background: var(--panel);

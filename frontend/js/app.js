@@ -165,6 +165,57 @@
     catalogReloadBtn.addEventListener("click", () => loadCatalogPreview({ randomize: true }));
   }
 
+  // 즐겨찾기 섹션 — 저장된 곡이 있을 때만 노출.
+  const favSection = document.getElementById("favorites-section");
+  const favList = document.getElementById("favorites-list");
+  const favClearBtn = document.getElementById("favorites-clear");
+
+  function renderFavorites() {
+    if (!favSection || !favList || !window.SoundMatchFavorites) return;
+    const items = window.SoundMatchFavorites.list();
+    if (!items.length) {
+      favSection.classList.add("hidden");
+      favList.innerHTML = "";
+      return;
+    }
+    favSection.classList.remove("hidden");
+    favList.innerHTML = items
+      .map((it) => {
+        const safeName = escapeHtml(it.name);
+        return `
+          <button type="button" class="catalog-chip catalog-chip-fav" data-name="${safeName}"
+                  title="${safeName} — 클릭 시 이 곡으로 카탈로그 다시 검색">
+            <span class="catalog-title">${escapeHtml(it.title)}</span>
+            <span class="catalog-artist">${escapeHtml(it.artist)}</span>
+          </button>`;
+      })
+      .join("");
+    favList.querySelectorAll("button[data-name]").forEach((el) => {
+      el.addEventListener("click", () => {
+        const name = el.getAttribute("data-name");
+        if (!name) return;
+        const [title, artist] = name.split(" - ");
+        seedFromHit({
+          title: title || name,
+          artist: artist || "",
+          youtube_search_url: "#",
+          spotify_search_url: "#",
+        });
+      });
+    });
+  }
+
+  if (favClearBtn) {
+    favClearBtn.addEventListener("click", () => {
+      if (!confirm(t("favorites.confirm"))) return;
+      window.SoundMatchFavorites.clearAll();
+    });
+  }
+
+  window.addEventListener("favorites:change", renderFavorites);
+  window.addEventListener("i18n:change", renderFavorites);
+  renderFavorites();
+
   // ----------------------------------------------------------------------
   // 토스트
   // ----------------------------------------------------------------------
@@ -575,6 +626,26 @@
       const seedBtn = li.querySelector('[data-action="seed"]');
       if (seedBtn) {
         seedBtn.addEventListener("click", () => seedFromHit(hit));
+      }
+
+      // ★ 즐겨찾기 토글.
+      const favBtn = li.querySelector('[data-action="favorite"]');
+      if (favBtn && window.SoundMatchFavorites) {
+        const fullName = `${hit.title} - ${hit.artist}`;
+        const applyFavState = () => {
+          const isFav = window.SoundMatchFavorites.has(fullName);
+          favBtn.setAttribute("aria-pressed", isFav ? "true" : "false");
+          favBtn.dataset.active = isFav ? "true" : "false";
+          const label = favBtn.querySelector(".fav-label");
+          if (label) {
+            label.textContent = t(isFav ? "results.favoriteRemove" : "results.favoriteAdd");
+          }
+        };
+        applyFavState();
+        favBtn.addEventListener("click", () => {
+          window.SoundMatchFavorites.toggle(fullName, hit.title, hit.artist);
+          applyFavState();
+        });
       }
 
       // 펼침 토글 — 1위 카드는 펼친 채로, 2위부터는 접어둔다.
