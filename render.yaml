@@ -1,0 +1,24 @@
+# Render.com Blueprint — one-click deploy for SoundMatch.
+# Push this repo to GitHub then click "New > Blueprint" on Render.
+
+services:
+  - type: web
+    name: music-similarity
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: MUSIC_ENV
+        value: production
+      - key: MUSIC_LOG_LEVEL
+        value: INFO
+      - key: MUSIC_MAX_CONCURRENT
+        value: "4"
+      - key: MUSIC_RATE_LIMIT_PER_MIN
+        value: "30"
+      - key: MUSIC_ALLOWED_ORIGINS
+        # Comma-separated list of origins allowed for /api requests. Leave
+        # empty in production to disable CORS entirely (same-origin only).
+        value: ""

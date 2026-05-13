@@ -19,15 +19,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
 
-from .audio_features import AudioFeatureVector, FEATURE_COLUMNS
-
+from .audio_features import AudioFeatureVector
 
 # The dataset key column carries the song title and the artist together.
 NAME_COLUMN = "musicname & artist"
@@ -44,7 +42,7 @@ class SimilarityHit:
     artist: str
     similarity: float           # raw cosine similarity in [-1, 1]
     similarity_percent: float   # mapped to [0, 100] for display
-    feature_distances: Dict[str, float]
+    feature_distances: dict[str, float]
 
 
 class MusicSimilarityEngine:
@@ -67,17 +65,40 @@ class MusicSimilarityEngine:
 
         df = df.set_index(NAME_COLUMN)
         # The catalog of feature columns we will use for similarity.
-        self._feature_columns: List[str] = [
-            c for c in df.columns if c != LABEL_COLUMN
-        ]
+        feature_columns: list[str] = [c for c in df.columns if c != LABEL_COLUMN]
 
         # Save the raw (unscaled) matrix for the reason engine — explanations
         # are friendlier when computed on real-world units rather than z-scores.
-        self._catalog_raw = df[self._feature_columns].astype(float)
-        self._catalog_index: List[str] = list(df.index)
+        raw = df[feature_columns].astype(float)
+
+        # Drop any rows that came in with NaN/inf values — they would poison
+        # the StandardScaler and produce silent garbage similarities.
+        finite_mask = np.isfinite(raw.values).all(axis=1)
+        if not finite_mask.all():
+            raw = raw.loc[finite_mask]
+        if raw.empty:
+            raise ValueError("Dataset contains no rows with all-finite features.")
+
+        # Drop zero-variance columns. Those produce NaN after StandardScaler
+        # (divide by zero) and break cosine similarity for the whole catalog.
+        col_std = raw.std(axis=0, ddof=0)
+        keep_cols = [c for c in feature_columns if col_std.get(c, 0.0) > 1e-12]
+        if not keep_cols:
+            raise ValueError("Dataset has no usable (non-constant) feature columns.")
+
+        self._feature_columns: list[str] = keep_cols
+        self._dropped_columns: list[str] = [c for c in feature_columns if c not in keep_cols]
+        self._catalog_raw = raw[self._feature_columns]
+        self._catalog_index: list[str] = list(raw.index)
 
         scaler = StandardScaler()
-        self._catalog_scaled = scaler.fit_transform(self._catalog_raw.values)
+        scaled = scaler.fit_transform(self._catalog_raw.values)
+        if not np.isfinite(scaled).all():
+            raise ValueError(
+                "StandardScaler produced non-finite values; check dataset for "
+                "duplicates / constant features."
+            )
+        self._catalog_scaled = scaled
         self._scaler = scaler
 
     # ------------------------------------------------------------------
@@ -88,23 +109,32 @@ class MusicSimilarityEngine:
         return len(self._catalog_index)
 
     @property
-    def feature_columns(self) -> List[str]:
+    def feature_columns(self) -> list[str]:
         return list(self._feature_columns)
 
     def query_vector(self, features: AudioFeatureVector) -> np.ndarray:
-        """Convert a user-uploaded feature vector to the scaled space."""
-        row = np.array(
-            [features.values[c] for c in self._feature_columns],
-            dtype=float,
-        ).reshape(1, -1)
-        return self._scaler.transform(row)
+        """Convert a user-uploaded feature vector to the scaled space.
+
+        Raises ValueError if any required feature is missing or non-finite.
+        """
+        try:
+            raw_values = [float(features.values[c]) for c in self._feature_columns]
+        except KeyError as e:
+            raise ValueError(f"Query is missing required feature: {e}") from e
+        row = np.array(raw_values, dtype=float).reshape(1, -1)
+        if not np.isfinite(row).all():
+            raise ValueError("Query feature vector contains non-finite values.")
+        scaled = self._scaler.transform(row)
+        if not np.isfinite(scaled).all():
+            raise ValueError("Query produced non-finite scaled values.")
+        return scaled
 
     def find_similar(
         self,
         features: AudioFeatureVector,
         *,
         top_n: int = 5,
-    ) -> Tuple[List[SimilarityHit], np.ndarray]:
+    ) -> tuple[list[SimilarityHit], np.ndarray]:
         """Return the top-N most similar catalog tracks.
 
         Returns the ranked hits and the scaled query vector (handy if the
@@ -114,7 +144,7 @@ class MusicSimilarityEngine:
 
         sims = cosine_similarity(query_scaled, self._catalog_scaled).ravel()
         ranked = np.argsort(-sims)
-        hits: List[SimilarityHit] = []
+        hits: list[SimilarityHit] = []
 
         # Pre-compute per-feature absolute differences against the catalog in
         # the SCALED space. These are what the reason engine actually uses.
@@ -129,7 +159,7 @@ class MusicSimilarityEngine:
             # don't want misleading 50% floors for clearly different songs.
             percent = max(0.0, min(100.0, sim * 100.0))
 
-            feature_distance_map: Dict[str, float] = {
+            feature_distance_map: dict[str, float] = {
                 col: float(diffs_scaled[catalog_idx, j])
                 for j, col in enumerate(self._feature_columns)
             }
@@ -147,7 +177,7 @@ class MusicSimilarityEngine:
 
         return hits, query_scaled.ravel()
 
-    def catalog_row_raw(self, name: str) -> Dict[str, float] | None:
+    def catalog_row_raw(self, name: str) -> dict[str, float] | None:
         """Look up the raw (unscaled) features for a catalog entry by name."""
         if name not in self._catalog_index:
             return None

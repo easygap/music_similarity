@@ -1,132 +1,161 @@
 <div align="center">
 
-# 🎧 SoundMatch · AI 음악 유사도 분석
+# 🎧 SoundMatch · AI Music Similarity
 
-**음악을 업로드하면 sklearn 코사인 유사도로 가장 닮은 곡을 찾고, 닮은 이유까지 설명하는 웹 서비스.**
+**Drop a song — get the closest matches and a plain-language explanation of why.**
 
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![CI](https://github.com/easygap/music_similarity/actions/workflows/ci.yml/badge.svg)](https://github.com/easygap/music_similarity/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.4-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![librosa](https://img.shields.io/badge/librosa-0.10-5C2D91)](https://librosa.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+[Deploy on Render](https://render.com/deploy?repo=https://github.com/easygap/music_similarity) ·
+[Deploy on Fly.io](https://fly.io/docs/getting-started/launch/) ·
+[Live demo (your own)](#-quick-start)
 
 </div>
 
----
-
-졸업작품으로 만들었던 [easygap/capstone_music](https://github.com/easygap/capstone_music)을 기반으로,
-**완성도 있는 단일 웹 서비스**로 재설계한 프로젝트입니다.
-
-* 🎼 음악 파일 업로드 (드래그&드롭 / 클릭)
-* 🤖 **58개 오디오 특성** 추출 (librosa)
-* 📐 **sklearn StandardScaler + cosine similarity**로 카탈로그 매칭
-* 🥇 **순위 + 유사도 퍼센트** 표시
-* 💡 **닮은 이유**를 한국어 문장으로 자동 생성
-* 🎨 다크모드 글래스모피즘 UI, 모바일 반응형
-* 🔍 결과별 YouTube · Spotify 검색 링크 자동 생성
+졸업작품으로 만들었던 [easygap/capstone_music](https://github.com/easygap/capstone_music)을
+**시중 서비스급의 단일 웹 서비스**로 처음부터 다시 설계한 프로젝트입니다.
+FastAPI + librosa + scikit-learn 기반, 다크/라이트 테마, 한국어·영어 지원,
+Docker · Render · Fly.io 원클릭 배포까지 모두 포함되어 있어요.
 
 ---
 
-## ✨ 데모 · 화면 흐름
+## ✨ 핵심 기능
 
-1. **메인 화면** — Hero + 업로드 카드
-2. **분석 중** — 단계별 진행 메시지(librosa → MFCC → cosine)
-3. **결과 화면** — 업로드 곡의 오디오 요약 + 상위 N곡 카드 (유사도 게이지·이유 분해)
-
-업로드한 음원은 분석이 끝나는 즉시 서버에서 자동 삭제됩니다.
-사용자 음악은 카탈로그에 학습되지도, 저장되지도 않습니다.
+- 🎼 **드래그&드롭 음원 업로드** — `.wav .mp3 .flac .ogg .m4a` (25MB 한도, 클라이언트+서버 양쪽 검증)
+- 🤖 **58개 오디오 특성 추출** (librosa) — RMS · BPM · 스펙트럴 · 크로마 · 20-MFCC
+- 📐 **코사인 유사도 매칭** — sklearn `StandardScaler` + `cosine_similarity`
+- 🥇 **순위 + 유사도 % + 진행 게이지** UI
+- 💡 **닮은 이유 자동 생성** — z-score 거리를 음악적 그룹으로 묶어 한국어/영어 문장으로
+- 🎚️ **업로드 음원 미리듣기 + 직접 그린 파형(Web Audio API)** — 클릭으로 탐색 가능
+- 📊 **레이더 차트** — 1위 매칭과 6축 비교 (Tempo · 에너지 · 밝기 · 거친 정도 · 화성비 · 크로마)
+- 🕘 **로컬 히스토리** — 최근 5건 자동 저장(localStorage), 클릭 한 번으로 결과 복원
+- 🔗 **공유 + JSON 내보내기** — 상위 3곡 텍스트 복사 / 전체 분석 결과 JSON 다운로드
+- 🌗 **다크/라이트 테마 토글** — OS 환경설정 자동 감지 + `prefers-reduced-motion` 존중
+- 🌐 **한국어 + 영어** i18n — 토글 한 번으로 전체 UI 교체
+- ⚡ **API 안정성** — 비동기 threadpool, 동시 요청 cap, IP별 rate limit, magic-byte 검증, CSP/HSTS 등 시큐어 헤더, 구조화된 JSON 로그
+- 🧪 **pytest 31개 케이스** + ruff lint + GitHub Actions CI + Docker multi-stage + Python 3.11/3.12 매트릭스
 
 ---
 
 ## 🏗️ 아키텍처
 
 ```
-┌────────────────────┐        ┌────────────────────────────────────┐
-│   Browser (HTML)   │  POST  │             FastAPI                │
-│   /api/analyze     │ ─────▶ │  ├─ audio_features.py (librosa)    │
-│   드래그/드롭 UI   │        │  ├─ similarity.py (sklearn cosine) │
-│                    │ ◀───── │  └─ reason_engine.py (NL 설명)     │
-└────────────────────┘  JSON  └────────────────────────────────────┘
-                                          │
-                                          ▼
-                              data/dataset.csv (사전 추출된 카탈로그)
+┌──────────────────────────────────┐   POST   ┌────────────────────────────────────────┐
+│   Browser (HTML5 + WebAudio)     │  ──────▶│           FastAPI app                  │
+│   - drag&drop upload             │          │  ├─ SecurityHeadersMiddleware (CSP/…)  │
+│   - waveform · radar · history   │  ◀──────│  ├─ RequestLogMiddleware (req_id JSON)  │
+│   - theme + i18n toggles         │   JSON   │  ├─ rate_limit dep · semaphore         │
+│                                  │          │  ├─ run_in_threadpool(extract_features)│
+└──────────────────────────────────┘          │  ├─ similarity.py (sklearn cosine)     │
+                                              │  └─ reason_engine.py (KO/JSON)         │
+                                              └────────────────────────────────────────┘
+                                                                │
+                                                                ▼
+                                                  data/dataset.csv (catalog)
 ```
-
-### 핵심 코드
 
 | 파일 | 역할 |
 | --- | --- |
-| `backend/audio_features.py` | librosa로 RMS · BPM · 스펙트럴 · 크로마 · 20-MFCC 등 58개 특성 추출 |
-| `backend/similarity.py` | `StandardScaler`로 정규화 후 `cosine_similarity`로 카탈로그와 비교 |
-| `backend/reason_engine.py` | 특성 거리(z-score)를 음악적 개념으로 묶어 한국어 설명 생성 |
-| `backend/main.py` | FastAPI 엔드포인트 + 정적 프론트엔드 서빙 |
-| `frontend/index.html` | 단일 페이지 UI (Pretendard / Inter / JetBrains Mono) |
-| `frontend/css/style.css` | 다크모드 글래스모피즘 디자인 시스템 |
-| `frontend/js/app.js` | 업로드 · 진행상태 · 결과 렌더링 |
+| `backend/audio_features.py` | librosa로 58개 특성 추출 (BPM·RMS·spectral·chroma·MFCC) |
+| `backend/similarity.py` | `StandardScaler` + `cosine_similarity` (NaN 차단, zero-variance 컬럼 drop) |
+| `backend/reason_engine.py` | 그룹별 z-score 거리 → 한국어/영어 문장 |
+| `backend/main.py` | FastAPI 엔드포인트 + 미들웨어 + 정적 프론트엔드 + 캐시 헤더 |
+| `frontend/index.html` | SPA 단일 페이지 — 시맨틱 HTML, ARIA, skip-link |
+| `frontend/css/style.css` | 다크/라이트 디자인 시스템, focus-visible, 반응형, reduced-motion |
+| `frontend/js/app.js` | 메인 컨트롤러 (업로드/결과/히스토리/공유/테마) |
+| `frontend/js/i18n.js` | 한국어/영어 사전 + 토글 |
+| `frontend/js/visualizers.js` | Web Audio 파형 + SVG 레이더 차트 |
 | `data/dataset.csv` | 곡 카탈로그 + 사전 추출된 특성값 |
-
----
-
-## 🎼 분석되는 오디오 특성 (58개)
-
-| 그룹 | 특성 |
-| --- | --- |
-| **기본** | `length` (참조용 라벨, 유사도 계산 시 제외) |
-| **에너지** | `rms_mean`, `rms_var` |
-| **템포** | `bpm` (librosa beat track) |
-| **거친 정도** | `zero_crossing_rate_mean`, `zero_crossing_rate_var` |
-| **HPSS** | `harmony_mean/var`, `percussive_mean/var` |
-| **스펙트럴** | `spectral_centroid_mean/var`, `spectral_bandwidth_mean/var`, `spectral_rolloff_mean/var` |
-| **크로마** | `chroma_frequencies_mean`, `chroma_frequencies_var` |
-| **MFCC** | `mfcc1_mean/var` ~ `mfcc20_mean/var` (총 40개) |
-
-원작 캡스톤 노트북과 동일한 컬럼 레이아웃을 유지해서, 기존
-`Project Dataset.csv`를 그대로 재사용할 수 있습니다.
 
 ---
 
 ## 🚀 빠른 시작
 
-### 옵션 1 · 로컬 (권장: 첫 실행)
+### 1. 로컬 (개발)
 
 ```bash
-# 1) 클론
 git clone https://github.com/easygap/music_similarity.git
 cd music_similarity
 
-# 2) 가상환경 + 의존성
+# 가상환경 + 의존성
 python -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+source .venv/bin/activate           # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
 
-# 3) 개발 서버 실행 (자동 reload)
+# 개발 서버 실행 (autoreload)
 uvicorn backend.main:app --reload --port 8000
+# → http://localhost:8000
 ```
 
-브라우저에서 <http://localhost:8000> 접속 → 음악 파일 업로드.
-
-### 옵션 2 · Docker
+### 2. Docker
 
 ```bash
 docker compose up --build
-# http://localhost:8000
+# → http://localhost:8000
 ```
 
-### 옵션 3 · 쉘 스크립트
-
-* Linux/macOS: `bash scripts/dev.sh`
-* Windows PowerShell: `pwsh scripts/dev.ps1`
-
-### 옵션 4 · 디자인만 빠르게 보기 (librosa 없이)
+### 3. 디자인만 빠르게 확인 (librosa 없이)
 
 ```bash
 python preview_server.py 8765
-# http://127.0.0.1:8765
+# → http://127.0.0.1:8765
 ```
 
-`preview_server.py`는 ML 의존성 없이 정적 프론트엔드만 띄우고
-`/api/analyze`에 더미 응답을 돌려줍니다. 디자인/UX 변경을 빠르게
-확인하고 싶을 때 사용하세요.
+ML 의존성 없이 정적 프론트엔드만 띄우고 `/api/analyze`에 더미 응답을 돌려줍니다.
+디자인/UX 변경을 빠르게 확인하고 싶을 때 사용하세요.
+
+### 4. 시중 배포
+
+| 플랫폼 | 명령 |
+| --- | --- |
+| **Render** | `render.yaml` 포함 — GitHub repo를 Render Blueprint로 가져오면 1클릭 배포 |
+| **Fly.io** | `fly launch --no-deploy && fly deploy` — `fly.toml` 포함 (Tokyo 리전 기본) |
+| **Docker / VPS** | `docker compose up -d` 후 nginx 등 리버스 프록시 + Let's Encrypt 권장 |
+
+---
+
+## ⚙️ 환경 변수
+
+| 이름 | 기본 | 설명 |
+| --- | --- | --- |
+| `MUSIC_ENV` | `development` | `production`이면 HSTS 등 추가 헤더 활성화, CORS 명시적 origin만 허용 |
+| `MUSIC_DATASET_PATH` | `data/dataset.csv` | 카탈로그 CSV 경로 |
+| `MUSIC_UPLOAD_DIR` | `uploads/` | 임시 업로드 디렉토리 |
+| `MUSIC_MAX_UPLOAD_BYTES` | `26214400` (25MB) | 업로드 사이즈 한도 |
+| `MUSIC_MAX_CONCURRENT` | `4` | 동시 분석 처리 한도 (CPU 보호) |
+| `MUSIC_RATE_LIMIT_PER_MIN` | `12` | IP당 분당 요청 한도 |
+| `MUSIC_ALLOWED_ORIGINS` | (개발: `*`, 프로덕션: 빈 문자열) | CORS 허용 출처 콤마 구분 |
+| `MUSIC_LOG_LEVEL` | `INFO` | 구조화된 JSON 로그 레벨 |
+| `PORT` | `8000` | Uvicorn 리스닝 포트 (Fly.io 등 PaaS 호환) |
+| `WEB_CONCURRENCY` | `2` | Uvicorn worker 개수 (Docker) |
+
+---
+
+## 🧪 테스트 & 품질
+
+```bash
+# 전체 테스트
+pytest -q
+
+# lint
+ruff check backend tests scripts
+
+# 커버리지
+pytest --cov=backend --cov-report=html
+```
+
+총 **31개** pytest 케이스가 다음을 검증합니다:
+- 오디오 특성 추출 (실제 librosa 호출, 짧은 클립, 빈 파일 거부)
+- 유사도 엔진 (랭킹, 단일 row 시나리오, NaN/Inf/zero-variance 안전 처리)
+- 이유 엔진 (한국어 조사 정확도, 음수 mfcc 처리, JSON 직렬화 안전성)
+- FastAPI 엔드포인트 (security headers, request_id, magic-byte 검증, rate-limit, 정상 흐름, 임시 파일 정리)
+
+CI는 Python 3.11 + 3.12 매트릭스로 동일 테스트 + ruff + Docker build를 매 PR마다 실행합니다.
 
 ---
 
@@ -137,42 +166,28 @@ python preview_server.py 8765
 ```bash
 curl -X POST http://localhost:8000/api/analyze \
   -F "file=@./my_song.wav" \
-  "&top_n=5"
+  "?top_n=5"
 ```
 
-**응답 예시**
-
+응답 일부:
 ```json
 {
+  "request_id": "f3a9...",
   "filename": "my_song.wav",
-  "summary": {
-    "tempo_bpm": 128.0,
-    "energy_rms": 0.3142,
-    "brightness": 3120.5,
-    "noisiness": 0.115,
-    "harmony_ratio": 0.92,
-    "chroma": 0.412
-  },
+  "summary": { "tempo_bpm": 128.0, "brightness": 3120.5, "...": "..." },
   "results": [
     {
       "rank": 1,
       "title": "Invincible",
       "artist": "DEAF KEV",
-      "similarity": 0.9123,
       "similarity_percent": 91.2,
-      "youtube_search_url": "https://www.youtube.com/results?search_query=Invincible+DEAF+KEV",
-      "spotify_search_url": "https://open.spotify.com/search/Invincible%20DEAF%20KEV",
+      "match_summary": { "tempo_bpm": 130.5, "...": "..." },
+      "youtube_search_url": "https://...",
+      "spotify_search_url": "https://...",
       "reason": {
-        "summary": "두 곡은 **템포 & 리듬** 측면이 특히 닮았고, 전반적인 청각적 인상이 비슷합니다.",
+        "summary": "두 곡은 **템포 & 리듬** 측면이 닮았습니다.",
         "groups": [
-          {
-            "label": "템포 & 리듬",
-            "match_score": 0.94,
-            "summary": "템포 & 리듬 측면에서 매우 닮은 특성을 보입니다.",
-            "detail": [
-              "템포: 업로드한 곡 128.00BPM · 매칭된 곡 130.50BPM (비슷한 값)"
-            ]
-          }
+          { "label": "템포 & 리듬", "match_score": 0.96, "summary": "...", "detail": ["..."] }
         ]
       }
     }
@@ -182,25 +197,33 @@ curl -X POST http://localhost:8000/api/analyze \
 }
 ```
 
-### `GET /api/catalog`
+| 엔드포인트 | 설명 |
+| --- | --- |
+| `GET /api/health` | 라이브니스 — 카탈로그 사이즈 + 환경 + 버전 |
+| `GET /api/catalog` | 카탈로그 크기 + 사용 중인 특성 컬럼 |
+| `POST /api/analyze` | 음원 업로드 + 유사도 분석 (`top_n`은 1~20) |
 
-```json
-{
-  "catalog_size": 1006,
-  "feature_count": 57,
-  "features": ["rms_mean", "rms_var", "bpm", ...]
-}
-```
+모든 응답은 `X-Request-ID` 헤더를 포함하며 클라이언트가 보낸 헤더를 우선합니다.
 
-### `GET /api/health`
+---
 
-라이브니스 프로브용 — 카탈로그 사이즈와 OK 상태만 돌려줍니다.
+## 🔒 보안 / 개인정보
+
+- **TLS 권장** — 프로덕션 배포 시 nginx/Cloudflare 등으로 HTTPS 종단
+- **HSTS · CSP · X-Frame-Options · Referrer-Policy · Permissions-Policy** 모두 자동 적용
+- **CSP** — `default-src 'self'` 기본, 폰트 CDN만 명시 허용
+- **업로드 검증** — 확장자 + magic byte + content-length pre-flight + 25MB 캡
+- **CORS** — 프로덕션 기본 비활성화(`MUSIC_ALLOWED_ORIGINS=""`); 와일드카드와 credentials 조합 금지
+- **자동 삭제** — 업로드된 음원은 분석 종료 즉시 디스크에서 삭제(`finally` + `BackgroundTasks`)
+- **Non-root container** — Docker 이미지는 `uid 1001`로 실행
+- **Rate limit** — IP별 분당 12회 기본 (환경변수로 조절)
+- **카탈로그에 학습되지 않습니다** — 사용자 음원은 모델에도 카탈로그에도 들어가지 않음
 
 ---
 
 ## 🧰 카탈로그 다시 만들기
 
-사용자가 가지고 있는 .wav/.mp3 폴더로 카탈로그를 다시 빌드하고 싶다면:
+자신의 음원 폴더로 카탈로그를 다시 빌드:
 
 ```bash
 python scripts/rebuild_dataset.py \
@@ -212,64 +235,50 @@ python scripts/rebuild_dataset.py \
 
 ---
 
-## 🛠️ 기술 스택
-
-| 영역 | 라이브러리 |
-| --- | --- |
-| 백엔드 | **FastAPI** · uvicorn · python-multipart |
-| 머신러닝 | **scikit-learn** (StandardScaler · cosine_similarity) |
-| 오디오 | **librosa** (STFT · MFCC · HPSS · beat track) |
-| 데이터 | numpy · pandas |
-| 프론트엔드 | 순수 HTML/CSS/JS (빌드 스텝 없음), Pretendard · Inter · JetBrains Mono |
-| 컨테이너 | Docker · docker-compose |
-
----
-
 ## 📂 디렉토리 구조
 
 ```
 music_similarity/
-├── backend/
-│   ├── __init__.py
-│   ├── audio_features.py       # librosa 특성 추출
-│   ├── similarity.py           # sklearn 유사도 엔진
-│   ├── reason_engine.py        # 한국어 설명 생성
-│   └── main.py                 # FastAPI 엔트리포인트
-├── frontend/
+├── backend/                  # FastAPI app
+│   ├── audio_features.py
+│   ├── similarity.py
+│   ├── reason_engine.py
+│   └── main.py
+├── frontend/                 # vanilla SPA
 │   ├── index.html
 │   ├── css/style.css
-│   ├── js/app.js
+│   ├── js/
+│   │   ├── app.js
+│   │   ├── i18n.js
+│   │   └── visualizers.js
 │   └── assets/favicon.svg
-├── data/
-│   └── dataset.csv             # 사전 추출된 카탈로그
+├── data/dataset.csv
+├── tests/                    # pytest suite
+│   ├── conftest.py
+│   ├── test_audio_features.py
+│   ├── test_similarity.py
+│   ├── test_reason_engine.py
+│   └── test_api.py
 ├── scripts/
-│   ├── dev.sh                  # Linux/macOS 개발 실행 스크립트
-│   ├── dev.ps1                 # Windows PowerShell 개발 스크립트
-│   └── rebuild_dataset.py      # 카탈로그 재생성
-├── uploads/                    # 업로드 임시 폴더 (자동 정리)
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── README.md
+│   ├── dev.sh · dev.ps1
+│   └── rebuild_dataset.py
+├── .github/workflows/ci.yml
+├── render.yaml · fly.toml
+├── Dockerfile · docker-compose.yml
+├── pyproject.toml
+└── requirements.txt · requirements-dev.txt
 ```
 
 ---
 
-## 🔒 개인정보 & 보안
+## 🗺️ 향후 로드맵 아이디어
 
-* 업로드된 음원은 **분석 종료 즉시 삭제**되며, 카탈로그에 추가/학습되지 않습니다.
-* 파일 사이즈는 25MB로 제한되어 있고, 허용 확장자는 `.wav .mp3 .flac .ogg .m4a` 입니다.
-* 외부에 노출할 때는 nginx 등 리버스 프록시 뒤에 두고 HTTPS를 사용하는 것을 권장합니다.
-
----
-
-## 🗺️ 향후 개선 아이디어
-
-* 결과 카드에 30초 미리듣기(스트리밍 + 오디오 비주얼라이저)
-* Annoy/FAISS 기반 ANN 검색으로 대규모 카탈로그 지원
-* 사용자 직접 카탈로그 업로드(관리자 페이지)
-* 장르 다중 분류(예: trap / EDM / classical)와 유사도 함께 표기
-* 다국어(EN/JP) 지원
+- [ ] Annoy/FAISS 기반 ANN 검색으로 10만곡+ 카탈로그 지원
+- [ ] 30초 미리듣기 (Spotify oEmbed) 직접 임베드
+- [ ] 사용자 직접 카탈로그 업로드(관리자 페이지)
+- [ ] 다국어 추가 (JA / ZH)
+- [ ] PWA · 오프라인 캐시
+- [ ] WebSocket 기반 실시간 진행률 (큰 파일용)
 
 ---
 
@@ -277,8 +286,8 @@ music_similarity/
 
 MIT License. 자유롭게 포크 후 사용하세요.
 
-원작 캡스톤 데이터셋과 코드는 [easygap/capstone_music](https://github.com/easygap/capstone_music)
-에서 확인할 수 있습니다.
+원작 캡스톤 데이터셋과 코드는
+[easygap/capstone_music](https://github.com/easygap/capstone_music) 에서 확인할 수 있습니다.
 
 ---
 

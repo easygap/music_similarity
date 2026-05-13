@@ -17,7 +17,6 @@ import argparse
 import csv
 import sys
 from pathlib import Path
-from typing import List
 
 # Allow `python scripts/rebuild_dataset.py` from repo root.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -49,7 +48,7 @@ def main() -> int:
         return 1
 
     exts = {e.lower() for e in args.extensions}
-    files: List[Path] = sorted(
+    files: list[Path] = sorted(
         p for p in audio_dir.iterdir() if p.is_file() and p.suffix.lower() in exts
     )
     if not files:

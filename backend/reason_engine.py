@@ -12,12 +12,10 @@ translated into musical concepts the user can actually picture.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
-
 
 # Feature -> (human label, unit, friendly explanation template)
 # The template receives `q` (query value) and `c` (catalog value).
-FEATURE_LABELS: Dict[str, Tuple[str, str]] = {
+FEATURE_LABELS: dict[str, tuple[str, str]] = {
     "bpm": ("템포", "BPM"),
     "rms_mean": ("평균 음량(에너지)", ""),
     "rms_var": ("음량 변화", ""),
@@ -38,7 +36,7 @@ FEATURE_LABELS: Dict[str, Tuple[str, str]] = {
 }
 
 # Group features into musical concepts so we summarise rather than dump 58 lines.
-FEATURE_GROUPS: Dict[str, List[str]] = {
+FEATURE_GROUPS: dict[str, list[str]] = {
     "템포 & 리듬": ["bpm", "rms_mean", "rms_var"],
     "음색 (밝기)": [
         "spectral_centroid_mean",
@@ -71,16 +69,16 @@ class ReasonGroup:
     label: str
     match_score: float          # 0..1, 1 = very close on this concept
     summary: str                # short sentence the UI shows
-    detail: List[str]           # per-feature bullet points
+    detail: list[str]           # per-feature bullet points
 
 
 @dataclass
 class ReasonReport:
     summary: str                # 1–2 sentence top-level explanation
-    groups: List[ReasonGroup]   # ranked best-matching musical concepts
+    groups: list[ReasonGroup]   # ranked best-matching musical concepts
 
 
-def _concept_score(distances: Dict[str, float], cols: List[str]) -> float:
+def _concept_score(distances: dict[str, float], cols: list[str]) -> float:
     """Average scaled distance over the concept's columns -> closeness score.
 
     Distances are in z-score units; a distance of 0 means the two songs are
@@ -126,9 +124,21 @@ def _phrase_compare(query: float, catalog: float, label: str, unit: str) -> str:
     """Return a short Korean sentence comparing two raw feature values."""
     if abs(query - catalog) < 1e-9:
         return f"{label}{_i_ga(label)} 거의 동일합니다 ({query:.2f}{unit})."
-    higher, lower = (query, catalog) if query > catalog else (catalog, query)
-    ratio = higher / (lower + 1e-9) if lower != 0 else float("inf")
-    closeness = "비슷한" if ratio < 1.2 else "유사한 범위의"
+    # Use absolute values for ratio so negative-valued features (e.g. mfcc
+    # means, harmony_mean) don't produce misleading "ratio" interpretations.
+    abs_q, abs_c = abs(query), abs(catalog)
+    higher, lower = (abs_q, abs_c) if abs_q > abs_c else (abs_c, abs_q)
+    if lower < 1e-9:
+        # Both effectively zero on the magnitude axis — fall through to "비슷한 값".
+        ratio = 1.0
+    else:
+        ratio = higher / lower
+    if ratio < 1.2:
+        closeness = "비슷한"
+    elif ratio < 2.0:
+        closeness = "유사한 범위의"
+    else:
+        closeness = "어느 정도 떨어진"
     return (
         f"{label}: 업로드한 곡 {query:.2f}{unit} · 매칭된 곡 {catalog:.2f}{unit} "
         f"({closeness} 값)"
@@ -136,9 +146,9 @@ def _phrase_compare(query: float, catalog: float, label: str, unit: str) -> str:
 
 
 def explain_match(
-    query_raw: Dict[str, float],
-    catalog_raw: Dict[str, float],
-    distances_scaled: Dict[str, float],
+    query_raw: dict[str, float],
+    catalog_raw: dict[str, float],
+    distances_scaled: dict[str, float],
     *,
     top_groups: int = 3,
     top_detail_per_group: int = 2,
@@ -149,7 +159,7 @@ def explain_match(
     StandardScaler space — small values mean the two songs are close on
     that feature.
     """
-    group_scores: List[ReasonGroup] = []
+    group_scores: list[ReasonGroup] = []
     for group_label, cols in FEATURE_GROUPS.items():
         score = _concept_score(distances_scaled, cols)
 
@@ -157,7 +167,7 @@ def explain_match(
         eligible = [(c, distances_scaled.get(c, float("inf"))) for c in cols]
         eligible.sort(key=lambda x: x[1])
 
-        detail_lines: List[str] = []
+        detail_lines: list[str] = []
         for col, _d in eligible[:top_detail_per_group]:
             if col in query_raw and col in catalog_raw and col in FEATURE_LABELS:
                 label, unit = FEATURE_LABELS[col]
@@ -215,7 +225,7 @@ def _group_summary(label: str, score: float) -> str:
     return f"{label} 측면에서 {adv} 특성을 보입니다."
 
 
-def report_to_dict(report: ReasonReport) -> Dict:
+def report_to_dict(report: ReasonReport) -> dict:
     return {
         "summary": report.summary,
         "groups": [

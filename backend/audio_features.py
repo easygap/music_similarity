@@ -7,13 +7,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List
 
 import librosa
 import numpy as np
 
-
-FEATURE_COLUMNS: List[str] = [
+FEATURE_COLUMNS: list[str] = [
     "length",
     "rms_mean",
     "rms_var",
@@ -41,9 +39,9 @@ for _i in range(1, 21):
 @dataclass
 class AudioFeatureVector:
     name: str
-    values: Dict[str, float] = field(default_factory=dict)
+    values: dict[str, float] = field(default_factory=dict)
 
-    def to_ordered_list(self) -> List[float]:
+    def to_ordered_list(self) -> list[float]:
         return [self.values[c] for c in FEATURE_COLUMNS]
 
 
@@ -61,9 +59,14 @@ def extract_features(audio_path: str | Path, *, max_duration: float = 30.0) -> A
 
     rms = librosa.feature.rms(y=y)
     try:
-        bpm, _ = librosa.beat.beat_track(y=y, sr=sr)
-    except Exception:
-        bpm = 0.0
+        bpm_raw, _ = librosa.beat.beat_track(y=y, sr=sr)
+        # librosa >=0.10 returns a numpy array, older versions a scalar.
+        bpm_val = float(np.atleast_1d(bpm_raw)[0])
+        if not np.isfinite(bpm_val) or bpm_val <= 0:
+            bpm_val = 0.0
+    except (ValueError, RuntimeError):
+        bpm_val = 0.0
+    bpm = bpm_val
     zero_crossings = librosa.zero_crossings(y, pad=False).astype(np.float32)
     harm, perc = librosa.effects.hpss(y)
     spec = librosa.feature.spectral_centroid(y=y, sr=sr)
@@ -72,11 +75,11 @@ def extract_features(audio_path: str | Path, *, max_duration: float = 30.0) -> A
     chroma = librosa.feature.chroma_stft(y=y, sr=sr)
     mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20)
 
-    values: Dict[str, float] = {
+    values: dict[str, float] = {
         "length": float(len(y)),
         "rms_mean": float(np.mean(rms)),
         "rms_var": float(np.var(rms)),
-        "bpm": float(bpm if np.isscalar(bpm) else np.atleast_1d(bpm)[0]),
+        "bpm": bpm,
         "zero_crossing_rate_mean": float(np.mean(zero_crossings)),
         "zero_crossing_rate_var": float(np.var(zero_crossings)),
         "harmony_mean": float(np.mean(harm)),
@@ -100,16 +103,28 @@ def extract_features(audio_path: str | Path, *, max_duration: float = 30.0) -> A
     return AudioFeatureVector(name=audio_path.stem, values=values)
 
 
-def summary_metrics(features: AudioFeatureVector) -> Dict[str, float]:
-    """A small human-friendly summary used by the frontend for the radar chart."""
+def summary_metrics(features: AudioFeatureVector) -> dict[str, float]:
+    """A small human-friendly summary used by the frontend for the radar chart.
+
+    Resilient to missing keys (returns 0.0 for any field the catalog row
+    happens to lack) so this can be reused for both fresh queries and
+    pre-extracted catalog rows.
+    """
     v = features.values
+
+    def _get(key: str) -> float:
+        try:
+            val = float(v.get(key, 0.0))
+        except (TypeError, ValueError):
+            return 0.0
+        return val if np.isfinite(val) else 0.0
+
+    perc = abs(_get("percussive_mean"))
     return {
-        "tempo_bpm": round(v["bpm"], 1),
-        "energy_rms": round(v["rms_mean"], 4),
-        "brightness": round(v["spectral_centroid_mean"], 1),
-        "noisiness": round(v["zero_crossing_rate_mean"], 4),
-        "harmony_ratio": round(
-            abs(v["harmony_mean"]) / (abs(v["percussive_mean"]) + 1e-9), 2
-        ),
-        "chroma": round(v["chroma_frequencies_mean"], 4),
+        "tempo_bpm": round(_get("bpm"), 1),
+        "energy_rms": round(_get("rms_mean"), 4),
+        "brightness": round(_get("spectral_centroid_mean"), 1),
+        "noisiness": round(_get("zero_crossing_rate_mean"), 4),
+        "harmony_ratio": round(abs(_get("harmony_mean")) / (perc + 1e-9), 2),
+        "chroma": round(_get("chroma_frequencies_mean"), 4),
     }

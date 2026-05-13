@@ -38,6 +38,10 @@ SAMPLE_RESULTS = {
             "similarity_percent": 94.1,
             "youtube_search_url": "https://www.youtube.com/results?search_query=Invincible+DEAF+KEV",
             "spotify_search_url": "https://open.spotify.com/search/Invincible%20DEAF%20KEV",
+            "match_summary": {
+                "tempo_bpm": 130.5, "energy_rms": 0.30, "brightness": 3150.1,
+                "noisiness": 0.118, "harmony_ratio": 0.88, "chroma": 0.40,
+            },
             "reason": {
                 "summary": "두 곡은 **템포 & 리듬** 측면이 특히 닮았고, 전반적인 청각적 인상이 비슷합니다.",
                 "groups": [
@@ -77,6 +81,10 @@ SAMPLE_RESULTS = {
             "similarity_percent": 88.4,
             "youtube_search_url": "https://www.youtube.com/results?search_query=Heroes+Tonight+Janji",
             "spotify_search_url": "https://open.spotify.com/search/Heroes%20Tonight%20Janji",
+            "match_summary": {
+                "tempo_bpm": 132.0, "energy_rms": 0.34, "brightness": 3080.2,
+                "noisiness": 0.122, "harmony_ratio": 0.95, "chroma": 0.42,
+            },
             "reason": {
                 "summary": "두 곡은 **음색 (밝기)** 측면이 특히 닮았고, 전반적인 청각적 인상이 비슷합니다.",
                 "groups": [
@@ -107,6 +115,10 @@ SAMPLE_RESULTS = {
             "similarity_percent": 81.2,
             "youtube_search_url": "https://www.youtube.com/results?search_query=Make+Me+Move+Culture+Code",
             "spotify_search_url": "https://open.spotify.com/search/Make%20Me%20Move%20Culture%20Code",
+            "match_summary": {
+                "tempo_bpm": 95.7, "energy_rms": 0.24, "brightness": 2780.0,
+                "noisiness": 0.118, "harmony_ratio": 0.58, "chroma": 0.34,
+            },
             "reason": {
                 "summary": "두 곡은 **거친 질감 & 노이즈** 측면이 특히 닮았고, 전반적인 청각적 인상이 비슷합니다.",
                 "groups": [
@@ -143,6 +155,8 @@ class PreviewHandler(SimpleHTTPRequestHandler):
     PATH_ALIASES = {
         "/style.css": "/css/style.css",
         "/app.js": "/js/app.js",
+        "/i18n.js": "/js/i18n.js",
+        "/visualizers.js": "/js/visualizers.js",
         "/favicon.svg": "/assets/favicon.svg",
     }
 

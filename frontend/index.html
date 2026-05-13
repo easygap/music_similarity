@@ -1,10 +1,17 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="음악을 업로드하면 sklearn 코사인 유사도로 가장 닮은 곡을 찾아주고, 왜 닮았는지까지 설명해주는 AI 음악 유사도 서비스." />
+  <meta name="description" content="음악을 업로드하면 sklearn 코사인 유사도로 가장 닮은 곡을 찾아주고, 왜 닮았는지까지 설명해주는 AI 음악 유사도 분석 서비스." />
   <meta name="theme-color" content="#0b0b18" />
+
+  <!-- OpenGraph / Twitter -->
+  <meta property="og:title" content="SoundMatch · AI 음악 유사도 분석" />
+  <meta property="og:description" content="업로드한 음악과 가장 닮은 곡을 sklearn + librosa 기반으로 찾아주고, 닮은 이유까지 설명합니다." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://github.com/easygap/music_similarity" />
+  <meta name="twitter:card" content="summary_large_image" />
 
   <title>SoundMatch · AI 음악 유사도 분석</title>
 
@@ -12,14 +19,35 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Pretendard:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet"
   />
+  <!-- Pretendard via the official CDN; Inter is the fallback. -->
+  <link
+    rel="stylesheet"
+    as="style"
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+  />
   <link rel="stylesheet" href="/style.css" />
+
+  <!-- Prevent flash of wrong theme. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("soundmatch.theme");
+        if (!t) {
+          t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
   <!-- Animated background ---------------------------------------- -->
-  <div class="bg-canvas">
+  <div class="bg-canvas" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
@@ -43,25 +71,30 @@
       </svg>
       <span>SoundMatch</span>
     </a>
-    <nav class="site-nav-links">
-      <a href="#how">사용법</a>
-      <a href="#features">기능</a>
-      <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener">GitHub</a>
+    <nav class="site-nav-links" aria-label="Primary">
+      <a href="#how" data-i18n="nav.how">사용법</a>
+      <a href="#features" data-i18n="nav.features">기능</a>
+      <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="nav.github">GitHub</a>
+      <button type="button" class="icon-btn" id="theme-toggle" aria-label="Toggle theme" data-i18n-attr="aria-label:controls.themeToggle">
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 13a8 8 0 0 1-10-10 8.5 8.5 0 1 0 10 10z" fill="currentColor"/></svg>
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/></g></svg>
+      </button>
+      <button type="button" class="ghost-pill" id="lang-toggle" data-i18n="controls.langToggle">Language: English</button>
     </nav>
   </header>
 
   <!-- Hero -------------------------------------------------------- -->
-  <main>
+  <main id="main">
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">
-          <span class="dot"></span> Sklearn · librosa · FastAPI
+          <span class="dot" aria-hidden="true"></span>
+          <span data-i18n="hero.eyebrow">Sklearn · librosa · FastAPI · WebAudio</span>
         </p>
-        <h1>
-          업로드한 음악과 <span class="grad">가장 닮은 곡</span>을<br/>
-          AI가 찾아드립니다.
+        <h1 data-i18n="hero.title" data-i18n-html>
+          업로드한 음악과 <span class="grad">가장 닮은 곡</span>을<br/>AI가 찾아드립니다.
         </h1>
-        <p class="lede">
+        <p class="lede" data-i18n="hero.lede" data-i18n-html>
           파일 하나만 올리면 60초 안에 끝납니다.
           음색·템포·리듬·MFCC 등 <strong>58가지 오디오 특성</strong>을 추출해
           코사인 유사도로 가장 닮은 곡 순위와 <strong>닮은 이유</strong>를 알려드려요.
@@ -70,39 +103,41 @@
         <div class="hero-stats">
           <div class="stat">
             <strong id="stat-catalog">…</strong>
-            <span>분석 가능한 곡</span>
+            <span data-i18n="hero.statCatalogLabel">분석 가능한 곡</span>
           </div>
           <div class="stat">
             <strong>58</strong>
-            <span>추출 특성 수</span>
+            <span data-i18n="hero.statFeaturesLabel">추출 특성 수</span>
           </div>
           <div class="stat">
             <strong>~5s</strong>
-            <span>평균 분석 시간</span>
+            <span data-i18n="hero.statTimeLabel">평균 분석 시간</span>
           </div>
         </div>
       </div>
 
       <!-- Upload card --------------------------------------------- -->
-      <form id="upload-form" class="upload-card" autocomplete="off">
-        <h2>지금 분석해보기</h2>
-        <p class="upload-sub">.mp3 · .wav · .flac · .ogg · .m4a (25MB 이하)</p>
+      <form id="upload-form" class="upload-card" autocomplete="off" novalidate>
+        <h2 data-i18n="upload.title">지금 분석해보기</h2>
+        <p class="upload-sub" data-i18n="upload.subtitle">.mp3 · .wav · .flac · .ogg · .m4a (25MB 이하)</p>
 
-        <label class="dropzone" id="dropzone">
-          <input type="file" id="file-input" accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a" />
+        <label class="dropzone" id="dropzone" tabindex="0">
+          <input type="file" id="file-input" accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a"
+                 aria-describedby="dropzone-hint" />
           <div class="dropzone-inner">
             <svg class="dropzone-icon" viewBox="0 0 48 48" aria-hidden="true">
               <path d="M24 30V10m0 0l-7 7m7-7l7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
               <rect x="8" y="32" width="32" height="8" rx="3" stroke="currentColor" stroke-width="2.4" fill="none"/>
             </svg>
-            <p class="dropzone-title">음악 파일을 여기에 드래그하거나 클릭</p>
-            <p class="dropzone-hint" id="filename-display">최대 30초가 분석에 사용됩니다.</p>
+            <p class="dropzone-title" data-i18n="upload.dropTitle">음악 파일을 여기에 드래그하거나 클릭</p>
+            <p class="dropzone-hint" id="filename-display" data-i18n="upload.dropHint">최대 30초가 분석에 사용됩니다.</p>
           </div>
         </label>
+        <p class="dropzone-error hidden" id="dropzone-error" role="alert"></p>
 
         <div class="form-row">
           <label class="select-wrap">
-            <span>찾을 곡 수</span>
+            <span data-i18n="upload.topNLabel">찾을 곡 수</span>
             <select id="top-n">
               <option value="3">상위 3곡</option>
               <option value="5" selected>상위 5곡</option>
@@ -110,121 +145,164 @@
             </select>
           </label>
           <button type="submit" class="cta" id="analyze-btn" disabled>
-            <span class="cta-label">유사한 곡 찾기</span>
+            <span class="cta-label" data-i18n="upload.submit">유사한 곡 찾기</span>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M5 12h14m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
 
-        <p class="upload-foot">
+        <p class="upload-foot" data-i18n="upload.privacy">
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="lock-icon"><path d="M7 11V8a5 5 0 0 1 10 0v3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
           업로드된 음원은 분석이 끝나는 즉시 서버에서 자동 삭제됩니다.
         </p>
       </form>
     </section>
 
     <!-- Loading state ----------------------------------------------- -->
-    <section id="loading" class="card loading-card hidden" aria-live="polite">
-      <div class="loading-bars">
+    <section id="loading" class="card loading-card hidden" aria-live="polite" role="status">
+      <span class="sr-only" data-i18n="loading.title">오디오 특성을 추출하는 중…</span>
+      <div class="loading-bars" aria-hidden="true">
         <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
-      <p class="loading-title">오디오 특성을 추출하는 중…</p>
+      <p class="loading-title" data-i18n="loading.title">오디오 특성을 추출하는 중…</p>
       <p class="loading-sub" id="loading-step">librosa · STFT · MFCC · 코사인 유사도</p>
+      <p class="loading-elapsed" id="loading-elapsed"></p>
     </section>
 
     <!-- Error state ------------------------------------------------- -->
     <section id="error" class="card error-card hidden" role="alert">
-      <strong>분석에 실패했습니다.</strong>
+      <strong data-i18n="error.title">분석에 실패했습니다.</strong>
       <p id="error-message"></p>
+      <button type="button" class="ghost" id="error-retry" data-i18n="error.retry">다시 시도</button>
     </section>
 
     <!-- Results ----------------------------------------------------- -->
-    <section id="results" class="results hidden">
+    <section id="results" class="results hidden" aria-live="polite">
       <header class="results-header">
         <div>
-          <h2>분석 결과</h2>
-          <p id="results-subtitle">업로드된 곡의 오디오 지문을 카탈로그와 비교했습니다.</p>
+          <h2 data-i18n="results.title">분석 결과</h2>
+          <p id="results-subtitle"></p>
         </div>
-        <button type="button" class="ghost" id="reset-btn">새 음악 분석</button>
+        <div class="results-actions">
+          <button type="button" class="ghost" id="copy-link-btn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+            <span data-i18n="results.copyLink">링크 복사</span>
+          </button>
+          <button type="button" class="ghost" id="export-json-btn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 18h16" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="results.exportJson">JSON 다운로드</span>
+          </button>
+          <button type="button" class="ghost" id="reset-btn" data-i18n="results.newAnalysis">새 음악 분석</button>
+        </div>
       </header>
 
-      <!-- Uploaded-file audio preview ------------------------------------- -->
+      <!-- Uploaded-file audio preview with waveform ---------------- -->
       <div class="audio-player card hidden" id="audio-player">
-        <div class="audio-player-meta">
-          <div class="audio-player-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="18" cy="16" r="3" fill="currentColor"/></svg>
+        <div class="audio-player-head">
+          <div class="audio-player-meta">
+            <div class="audio-player-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="18" cy="16" r="3" fill="currentColor"/></svg>
+            </div>
+            <div>
+              <p class="audio-player-title" id="audio-player-title" data-i18n="results.uploadedTrackTitle">업로드한 음원</p>
+              <p class="audio-player-sub" data-i18n="results.uploadedTrackSub">분석에 사용된 첫 30초가 동일하게 재생됩니다.</p>
+            </div>
           </div>
-          <div>
-            <p class="audio-player-title" id="audio-player-title">업로드한 음원</p>
-            <p class="audio-player-sub">분석에 사용된 첫 30초가 동일하게 재생됩니다.</p>
+          <div class="audio-player-controls">
+            <button type="button" class="play-btn" id="play-btn" aria-label="Play / pause">
+              <svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
+              <svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/></svg>
+            </button>
+            <span class="audio-time" id="audio-time">0:00 / 0:00</span>
           </div>
         </div>
-        <audio id="audio-preview" controls preload="metadata"></audio>
+        <canvas id="waveform" class="waveform" aria-hidden="true" height="72"></canvas>
+        <audio id="audio-preview" preload="metadata"></audio>
       </div>
 
       <div class="audio-summary card" id="audio-summary"></div>
 
+      <div class="radar-card card hidden" id="radar-card">
+        <header class="radar-head">
+          <h3 data-i18n="results.radarTitle">오디오 지문 비교 (1위 매칭과)</h3>
+          <ul class="radar-legend">
+            <li><span class="legend-swatch swatch-query"></span><span data-i18n="results.radarLegendQuery">업로드한 곡</span></li>
+            <li><span class="legend-swatch swatch-match"></span><span data-i18n="results.radarLegendMatch">Top 1 매칭</span></li>
+          </ul>
+        </header>
+        <div class="radar-host" id="radar-host"></div>
+      </div>
+
       <ol class="hit-list" id="hit-list"></ol>
     </section>
 
+    <!-- History sidebar --------------------------------------------- -->
+    <aside class="history hidden" id="history">
+      <header class="history-head">
+        <h3 data-i18n="history.title">최근 분석</h3>
+        <button type="button" class="link-ghost" id="history-clear" data-i18n="history.clear">기록 지우기</button>
+      </header>
+      <ol class="history-list" id="history-list"></ol>
+    </aside>
+
     <!-- How-it-works ----------------------------------------------- -->
     <section id="how" class="info">
-      <h2 class="info-title">어떻게 동작하나요?</h2>
+      <h2 class="info-title" data-i18n="info.howTitle">어떻게 동작하나요?</h2>
       <div class="info-grid">
         <div class="info-card">
           <span class="info-step">01</span>
-          <h3>오디오 특성 추출</h3>
-          <p>librosa가 업로드된 곡에서 RMS 에너지, BPM, 스펙트럴 센트로이드,
-          제로 크로싱, 크로마, 20차원 MFCC 등 <strong>58개 특성</strong>을 뽑아냅니다.</p>
+          <h3 data-i18n="info.step1Title">오디오 특성 추출</h3>
+          <p data-i18n="info.step1Body" data-i18n-html>librosa가 업로드된 곡에서 RMS 에너지, BPM, 스펙트럴 센트로이드, 제로 크로싱, 크로마, 20차원 MFCC 등 <strong>58개 특성</strong>을 뽑아냅니다.</p>
         </div>
         <div class="info-card">
           <span class="info-step">02</span>
-          <h3>표준화 + 코사인 유사도</h3>
-          <p>sklearn의 <code>StandardScaler</code>로 정규화한 뒤
-          <code>cosine_similarity</code>로 카탈로그 전곡과의 유사도를 계산합니다.</p>
+          <h3 data-i18n="info.step2Title">표준화 + 코사인 유사도</h3>
+          <p data-i18n="info.step2Body" data-i18n-html>sklearn의 <code>StandardScaler</code>로 정규화한 뒤 <code>cosine_similarity</code>로 카탈로그 전곡과의 유사도를 계산합니다.</p>
         </div>
         <div class="info-card">
           <span class="info-step">03</span>
-          <h3>닮은 이유 설명</h3>
-          <p>특성별 거리(z-score)를 그룹화해 <strong>음색·템포·리듬·화성</strong>
-          중 어디가 닮았는지 한국어 문장으로 풀어드립니다.</p>
+          <h3 data-i18n="info.step3Title">닮은 이유 설명</h3>
+          <p data-i18n="info.step3Body" data-i18n-html>특성별 거리(z-score)를 그룹화해 <strong>음색·템포·리듬·화성</strong> 중 어디가 닮았는지 한국어 문장으로 풀어드립니다.</p>
         </div>
       </div>
     </section>
 
     <section id="features" class="info">
-      <h2 class="info-title">SoundMatch가 분석하는 항목</h2>
+      <h2 class="info-title" data-i18n="info.featuresTitle">SoundMatch가 분석하는 항목</h2>
       <div class="feature-pills">
-        <span>템포 (BPM)</span>
-        <span>RMS 에너지</span>
-        <span>스펙트럴 센트로이드</span>
-        <span>스펙트럴 대역폭</span>
-        <span>스펙트럴 롤오프</span>
-        <span>제로 크로싱 레이트</span>
-        <span>화성 / 타악기 분리</span>
-        <span>크로마</span>
-        <span>20-MFCC</span>
-        <span>코사인 유사도</span>
+        <span>Tempo (BPM)</span>
+        <span>RMS Energy</span>
+        <span>Spectral Centroid</span>
+        <span>Spectral Bandwidth</span>
+        <span>Spectral Rolloff</span>
+        <span>Zero Crossing Rate</span>
+        <span>Harmonic / Percussive</span>
+        <span>Chroma STFT</span>
+        <span>20-dim MFCC</span>
+        <span>Cosine Similarity</span>
       </div>
     </section>
   </main>
 
   <footer class="site-foot">
-    <p>
-      © <span id="year"></span> SoundMatch · 졸업작품
-      <a href="https://github.com/easygap/capstone_music" target="_blank" rel="noopener">capstone_music</a>에서 출발한 프로젝트
-    </p>
+    <p data-i18n="footer.tagline">졸업작품에서 출발해, 시중 서비스급으로 끝까지 다듬은 프로젝트</p>
     <p class="muted">
-      서버에 음원을 영구 저장하지 않습니다. 분석 결과는 학술/취미 용도로만 사용해주세요.
+      © <span id="year"></span> SoundMatch ·
+      <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="footer.repoLink">GitHub</a>
     </p>
+    <p class="muted" data-i18n="footer.notice">서버에 음원을 영구 저장하지 않습니다.</p>
   </footer>
+
+  <!-- Toast --------------------------------------------------------- -->
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
 
   <!-- Result-card template ------------------------------------------------- -->
   <template id="hit-template">
     <li class="hit">
-      <div class="hit-rank">
+      <div class="hit-rank" aria-hidden="true">
         <span class="rank-num"></span>
-        <span class="rank-label">위</span>
+        <span class="rank-label"></span>
       </div>
       <div class="hit-body">
         <div class="hit-head">
@@ -232,12 +310,12 @@
             <h3 class="hit-title"></h3>
             <p class="hit-artist"></p>
           </div>
-          <div class="hit-percent">
+          <div class="hit-percent" aria-label="similarity">
             <span class="hit-percent-num"></span><span class="hit-percent-unit">%</span>
-            <span class="hit-percent-label">유사도</span>
+            <span class="hit-percent-label"></span>
           </div>
         </div>
-        <div class="hit-bar">
+        <div class="hit-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
           <div class="hit-bar-fill"></div>
         </div>
         <p class="hit-summary"></p>
@@ -261,6 +339,27 @@
     </li>
   </template>
 
+  <!-- Skeleton card template ------------------------------------------------ -->
+  <template id="skeleton-template">
+    <li class="hit skel">
+      <div class="hit-rank"><div class="skel-block w-30 h-30"></div></div>
+      <div class="hit-body">
+        <div class="hit-head">
+          <div>
+            <div class="skel-block w-200 h-18"></div>
+            <div class="skel-block w-140 h-14 mt-6"></div>
+          </div>
+          <div class="skel-block w-80 h-30"></div>
+        </div>
+        <div class="skel-block w-full h-6 mt-12"></div>
+        <div class="skel-block w-full h-12 mt-12"></div>
+        <div class="skel-block w-80pct h-12 mt-6"></div>
+      </div>
+    </li>
+  </template>
+
+  <script src="/i18n.js"></script>
+  <script src="/visualizers.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
