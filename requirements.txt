@@ -7,6 +7,7 @@ scikit-learn==1.4.0
 librosa==0.10.1
 soundfile==0.12.1
 audioread==3.0.1
-# librosa imports pkg_resources, which was removed from the Python 3.12
-# stdlib; pin setuptools explicitly so the package is available everywhere.
-setuptools>=68
+# librosa imports `pkg_resources`, which Python 3.12 no longer ships and
+# setuptools 81+ removed. Pin to the last release that still ships the
+# module so librosa keeps loading on every supported Python.
+setuptools>=68,<81
