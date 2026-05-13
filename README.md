@@ -117,6 +117,17 @@ docker compose up --build
 * Linux/macOS: `bash scripts/dev.sh`
 * Windows PowerShell: `pwsh scripts/dev.ps1`
 
+### 옵션 4 · 디자인만 빠르게 보기 (librosa 없이)
+
+```bash
+python preview_server.py 8765
+# http://127.0.0.1:8765
+```
+
+`preview_server.py`는 ML 의존성 없이 정적 프론트엔드만 띄우고
+`/api/analyze`에 더미 응답을 돌려줍니다. 디자인/UX 변경을 빠르게
+확인하고 싶을 때 사용하세요.
+
 ---
 
 ## 🧪 API 사용법
