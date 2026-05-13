@@ -63,6 +63,8 @@ class AnalyzeResponse(BaseModel):
     request_id: str
     filename: str
     summary: SummaryMetrics
+    # 휴리스틱 태그(예: ["빠른 템포", "에너지 폭발", "밝은 톤"]). 빈 배열 가능.
+    tags: list[str] = Field(default_factory=list)
     results: list[HitResult]
     timing: TimingInfo
     catalog_size: int

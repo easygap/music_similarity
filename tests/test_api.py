@@ -143,6 +143,51 @@ def test_offline_page(fastapi_client):
     assert "오프라인" in r.text
 
 
+def test_analyze_returns_tags(fastapi_client, tiny_wav):
+    """분석 결과에 휴리스틱 태그 배열이 포함되어야 한다."""
+    with tiny_wav.open("rb") as f:
+        r = fastapi_client.post(
+            "/api/analyze",
+            files={"file": ("tone.wav", f.read(), "audio/wav")},
+        )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert "tags" in body
+    assert isinstance(body["tags"], list)
+    # 사인파라도 RMS / spectral / zcr 은 다 0이 아니라서 최소 1개는 매핑돼야 한다.
+    assert len(body["tags"]) >= 1
+
+
+def test_rate_limit_headers_exposed(fastapi_client, tiny_wav):
+    """정상 분석 응답에 X-RateLimit-* 헤더가 붙어야 한다."""
+    with tiny_wav.open("rb") as f:
+        r = fastapi_client.post(
+            "/api/analyze",
+            files={"file": ("tone.wav", f.read(), "audio/wav")},
+        )
+    assert r.status_code == 200
+    assert r.headers.get("X-RateLimit-Limit")
+    assert r.headers.get("X-RateLimit-Remaining") is not None
+    assert r.headers.get("X-RateLimit-Reset")
+
+
+def test_metrics_endpoint(fastapi_client):
+    """/metrics 가 Prometheus exposition 형식으로 응답해야 한다."""
+    r = fastapi_client.get("/metrics")
+    assert r.status_code == 200
+    body = r.text
+    assert "soundmatch_requests_total" in body
+    assert "# HELP" in body
+    assert "# TYPE" in body
+    assert "soundmatch_catalog_size" in body
+
+
+def test_compare_page(fastapi_client):
+    r = fastapi_client.get("/compare")
+    assert r.status_code == 200
+    assert "두 곡 나란히 비교" in r.text
+
+
 def test_analyze_returns_spectrogram_svg(fastapi_client, tiny_wav):
     """정상 분석 결과에 멜 스펙트로그램 SVG 가 함께 내려와야 한다."""
     with tiny_wav.open("rb") as f:

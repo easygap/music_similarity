@@ -44,6 +44,7 @@ from .reason_engine import explain_match, report_to_dict
 from .schemas import AnalyzeResponse, CatalogResponse, HealthResponse
 from .similarity import MusicSimilarityEngine
 from .spectrogram import build_mel_spectrogram_svg
+from .tagging import derive_tags
 
 # ----------------------------------------------------------------------
 # 경로 / 설정
@@ -90,6 +91,22 @@ _rate_state: dict[str, list[float]] = {}
 _rate_lock = asyncio.Lock()
 
 logger = logging.getLogger("music_similarity")
+
+# ----------------------------------------------------------------------
+# Observability — Prometheus 호환 간단한 인-프로세스 카운터/게이지.
+# 라이브러리 의존성을 더 늘리지 않으려고 직접 작성한다.
+# (단일 워커에서만 정확하다. 여러 worker 환경에선 별도 exporter 필요.)
+# ----------------------------------------------------------------------
+_metrics_counters: dict[str, int] = {
+    "soundmatch_requests_total": 0,
+    "soundmatch_analyze_success_total": 0,
+    "soundmatch_analyze_failed_total": 0,
+    "soundmatch_rate_limited_total": 0,
+}
+
+
+def _bump(name: str, delta: int = 1) -> None:
+    _metrics_counters[name] = _metrics_counters.get(name, 0) + delta
 
 # ----------------------------------------------------------------------
 # 엔진 — CSV가 깨져 있어도 worker 시작은 살아있게 lazy 로딩한다
@@ -174,13 +191,20 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RequestLogMiddleware(BaseHTTPMiddleware):
-    """요청별로 request_id 를 부여하고 종료 후 구조화된 로그를 남긴다."""
+    """요청별로 request_id 를 부여하고 종료 후 구조화된 로그를 남긴다.
+
+    rate-limit 정보가 request.state 에 들어있으면 응답 헤더에도 전파한다.
+    """
 
     async def dispatch(self, request: Request, call_next):
         # 클라이언트가 보낸 X-Request-ID가 있으면 그대로 사용 (분산 추적용).
         request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
         request.state.request_id = request_id
         t0 = time.perf_counter()
+        # /metrics 같은 운영 경로는 카운터에 안 잡는다 (의미 없는 노이즈).
+        is_business = not request.url.path.startswith(("/metrics", "/sw.js"))
+        if is_business:
+            _bump("soundmatch_requests_total")
         try:
             response = await call_next(request)
         except Exception:  # noqa: BLE001
@@ -197,6 +221,12 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
             raise
         elapsed_ms = (time.perf_counter() - t0) * 1000
         response.headers["X-Request-ID"] = request_id
+        # rate-limit 메타데이터가 의존성에서 채워졌으면 응답에 함께 노출.
+        rl = getattr(request.state, "rate_limit", None)
+        if rl:
+            response.headers["X-RateLimit-Limit"] = str(rl["limit"])
+            response.headers["X-RateLimit-Remaining"] = str(rl["remaining"])
+            response.headers["X-RateLimit-Reset"] = str(rl["reset"])
         logger.info(
             "request_done",
             extra={
@@ -240,7 +270,12 @@ def _client_ip(request: Request) -> str:
 
 
 async def _rate_limit(request: Request) -> None:
-    """IP별 sliding-window rate limiter (RATE_LIMIT_PER_MIN / 60s)."""
+    """IP별 sliding-window rate limiter (RATE_LIMIT_PER_MIN / 60s).
+
+    제한에 안 걸린 요청에 대해서는 ``request.state.rate_limit`` 에 limit /
+    remaining / reset 정보를 채워둔다. RequestLogMiddleware 가 이걸 응답
+    헤더로 노출한다.
+    """
     ip = _client_ip(request)
     now = time.time()
     window = 60.0
@@ -251,12 +286,26 @@ async def _rate_limit(request: Request) -> None:
         history[:] = [t for t in history if t > cutoff]
         if len(history) >= RATE_LIMIT_PER_MIN:
             retry = window - (now - history[0])
+            _bump("soundmatch_rate_limited_total")
+            reset_at = int(history[0] + window)
             raise HTTPException(
                 status_code=429,
                 detail=f"요청이 너무 잦습니다. 약 {int(retry) + 1}초 뒤에 다시 시도해주세요.",
-                headers={"Retry-After": str(int(retry) + 1)},
+                headers={
+                    "Retry-After": str(int(retry) + 1),
+                    "X-RateLimit-Limit": str(RATE_LIMIT_PER_MIN),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(reset_at),
+                },
             )
         history.append(now)
+        remaining = max(0, RATE_LIMIT_PER_MIN - len(history))
+        reset_at = int((history[0] if history else now) + window)
+        request.state.rate_limit = {
+            "limit": RATE_LIMIT_PER_MIN,
+            "remaining": remaining,
+            "reset": reset_at,
+        }
 
 
 def _sniff_audio(head: bytes, ext: str) -> bool:
@@ -321,6 +370,49 @@ def catalog_info():
         "feature_count": len(eng.feature_columns),
         "features": eng.feature_columns,
     }
+
+
+@app.get(
+    "/metrics",
+    summary="Prometheus exposition (in-process counters)",
+    tags=["system"],
+    include_in_schema=False,
+)
+def metrics():
+    """Prometheus 호환 텍스트 노출. 외부 라이브러리 없이 직접 직렬화한다.
+
+    단일 worker 환경에서만 정확한 값. 다중 worker 라면 결과가 worker 별로
+    파편화되므로 push gateway 또는 statsd exporter 같은 별도 솔루션이 필요.
+    """
+    try:
+        catalog_size = get_engine().catalog_size
+    except Exception:  # noqa: BLE001
+        catalog_size = 0
+
+    lines: list[str] = []
+    # Counter 들 — 누적값, monotonic.
+    counter_help = {
+        "soundmatch_requests_total": "전체 비즈니스 HTTP 요청 수",
+        "soundmatch_analyze_success_total": "분석이 성공한 횟수",
+        "soundmatch_analyze_failed_total": "분석이 실패한 횟수 (4xx/5xx)",
+        "soundmatch_rate_limited_total": "rate limit 으로 차단된 요청 수",
+    }
+    for name, doc in counter_help.items():
+        lines.append(f"# HELP {name} {doc}")
+        lines.append(f"# TYPE {name} counter")
+        lines.append(f"{name} {_metrics_counters.get(name, 0)}")
+
+    # Gauge: 현재 카탈로그 사이즈.
+    lines.append("# HELP soundmatch_catalog_size 현재 메모리에 적재된 카탈로그 곡 수")
+    lines.append("# TYPE soundmatch_catalog_size gauge")
+    lines.append(f"soundmatch_catalog_size {catalog_size}")
+
+    body = "\n".join(lines) + "\n"
+    return Response(
+        body,
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.get(
@@ -423,6 +515,7 @@ async def analyze(
                 raise
             except (ValueError, RuntimeError) as e:
                 # 손상된 오디오/너무 짧은 파일 등에서 librosa 가 던지는 오류들.
+                _bump("soundmatch_analyze_failed_total")
                 logger.warning(
                     "feature_extraction_failed",
                     extra={"request_id": request_id, "error": str(e)},
@@ -433,6 +526,7 @@ async def analyze(
                 ) from e
             except Exception as e:  # noqa: BLE001
                 # 그 외 예외는 내부 오류로 처리. 자세한 traceback 은 서버 로그로.
+                _bump("soundmatch_analyze_failed_total")
                 logger.exception(
                     "feature_extraction_crashed",
                     extra={"request_id": request_id},
@@ -458,6 +552,7 @@ async def analyze(
             try:
                 hits, _q_scaled = await run_in_threadpool(eng.find_similar, features, top_n=top_n)
             except Exception as e:  # noqa: BLE001
+                _bump("soundmatch_analyze_failed_total")
                 logger.exception("similarity_failed", extra={"request_id": request_id})
                 raise HTTPException(
                     status_code=500, detail="유사도 계산에 실패했습니다."
@@ -519,6 +614,10 @@ async def analyze(
                 )
                 spectrogram_svg = ""
 
+            # 휴리스틱 태그 (예: 빠른 템포 / 에너지 폭발 / 밝은 톤).
+            tags = derive_tags(features)
+
+            _bump("soundmatch_analyze_success_total")
             logger.info(
                 "analyze_done",
                 extra={
@@ -530,6 +629,7 @@ async def analyze(
                     "top_sim": round(hits[0].similarity, 4) if hits else None,
                     "top_n": top_n,
                     "has_spectrogram": bool(spectrogram_svg),
+                    "tags": tags,
                 },
             )
 
@@ -538,6 +638,7 @@ async def analyze(
                     "request_id": request_id,
                     "filename": safe_name,
                     "summary": summary_metrics(features),
+                    "tags": tags,
                     "results": results,
                     "timing": {
                         "feature_extraction_seconds": round(feature_seconds, 3),
@@ -656,6 +757,11 @@ if FRONTEND_DIR.exists():
     def terms_page():
         """이용 약관."""
         return _cached_file_response(FRONTEND_DIR / "terms.html")
+
+    @app.get("/compare", include_in_schema=False)
+    def compare_page():
+        """두 분석 결과를 나란히 비교하는 페이지. 데이터는 localStorage 히스토리에서."""
+        return _cached_file_response(FRONTEND_DIR / "compare.html")
 
     @app.get("/robots.txt", include_in_schema=False)
     def robots():

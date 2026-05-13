@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>두 곡 비교 · SoundMatch</title>
+  <meta name="description" content="히스토리에 저장된 두 분석 결과를 나란히 놓고 메트릭과 매칭을 비교합니다." />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/style.css" />
+  <script>
+    try {
+      var t = localStorage.getItem("soundmatch.theme")
+        || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
+  <style>
+    .compare-wrap { max-width: 1100px; margin: 0 auto; padding: 56px 24px 120px; }
+    .compare-head { margin-bottom: 24px; }
+    .compare-head h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.02em; }
+    .compare-head p { margin: 0; color: var(--text-mute); }
+    .picker-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 24px 0 18px;
+    }
+    .picker {
+      background: var(--panel);
+      border: 1px solid var(--border-strong);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .picker label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-mute);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .picker select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='white' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+    :root[data-theme="light"] .picker select {
+      background-color: white;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%230f172a' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+    }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .compare-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px;
+    }
+    .compare-filename { font-weight: 700; font-size: 18px; margin: 0 0 10px; word-break: break-all; }
+    .compare-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .compare-tag {
+      background: rgba(124, 92, 255, 0.18);
+      border: 1px solid rgba(124, 92, 255, 0.4);
+      color: #d3c8ff;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+    :root[data-theme="light"] .compare-tag { color: #4c2bd6; }
+    .compare-metric {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 14px;
+    }
+    .compare-metric:last-of-type { border-bottom: none; }
+    .compare-metric-key { color: var(--text-mute); }
+    .compare-metric-val { font-weight: 600; }
+    .compare-top {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .compare-top-label { color: var(--text-mute); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .compare-top-title { margin: 4px 0 0; font-weight: 600; }
+    .compare-top-percent {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      color: var(--accent-2);
+    }
+    .compare-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--text-mute);
+      padding: 60px 20px;
+    }
+    .compare-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-mute);
+      font-size: 13.5px;
+      margin-bottom: 16px;
+    }
+    .compare-back:hover { color: var(--text); }
+    .delta-up { color: #f87171; }
+    .delta-down { color: #34d399; }
+    .delta-flat { color: var(--text-mute); }
+
+    @media (max-width: 760px) {
+      .picker-row, .compare-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="noise"></div>
+  </div>
+
+  <main class="compare-wrap">
+    <a class="compare-back" href="/">← 메인으로</a>
+    <header class="compare-head">
+      <h1>두 곡 나란히 비교하기</h1>
+      <p>최근 분석한 곡 중 두 개를 골라서 메트릭과 1위 매칭을 한 눈에 비교해보세요.</p>
+    </header>
+
+    <div class="picker-row">
+      <div class="picker">
+        <label for="select-a">왼쪽 곡</label>
+        <select id="select-a"></select>
+      </div>
+      <div class="picker">
+        <label for="select-b">오른쪽 곡</label>
+        <select id="select-b"></select>
+      </div>
+    </div>
+
+    <div class="compare-grid" id="compare-grid">
+      <p class="compare-empty">히스토리에 분석 결과가 2건 이상 있어야 비교할 수 있어요.<br>메인 화면에서 음원을 두 곡 이상 분석해 주세요.</p>
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    var HISTORY_KEY = "soundmatch.history.v1";
+
+    function read() {
+      try {
+        var raw = localStorage.getItem(HISTORY_KEY);
+        if (!raw) return [];
+        var parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) { return []; }
+    }
+
+    function fmt(v, digits) {
+      if (typeof v !== "number" || !isFinite(v)) return "—";
+      if (Math.abs(v) >= 100) return v.toFixed(0);
+      if (Math.abs(v) >= 1) return v.toFixed(digits || 1);
+      return v.toFixed(digits || 3);
+    }
+
+    function deltaClass(a, b, lowerBetter) {
+      // a 기준으로 b 가 어느 방향인지. lowerBetter 면 b 가 더 작으면 좋은 거.
+      if (typeof a !== "number" || typeof b !== "number") return "delta-flat";
+      if (Math.abs(a - b) < 1e-6) return "delta-flat";
+      var bIsBigger = b > a;
+      if (lowerBetter) return bIsBigger ? "delta-up" : "delta-down";
+      return bIsBigger ? "delta-down" : "delta-up";
+    }
+
+    var METRICS = [
+      { key: "tempo_bpm", label: "Tempo (BPM)", digits: 1 },
+      { key: "energy_rms", label: "에너지 (RMS)", digits: 3 },
+      { key: "brightness", label: "밝기 (Hz)", digits: 0 },
+      { key: "noisiness", label: "거친 정도", digits: 3 },
+      { key: "harmony_ratio", label: "화성/타악기", digits: 2 },
+      { key: "chroma", label: "크로마", digits: 3 },
+    ];
+
+    function escapeHtml(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function renderCard(entry, other) {
+      var data = entry.data || {};
+      var summary = data.summary || {};
+      var otherSummary = (other && other.data && other.data.summary) || {};
+      var tags = Array.isArray(data.tags) ? data.tags : [];
+      var top = data.results && data.results[0];
+
+      var metricsHtml = METRICS.map(function (m) {
+        var a = summary[m.key];
+        var b = otherSummary[m.key];
+        var cls = deltaClass(b, a, false);
+        return [
+          '<div class="compare-metric">',
+          '<span class="compare-metric-key">' + escapeHtml(m.label) + '</span>',
+          '<span class="compare-metric-val ' + cls + '">' + fmt(a, m.digits) + '</span>',
+          '</div>',
+        ].join("");
+      }).join("");
+
+      var tagsHtml = tags.map(function (t) {
+        return '<span class="compare-tag">' + escapeHtml(t) + '</span>';
+      }).join("");
+
+      var topHtml = "";
+      if (top) {
+        topHtml = [
+          '<div class="compare-top">',
+          '<div class="compare-top-label">Top 1 매칭</div>',
+          '<p class="compare-top-title">' + escapeHtml(top.title || "—") + ' · <span style="color:var(--text-mute)">' + escapeHtml(top.artist || "") + '</span></p>',
+          '<span class="compare-top-percent">' + fmt(top.similarity_percent, 1) + '% 유사도</span>',
+          '</div>',
+        ].join("");
+      }
+
+      return [
+        '<div class="compare-card">',
+        '<h2 class="compare-filename">' + escapeHtml(data.filename || "—") + '</h2>',
+        tagsHtml ? '<div class="compare-tags">' + tagsHtml + '</div>' : "",
+        metricsHtml,
+        topHtml,
+        '</div>',
+      ].join("");
+    }
+
+    function init() {
+      var items = read();
+      var grid = document.getElementById("compare-grid");
+      var pickerRow = document.querySelector(".picker-row");
+      var selA = document.getElementById("select-a");
+      var selB = document.getElementById("select-b");
+
+      if (items.length < 2) {
+        pickerRow.style.display = "none";
+        return;
+      }
+
+      function buildOptions(target, defaultIdx) {
+        target.innerHTML = items.map(function (it, idx) {
+          var when = new Date(it.ts);
+          var label = when.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+          var name = it.filename || ("분석 " + (idx + 1));
+          return '<option value="' + idx + '"' + (idx === defaultIdx ? ' selected' : '') + '>'
+            + escapeHtml(name) + ' · ' + escapeHtml(label) + '</option>';
+        }).join("");
+      }
+
+      buildOptions(selA, 0);
+      buildOptions(selB, 1);
+
+      function rerender() {
+        var a = items[parseInt(selA.value, 10)];
+        var b = items[parseInt(selB.value, 10)];
+        if (!a || !b) {
+          grid.innerHTML = '<p class="compare-empty">유효하지 않은 선택이에요.</p>';
+          return;
+        }
+        grid.innerHTML = renderCard(a, b) + renderCard(b, a);
+      }
+
+      selA.addEventListener("change", rerender);
+      selB.addEventListener("change", rerender);
+      rerender();
+    }
+
+    if (document.readyState !== "loading") init();
+    else document.addEventListener("DOMContentLoaded", init);
+  })();
+  </script>
+</body>
+</html>

@@ -9,7 +9,7 @@
 
   const dict = {
     ko: {
-      nav: { how: "사용법", features: "기능", github: "GitHub" },
+      nav: { how: "사용법", features: "기능", compare: "비교", github: "GitHub" },
       hero: {
         eyebrow: "Sklearn · librosa · FastAPI · WebAudio",
         title: "업로드한 음악과 <span class=\"grad\">가장 닮은 곡</span>을<br/>AI가 찾아드립니다.",
@@ -131,7 +131,7 @@
       },
     },
     en: {
-      nav: { how: "How it works", features: "Features", github: "GitHub" },
+      nav: { how: "How it works", features: "Features", compare: "Compare", github: "GitHub" },
       hero: {
         eyebrow: "Sklearn · librosa · FastAPI · WebAudio",
         title: "Find the songs <span class=\"grad\">most similar</span> to yours,<br/>powered by AI.",

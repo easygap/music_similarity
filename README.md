@@ -45,11 +45,14 @@ Docker · Render · Fly.io 원클릭 배포까지 모두 포함되어 있어요.
 - 🔍 **SEO/SNS 친화** — OG 이미지(SVG), sitemap.xml, robots.txt, 깔끔한 404 페이지
 - 📑 **정책 페이지** — `/privacy`, `/terms` 정적 페이지를 같은 디자인 시스템으로 제공
 - 🧾 **카탈로그 미리보기** — `/api/catalog/sample` + 메인 페이지 하단 카드
+- 🏷️ **휴리스틱 태그** — 분석 결과에 "빠른 템포 / 에너지 폭발 / 밝은 톤" 같은 즉시 와닿는 라벨 자동 부여
+- ⚖️ **두 곡 비교 모드** — `/compare` 에서 히스토리 2건을 골라 메트릭 · 태그 · Top1 매칭을 나란히 비교
+- 📈 **Observability** — `X-RateLimit-Limit/Remaining/Reset` 헤더 + Prometheus 호환 `/metrics` 엔드포인트 (외부 의존성 없이 직접 직렬화)
 - 📱 **PWA 지원** — `manifest.webmanifest` + Service Worker + 오프라인 폴백 (`offline.html`). 모바일에서 "홈 화면에 추가" 가능
 - 🧯 **글로벌 JS 에러 boundary** — 사이드 스크립트가 깨져도 사용자에게 친절한 토스트만 보이고 사이트는 계속 동작
 - 📜 **OpenAPI 응답 모델** — `/docs` Swagger UI 에서 모든 응답 타입을 깔끔히 확인 가능
 - ⚡ **API 안정성** — 비동기 threadpool, 동시 요청 cap, IP별 rate limit, magic-byte 검증, CSP/HSTS 등 시큐어 헤더, 구조화된 JSON 로그
-- 🧪 **pytest 43개 케이스** + ruff lint + GitHub Actions CI + Docker multi-stage + Python 3.11/3.12 매트릭스
+- 🧪 **pytest 56개 케이스** + ruff lint + GitHub Actions CI + Docker multi-stage + Python 3.11/3.12 매트릭스
 - 🤖 **Dependabot** 으로 pip / GitHub Actions / Docker 의존성 자동 PR
 - 📜 **CHANGELOG / SECURITY / CODE_OF_CONDUCT** 까지 갖춘 협업 인프라
 
@@ -78,6 +81,7 @@ Docker · Render · Fly.io 원클릭 배포까지 모두 포함되어 있어요.
 | `backend/similarity.py` | `StandardScaler` + `cosine_similarity` (NaN 차단, zero-variance 컬럼 drop) |
 | `backend/reason_engine.py` | 그룹별 z-score 거리 → 한국어/영어 문장 |
 | `backend/spectrogram.py` | 멜 스펙트로그램 → 가벼운 SVG (matplotlib 의존성 없이) |
+| `backend/tagging.py` | BPM·RMS·spectral·HPSS 기반 휴리스틱 태그 생성 |
 | `backend/schemas.py` | OpenAPI 응답 모델 (HealthResponse / CatalogResponse / AnalyzeResponse 등) |
 | `backend/main.py` | FastAPI 엔드포인트 + 미들웨어 + 정적 프론트엔드 + 캐시 헤더 |
 | `frontend/index.html` | SPA 단일 페이지 — 시맨틱 HTML, ARIA, skip-link, 글로벌 JS 에러 boundary |
@@ -225,6 +229,8 @@ curl -X POST http://localhost:8000/api/analyze \
 | `GET /sw.js` | Service Worker. 같은 출처 정적 리소스를 stale-while-revalidate 로 캐시 |
 | `GET /offline.html` | 네트워크가 끊겼을 때 보여주는 폴백 페이지 |
 | `GET /api/catalog/sample` | 카탈로그 일부 미리보기 (limit 1~50, 기본 12). `Cache-Control: max-age=300` |
+| `GET /metrics` | Prometheus exposition (`soundmatch_requests_total`, `_analyze_success_total`, `_analyze_failed_total`, `_rate_limited_total`, `_catalog_size`) |
+| `GET /compare` | 히스토리 두 건을 골라 비교하는 정적 페이지 |
 | `GET /privacy` · `/terms` | 개인정보 처리방침 / 이용약관 (같은 디자인 시스템) |
 | `GET /robots.txt` | 검색 봇 정책 (Allow: all + sitemap 위치) |
 | `GET /sitemap.xml` | 단일 페이지 사이트맵 (SEO 수집용) |
@@ -232,6 +238,8 @@ curl -X POST http://localhost:8000/api/analyze \
 | `GET /404` | 잘못된 경로 접근 시 안내 페이지 (`frontend/404.html`) |
 
 모든 응답은 `X-Request-ID` 헤더를 포함하며 클라이언트가 보낸 헤더를 우선합니다.
+Rate limit 가 걸리는 엔드포인트(`/api/analyze`) 응답에는 `X-RateLimit-Limit`,
+`X-RateLimit-Remaining`, `X-RateLimit-Reset` 헤더가 함께 내려갑니다.
 
 ---
 

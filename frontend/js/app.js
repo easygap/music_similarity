@@ -34,6 +34,7 @@
 
   const resultsSection = $("#results");
   const resultsSubtitle = $("#results-subtitle");
+  const resultTagsEl = $("#result-tags");
   const audioSummary = $("#audio-summary");
   const radarCard = $("#radar-card");
   const radarHost = $("#radar-host");
@@ -475,6 +476,18 @@
     `;
 
     renderSummary(data.summary || {});
+
+    // 휴리스틱 태그 칩 ("빠른 템포", "에너지 폭발" 등). 빈 배열이면 숨김.
+    const tags = Array.isArray(data.tags) ? data.tags : [];
+    if (tags.length && resultTagsEl) {
+      resultTagsEl.innerHTML = tags
+        .map((tag) => `<span class="result-tag">${escapeHtml(tag)}</span>`)
+        .join("");
+      resultTagsEl.classList.remove("hidden");
+    } else if (resultTagsEl) {
+      resultTagsEl.innerHTML = "";
+      resultTagsEl.classList.add("hidden");
+    }
 
     // 멜 스펙트로그램 SVG (백엔드가 직접 만들어줌). 빈 문자열이면 카드 숨김.
     if (typeof data.spectrogram_svg === "string" && data.spectrogram_svg.length > 0) {

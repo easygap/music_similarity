@@ -7,6 +7,18 @@
 ## [Unreleased]
 
 ### Added
+- 휴리스틱 장르 태깅 (`backend/tagging.py`): BPM, RMS, 스펙트럴 센트로이드,
+  ZCR, HPSS 비율을 보고 "빠른 템포 / 에너지 폭발 / 밝은 톤" 같은 칩을 생성.
+  AnalyzeResponse 에 `tags: list[str]` 필드 추가.
+- 결과 페이지 상단에 태그 칩 렌더 (i18n 키 nav.compare 추가).
+- 두 곱 비교 페이지 (`/compare`, `frontend/compare.html`):
+  localStorage 히스토리에서 두 분석을 골라 메트릭 / 태그 / Top1 매칭을 나란히 비교.
+- Rate limit 헤더 노출: 분석 응답에 `X-RateLimit-Limit`, `X-RateLimit-Remaining`,
+  `X-RateLimit-Reset` 자동 첨부 (`_rate_limit` 의존성 → request.state →
+  RequestLogMiddleware 가 일괄 헤더 전파).
+- Prometheus 호환 `/metrics` 엔드포인트 (외부 라이브러리 의존 없이 직접 직렬화):
+  `soundmatch_requests_total`, `_analyze_success_total`, `_analyze_failed_total`,
+  `_rate_limited_total`, `_catalog_size`.
 - 결과 페이지에서 "공유 링크 복사" 버튼으로 분석 결과를 URL 한 번에 전달.
   CompressionStream 으로 gzip 압축 후 base64url 인코딩해 URL hash 에 직렬화.
   같은 URL 을 다시 열면 별도 분석 없이 결과가 자동 복원됨.
@@ -15,6 +27,9 @@
 - `.github/dependabot.yml` 으로 pip / GitHub Actions 의존성 자동 PR.
 - `SECURITY.md`, `CODE_OF_CONDUCT.md` 추가 (한국어 톤).
 - i18n 키 누락 자동 감지 테스트.
+
+### Changed
+- 분석 실패 / 성공 카운터를 in-process metric 으로 노출.
 
 ## [1.2.0] — 2026-05-13
 
