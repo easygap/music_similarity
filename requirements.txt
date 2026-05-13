@@ -10,4 +10,4 @@ audioread==3.0.1
 # librosa imports `pkg_resources`, which Python 3.12 no longer ships and
 # setuptools 81+ removed. Pin to the last release that still ships the
 # module so librosa keeps loading on every supported Python.
-setuptools>=68,<81
+setuptools>=82.0.1,<83
