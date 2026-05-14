@@ -15,6 +15,7 @@
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -24,6 +25,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
 
 from .audio_features import AudioFeatureVector
+
+logger = logging.getLogger("music_similarity")
 
 # 카탈로그 CSV의 인덱스 컬럼명. "곡명 - 아티스트" 형식의 키가 들어있다.
 NAME_COLUMN = "musicname & artist"
@@ -64,6 +67,17 @@ class MusicSimilarityEngine:
             )
 
         df = df.set_index(NAME_COLUMN)
+        # 중복된 키가 있으면 .loc 가 여러 행을 반환해서 catalog_row_raw 가 깨진다.
+        # 첫 번째만 유지하고 나머지를 떨군다. 운영 친화를 위해 카운트만 로그.
+        dup_mask = df.index.duplicated(keep="first")
+        self._dropped_duplicate_count = int(dup_mask.sum())
+        if self._dropped_duplicate_count:
+            logger.warning(
+                "catalog_duplicates_dropped",
+                extra={"count": self._dropped_duplicate_count, "path": str(self.dataset_path)},
+            )
+            df = df.loc[~dup_mask]
+
         # 실제 유사도 계산에 쓸 특성 컬럼만 골라낸다.
         feature_columns: list[str] = [c for c in df.columns if c != LABEL_COLUMN]
 
@@ -113,6 +127,11 @@ class MusicSimilarityEngine:
     @property
     def feature_columns(self) -> list[str]:
         return list(self._feature_columns)
+
+    @property
+    def dropped_duplicate_count(self) -> int:
+        """카탈로그 로딩 중 자동으로 떨군 중복 키 갯수."""
+        return self._dropped_duplicate_count
 
     def query_vector(self, features: AudioFeatureVector) -> np.ndarray:
         """업로드된 특성 벡터를 카탈로그와 같은 표준화 공간으로 변환한다.

@@ -205,6 +205,50 @@ def cmd_validate_dataset(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dedupe_dataset(args: argparse.Namespace) -> int:
+    """카탈로그 CSV 에서 중복된 키(같은 '곡명 - 아티스트')를 제거해 새 파일로 저장한다.
+
+    첫 번째 항목을 유지하고 나머지를 떨군다. 엔진과 같은 정책.
+    """
+    import pandas as pd
+
+    src = Path(args.path)
+    if not src.exists():
+        print(f"error: 파일을 찾을 수 없습니다: {src}", file=sys.stderr)
+        return 2
+
+    try:
+        df = pd.read_csv(src)
+    except Exception as e:  # noqa: BLE001
+        print(f"error: CSV 로딩 실패: {e}", file=sys.stderr)
+        return 3
+
+    name_col = "musicname & artist"
+    if name_col not in df.columns:
+        print(f"error: 필수 키 컬럼 누락: '{name_col}'", file=sys.stderr)
+        return 4
+
+    before = len(df)
+    df_dedup = df.drop_duplicates(subset=[name_col], keep="first")
+    dropped = before - len(df_dedup)
+
+    out = Path(args.out)
+    if not args.overwrite and out.exists() and out.samefile(src):
+        print(
+            f"error: 입력과 같은 파일을 덮어쓰려면 --overwrite 가 필요합니다: {out}",
+            file=sys.stderr,
+        )
+        return 5
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    df_dedup.to_csv(out, index=False, encoding="utf-8")
+    print("# 중복 제거 결과")
+    print(f"  입력: {src} ({before}행)")
+    print(f"  출력: {out} ({len(df_dedup)}행)")
+    print(f"  제거된 중복: {dropped}행")
+    return 0
+
+
 def cmd_batch(args: argparse.Namespace) -> int:
     """폴더 안의 음원들을 한꺼번에 분석해 CSV 로 떨군다."""
     import csv
@@ -316,6 +360,16 @@ def build_parser() -> argparse.ArgumentParser:
     validate = sub.add_parser("validate-dataset", help="카탈로그 CSV 가 엔진에 로딩 가능한지 점검한다.")
     validate.add_argument("path", help="검증할 dataset.csv 경로")
     validate.set_defaults(func=cmd_validate_dataset)
+
+    dedupe = sub.add_parser("dedupe-dataset", help="카탈로그 CSV 의 중복된 키를 제거한다.")
+    dedupe.add_argument("path", help="원본 dataset.csv 경로")
+    dedupe.add_argument("--out", required=True, help="결과를 저장할 CSV 경로")
+    dedupe.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="입력과 같은 파일을 덮어써도 되는지 명시적으로 허용",
+    )
+    dedupe.set_defaults(func=cmd_dedupe_dataset)
     return parser
 
 

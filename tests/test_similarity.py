@@ -82,6 +82,23 @@ def test_drops_zero_variance_columns(tmp_path, feature_columns):
     assert all(math.isfinite(h.similarity) for h in hits)
 
 
+def test_drops_duplicate_keys(tmp_path, feature_columns):
+    """같은 키가 여러 행에 있으면 첫 행만 유지하고 dropped_duplicate_count 가 채워진다."""
+    csv_path = tmp_path / "dup.csv"
+    with csv_path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["musicname & artist", *feature_columns])
+        # 같은 키 "Alpha - X" 를 3번 쓴다. 다른 키도 하나 섞어둔다.
+        for i in range(3):
+            row = {c: 0.5 + 0.1 * i + 0.001 * j for j, c in enumerate(feature_columns)}
+            writer.writerow(["Alpha - X", *[row[c] for c in feature_columns]])
+        row2 = {c: 0.9 + 0.001 * j for j, c in enumerate(feature_columns)}
+        writer.writerow(["Beta - Y", *[row2[c] for c in feature_columns]])
+    engine = MusicSimilarityEngine(csv_path)
+    assert engine.catalog_size == 2  # Alpha 한 번 + Beta 한 번
+    assert engine.dropped_duplicate_count == 2  # Alpha 의 나머지 두 개 떨궈짐
+
+
 def test_rejects_empty_dataset(tmp_path, feature_columns):
     csv_path = tmp_path / "empty.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as fh:

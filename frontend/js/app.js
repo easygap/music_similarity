@@ -56,6 +56,7 @@
   const copyShareUrlBtn = $("#copy-share-url-btn");
   const exportJsonBtn = $("#export-json-btn");
   const exportSvgBtn = $("#export-svg-btn");
+  const exportPngBtn = $("#export-png-btn");
   const yearSpan = $("#year");
 
   const themeToggleBtn = $("#theme-toggle");
@@ -1080,6 +1081,58 @@
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 500);
+    });
+  }
+
+  // PNG 저장 — 위에서 만든 SVG 문자열을 Image 로 한 번 그린 뒤 canvas 로 토출.
+  // 외부 라이브러리 없이 브라우저 기본 기능만 사용한다.
+  if (exportPngBtn) {
+    exportPngBtn.addEventListener("click", async () => {
+      if (!_lastResults) return;
+      const svg = buildResultSvg(_lastResults);
+      if (!svg) return;
+
+      // SVG 의 width/height 가 viewBox 만 있고 명시되어 있지 않을 수 있어
+      // 파싱해서 비율을 추출한 뒤 2배 스케일(retina 친화)로 그린다.
+      const dimMatch = svg.match(/viewBox="0 0 (\d+) (\d+)"/);
+      const baseW = dimMatch ? parseInt(dimMatch[1], 10) : 1200;
+      const baseH = dimMatch ? parseInt(dimMatch[2], 10) : 720;
+      const scale = 2;
+
+      const baseName = (_lastResults.filename || "soundmatch").replace(/\.[^.]+$/, "");
+
+      try {
+        const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+        const img = await new Promise((resolve, reject) => {
+          const im = new Image();
+          im.onload = () => resolve(im);
+          im.onerror = () => reject(new Error("svg-load-failed"));
+          im.src = url;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = baseW * scale;
+        canvas.height = baseH * scale;
+        const ctx = canvas.getContext("2d");
+        ctx.scale(scale, scale);
+        ctx.drawImage(img, 0, 0, baseW, baseH);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((pngBlob) => {
+          if (!pngBlob) {
+            toast(t("results.exportPngFailed"));
+            return;
+          }
+          const pngUrl = URL.createObjectURL(pngBlob);
+          const a = document.createElement("a");
+          a.href = pngUrl;
+          a.download = `${baseName}.soundmatch.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(pngUrl), 500);
+        }, "image/png");
+      } catch {
+        toast(t("results.exportPngFailed"));
+      }
     });
   }
 

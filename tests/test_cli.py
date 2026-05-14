@@ -123,3 +123,44 @@ def test_cli_validate_dataset_missing_name_column(tmp_path, capsys):
     err = capsys.readouterr().err
     assert code != 0
     assert "필수 키 컬럼" in err
+
+
+def test_cli_dedupe_dataset(tmp_path, feature_columns, capsys):
+    """dedupe-dataset 이 중복 키를 제거하고 통계를 출력해야 한다."""
+    import csv as csv_module
+
+    src = tmp_path / "dup.csv"
+    with src.open("w", newline="", encoding="utf-8") as fh:
+        w = csv_module.writer(fh)
+        w.writerow(["musicname & artist", *feature_columns])
+        # 같은 키 두 번 + 다른 키 한 번.
+        row = [0.5] * len(feature_columns)
+        w.writerow(["Alpha - X", *row])
+        w.writerow(["Alpha - X", *row])
+        w.writerow(["Beta - Y", *row])
+
+    out = tmp_path / "clean.csv"
+    code = main(["dedupe-dataset", str(src), "--out", str(out)])
+    output = capsys.readouterr().out
+    assert code == 0
+    assert "제거된 중복: 1행" in output
+    # 결과 CSV 는 2행만 남아야 한다.
+    with out.open(encoding="utf-8") as fh:
+        rows = list(csv_module.reader(fh))
+    assert len(rows) == 3  # 헤더 + 2행
+
+
+def test_cli_dedupe_dataset_requires_overwrite_for_same_path(tmp_path, feature_columns, capsys):
+    """입력과 같은 파일을 덮어쓸 때는 --overwrite 가 필요해야 한다."""
+    import csv as csv_module
+
+    src = tmp_path / "same.csv"
+    with src.open("w", newline="", encoding="utf-8") as fh:
+        w = csv_module.writer(fh)
+        w.writerow(["musicname & artist", *feature_columns])
+        w.writerow(["A - X", *[0.5] * len(feature_columns)])
+
+    code = main(["dedupe-dataset", str(src), "--out", str(src)])
+    err = capsys.readouterr().err
+    assert code != 0
+    assert "--overwrite" in err

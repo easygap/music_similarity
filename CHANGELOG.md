@@ -6,7 +6,17 @@
 
 ## [Unreleased]
 
-### Added
+### Added / Changed
+- 엔진이 카탈로그의 중복 키(같은 "곡명 - 아티스트") 를 자동으로 제거하고
+  `dropped_duplicate_count` 로 노출. 첫 번째 행을 유지하고 나머지를 떨군다.
+  중복이 있으면 운영 로그에 `catalog_duplicates_dropped` 경고.
+- `python -m backend.cli dedupe-dataset <csv> --out <new.csv>` 서브커먼드.
+  입력과 같은 파일을 덮어쓸 땐 `--overwrite` 명시 필요.
+- 실제 `data/dataset.csv` 를 dedupe 해서 785 → 781행으로 정리해 같이 커밋.
+- 결과 페이지 PNG 저장 버튼 추가. SVG 카드를 canvas 로 2× 스케일 래스터화 후
+  toBlob 으로 다운로드. SVG 변환 실패 시 토스트로 안내.
+
+### Added (earlier)
 - 결과 페이지 "카드 이미지 저장" 버튼. 클라이언트에서 직접 SVG 문자열을
   짜서 Blob 다운로드. 외부 라이브러리 없음. 다크 톤 + 그라데이션 막대 + 태그.
 - `python -m backend.cli validate-dataset <csv>` 서브커먼드. 행 수 / 중복키 /

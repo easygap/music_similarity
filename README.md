@@ -49,10 +49,11 @@ python -m backend.cli analyze ./mysong.wav --json > result.json
 python -m backend.cli batch ./songs --out results.csv --top-n 5
 ```
 
-카탈로그 CSV 가 엔진에 잘 로딩될지 미리 점검하고 싶다면:
+카탈로그 CSV 가 엔진에 잘 로딩될지 미리 점검하고, 중복된 키를 정리하려면:
 
 ```bash
 python -m backend.cli validate-dataset data/dataset.csv
+python -m backend.cli dedupe-dataset data/dataset.csv --out data/clean.csv
 ```
 
 서버를 띄우지 않고도 같은 엔진으로 동작한다 (배치 작업 / 디버깅 용).
@@ -78,8 +79,8 @@ python preview_server.py 8765
 - ★ 즐겨찾기 — 카탈로그 / 결과 카드의 별 버튼으로 곡을 모아둘 수 있다.
   localStorage 기반, 메인 페이지 "내 즐겨찾기" 섹션에 모이고, 카탈로그
   페이지에서 "즐겨찾기만 보기" 토글로 필터링 가능.
-- 결과를 한 페이지 SVG 카드로 다운로드 ("카드 이미지 저장"). 외부 라이브러리
-  없이 클라이언트에서 직접 SVG 직렬화 → Blob 다운로드.
+- 결과를 한 페이지 SVG / PNG 카드로 다운로드. SVG 는 클라이언트에서 직접
+  직렬화, PNG 는 그 SVG 를 canvas 로 2× 스케일 래스터화. 외부 라이브러리 없음.
 - Hero stat 의 "평균 분석 시간" 은 `/api/health` 가 함께 내려주는
   `analyze_latency_p50_seconds` 로 갱신된다 (샘플 누적 후부터).
 - 결과 카드의 매칭 곡에 "이 곡으로 다시 찾기" 버튼. 누르면 그 곡을 새 시드로
