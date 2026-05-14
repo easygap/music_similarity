@@ -61,6 +61,20 @@ def test_client_ip_honors_xff_only_from_trusted_proxy(mod):
     assert mod._client_ip(spoofed) == "8.8.8.8"
 
 
+def test_client_ip_trusts_all_with_wildcard(mod):
+    """`MUSIC_TRUSTED_PROXIES=*` 면 출발지 검사 없이 XFF 의 첫 IP 사용."""
+    mod.TRUSTED_PROXIES = frozenset({"*"})
+    # peer 가 어떤 값이든 신뢰. PaaS edge IP 처럼 정확한 주소를 모를 때.
+    req = _fake_request("66.241.125.18", xff="1.2.3.4, 5.6.7.8")
+    assert mod._client_ip(req) == "1.2.3.4"
+    # XFF 가 없으면 X-Real-IP 로 폴백.
+    req2 = _fake_request("66.241.125.18", xrip="9.9.9.9")
+    assert mod._client_ip(req2) == "9.9.9.9"
+    # 두 헤더 모두 없으면 peer 그대로 (PaaS edge 의 source).
+    req3 = _fake_request("66.241.125.18")
+    assert mod._client_ip(req3) == "66.241.125.18"
+
+
 def test_client_ip_falls_back_to_x_real_ip(mod):
     """XFF 가 없고 X-Real-IP 만 있을 때도 trusted 일 때만 신뢰."""
     mod.TRUSTED_PROXIES = frozenset({"10.0.0.1"})

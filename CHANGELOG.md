@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+### Fixed
+- PaaS(Fly.io / Render) 배포 환경에서 rate limiter 가 사실상 무력화되던
+  문제. edge 프록시 IP 가 자동 발급이라 trusted proxies 화이트리스트가
+  비어 있어 `_client_ip` 가 동일 edge IP 한 개만 보고 모든 사용자를 같은
+  버킷에 묶었음. 한 사용자만 빠르게 두드려도 전체가 429 에 빠짐.
+  `MUSIC_TRUSTED_PROXIES=*` 와일드카드 옵션 추가 — 모든 출발지에서 온 XFF
+  를 신뢰한다. `fly.toml` / `render.yaml` 도 이 값으로 설정.
+- 다중 워커 시 `_rate_state` / 결과 캐시 / metrics 카운터가 워커별로 파편화
+  되어 한도가 워커 수만큼 곱해지던 문제. `WEB_CONCURRENCY=1` 을 production
+  기본값으로 명시(fly.toml / render.yaml). 정확한 한도가 필요하면 Redis
+  백엔드 도입까지는 단일 워커 + 수직 확장으로 처리.
+
 ### Security
 - CSP `script-src` 에서 `'unsafe-inline'` 제거. 그동안 모든 인라인 스크립트
   실행을 허용해서, 결과 카드 어딘가에 `escapeHtml` 하나만 빠져도 그대로 XSS
