@@ -7,6 +7,20 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 페이지의 모든 필터 상태(검색어 · BPM/에너지 범위 · 정렬 · 페이지 ·
+  즐겨찾기 토글) 를 URLSearchParams 로 양방향 동기화. 같은 URL 을 공유하면
+  동일한 화면이 그대로 열리고, 새로고침 / 뒤로가기에도 상태가 유지된다.
+  쓰기는 180ms 디바운스 + `history.replaceState` 라 히스토리 스택을 망치지 않음.
+- 즐겨찾기 JSON 백업 / 복원. 메인 페이지 "내 즐겨찾기" 섹션에 `내보내기` /
+  `가져오기` 버튼 추가. 백업 포맷은 `{format: "soundmatch.favorites", version,
+  exportedAt, items}` 이고, 가져오기는 기본적으로 **병합** 모드 — 기존 즐겨찾기에
+  새 항목만 더한다. raw 배열만 들어와도 받아들이도록 sanitize 후 처리.
+- `SoundMatchFavorites.exportJson` / `importJson` / `replaceAll` 공개 API.
+  외부에서 직접 호출해 백업 자동화 / 복원 스크립트를 짤 수 있다.
+- `tests/test_frontend_assets.py` — 새 기능이 회귀로 지워지지 않도록 정적
+  검사를 추가 (12 케이스). 총 116 케이스.
+
+### Added (earlier)
 - `GET /api/catalog/stats` — BPM / 에너지 / 밝기의 min/max/avg + BPM 분포
   히스토그램(기본 10 bin, 60~200 BPM 고정 범위). 5분 캐시.
 - 카탈로그 페이지 상단에 BPM 분포 미니 막대 차트 (`/api/catalog/stats`).

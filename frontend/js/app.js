@@ -236,6 +236,54 @@
     });
   }
 
+  // 즐겨찾기 내보내기 — 현재 저장된 항목을 JSON 파일로 다운로드.
+  const favExportBtn = document.getElementById("favorites-export");
+  if (favExportBtn) {
+    favExportBtn.addEventListener("click", () => {
+      if (!window.SoundMatchFavorites) return;
+      try {
+        const payload = window.SoundMatchFavorites.exportJson();
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const stamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `soundmatch-favorites-${stamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        // 다운로드가 시작된 뒤에는 URL 해제. 같은 마이크로태스크에서 풀어버리면
+        // 사파리 같은 일부 브라우저에서 다운로드가 캔슬되는 사례가 있어 한 박자 늦춤.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        toast(t("favorites.exportDone"));
+      } catch (e) {
+        console.error("[favorites] export failed:", e);
+        toast(t("favorites.importFailed"));
+      }
+    });
+  }
+
+  // 가져오기 — 숨겨둔 file input 을 트리거해서 JSON 파일을 받는다.
+  const favImportBtn = document.getElementById("favorites-import-btn");
+  const favImportFile = document.getElementById("favorites-import-file");
+  if (favImportBtn && favImportFile) {
+    favImportBtn.addEventListener("click", () => favImportFile.click());
+    favImportFile.addEventListener("change", async () => {
+      const file = favImportFile.files && favImportFile.files[0];
+      // 같은 파일을 두 번 연속 선택하는 경우에도 change 이벤트가 다시 발생하도록 초기화.
+      favImportFile.value = "";
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const result = window.SoundMatchFavorites.importJson(text);
+        toast(t("favorites.importSuccess", result.added, result.total));
+      } catch (e) {
+        console.warn("[favorites] import failed:", e);
+        toast(t("favorites.importFailed"));
+      }
+    });
+  }
+
   window.addEventListener("favorites:change", renderFavorites);
   window.addEventListener("i18n:change", renderFavorites);
   renderFavorites();

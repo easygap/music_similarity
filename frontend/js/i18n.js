@@ -102,6 +102,14 @@
         clear: "모두 지우기",
         confirm: "즐겨찾기를 모두 지울까요?",
         filterOnly: "즐겨찾기만 보기",
+        export: "내보내기",
+        import: "가져오기",
+        exportDone: "즐겨찾기 JSON 파일을 받았어요.",
+        importSuccess: (added, total) =>
+          added > 0
+            ? `새 곡 ${added}개를 추가했어요. 현재 ${total}곡 저장 중.`
+            : "이미 모두 등록된 곡이에요. 변경된 항목이 없습니다.",
+        importFailed: "JSON 파일을 읽지 못했어요. 같은 형식의 파일인지 확인해주세요.",
       },
       summary: {
         tempo: "Tempo",
@@ -249,6 +257,14 @@
         clear: "Clear all",
         confirm: "Clear all favorites?",
         filterOnly: "Favorites only",
+        export: "Export",
+        import: "Import",
+        exportDone: "Saved favorites to a JSON file.",
+        importSuccess: (added, total) =>
+          added > 0
+            ? `Added ${added} new tracks. Now keeping ${total} favorites.`
+            : "All tracks were already saved. Nothing changed.",
+        importFailed: "Could not read the JSON file. Please check the format.",
       },
       summary: {
         tempo: "Tempo",
