@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Tests
+- `tests/test_spectrogram.py` 신규 13 케이스 — `_downsample_2d`, `_color_for`,
+  `_render_svg`, `build_mel_spectrogram_svg` 의 경계 / 극단값 / aria-label /
+  hex 컬러 포맷 / 평균 풀링 정확도 등을 헬퍼 단위로 직접 검증. 그동안 통합
+  경로 한 줄로만 묶여 있어 swallow 되던 회귀를 잡는다.
+- `/api/client-error` 비콘 엣지 케이스 3종 — 비-dict (배열) 본문 / 깨진 JSON /
+  oversize message+source 모두 204 로 안전하게 받아야 한다.
+
 ### Fixed
 - analyze() 의 in-flight 카운터 race — extension/size 검증 단계에서 일찍
   실패한 요청이 finally 에서 다른 정상 요청의 카운터를 잘못 깎아 `/metrics`
