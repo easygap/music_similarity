@@ -170,6 +170,37 @@ def test_render_mini_metrics_uses_i18n_labels():
     assert "label: \"밝기\"" not in text
 
 
+def test_history_strips_spectrogram_svg_before_saving():
+    """addToHistory 가 localStorage 에 저장하기 전 ~320KB 짜리 spectrogram_svg
+    를 빈 문자열로 trim 해야 한다. 그렇지 않으면 5건만으로 5MB 쿼터를 거의
+    독식해서 즐겨찾기도 같이 망가짐.
+    """
+    text = _read("js/app.js")
+    # trimmed copy 를 만들고 spectrogram_svg 만 비우는 패턴이 있어야 한다.
+    assert 'spectrogram_svg: ""' in text
+    assert "Object.assign({}, data, { spectrogram_svg" in text
+
+
+def test_write_history_handles_quota_failure_with_toast():
+    """writeHistory 가 try/catch 에서 silently 무시하지 말고 사용자에게 알려야
+    한다. (history.storageFull i18n 키 호출이 있는지로 검증.)
+    """
+    text = _read("js/app.js")
+    assert 't("history.storageFull")' in text
+
+
+def test_favorites_emits_storage_full_event_on_quota_failure():
+    """favorites.js write 실패 시 'favorites:storage-full' 이벤트를 쏴서
+    app.js 가 사용자에게 토스트로 알릴 수 있어야 한다.
+    """
+    text_fav = _read("js/favorites.js")
+    assert 'CustomEvent("favorites:storage-full")' in text_fav
+    text_app = _read("js/app.js")
+    assert 'favorites:storage-full' in text_app
+    # 토스트 호출도 묶여 있어야 한다.
+    assert 't("favorites.storageFull")' in text_app
+
+
 def test_seed_from_hit_failure_restores_previous_results():
     """seedFromHit 가 실패해도 이전 결과 화면이 그대로 남아야 한다."""
     text = _read("js/app.js")

@@ -96,6 +96,7 @@
         clear: "기록 지우기",
         confirm: "히스토리를 모두 지울까요?",
         view: "보기",
+        storageFull: "로컬 저장 공간이 부족해 히스토리를 추가하지 못했어요. '기록 지우기' 로 정리해주세요.",
       },
       favorites: {
         title: "내 즐겨찾기",
@@ -111,6 +112,7 @@
             ? `새 곡 ${added}개를 추가했어요. 현재 ${total}곡 저장 중.`
             : "이미 모두 등록된 곡이에요. 변경된 항목이 없습니다.",
         importFailed: "JSON 파일을 읽지 못했어요. 같은 형식의 파일인지 확인해주세요.",
+        storageFull: "로컬 저장 공간이 부족해 즐겨찾기를 저장하지 못했어요. '모두 지우기' 로 정리해주세요.",
       },
       summary: {
         tempo: "Tempo",
@@ -313,6 +315,7 @@
         clear: "Clear history",
         confirm: "Clear all history?",
         view: "View",
+        storageFull: "Browser storage is full. We couldn't save this analysis to history — please clear old entries.",
       },
       favorites: {
         title: "My favorites",
@@ -328,6 +331,7 @@
             ? `Added ${added} new tracks. Now keeping ${total} favorites.`
             : "All tracks were already saved. Nothing changed.",
         importFailed: "Could not read the JSON file. Please check the format.",
+        storageFull: "Browser storage is full. Favorites weren't saved — please clear them first.",
       },
       summary: {
         tempo: "Tempo",

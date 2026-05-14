@@ -7,6 +7,16 @@
 ## [Unreleased]
 
 ### Fixed
+- 분석 히스토리 항목이 ~320KB 짜리 멜 스펙트로그램 SVG 를 통째로
+  localStorage 에 저장해서, 5건만 쌓여도 1.6MB. 즐겨찾기와 같은 5MB 도메인
+  쿼터를 빠르게 잠식하던 문제. 히스토리 저장 시 SVG 필드를 비운
+  trimmed 페이로드만 보관. 결과 화면을 다시 그릴 때 SVG 가 없어도 카드가
+  자동으로 숨겨지도록 이미 처리되어 있어 UX 영향 없음.
+- writeHistory / favorites write 가 쿼터 초과 / 시크릿 모드 등으로 실패해도
+  silently 무시되어 사용자가 영문도 모르고 히스토리·즐겨찾기가 안 늘어나던
+  문제. 토스트로 안내하고, favorites.js 는 `favorites:storage-full`
+  CustomEvent 를 쏘아 app.js 에서 일괄 처리.
+- 신규 i18n 키 `history.storageFull`, `favorites.storageFull` (ko/en parity).
 - PaaS(Fly.io / Render) 배포 환경에서 rate limiter 가 사실상 무력화되던
   문제. edge 프록시 IP 가 자동 발급이라 trusted proxies 화이트리스트가
   비어 있어 `_client_ip` 가 동일 edge IP 한 개만 보고 모든 사용자를 같은
