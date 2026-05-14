@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Fixed
+- Service Worker 의 precache SHELL 에 `/catalog`, `/compare`, `/favorites.js`
+  가 빠져 있던 문제. 오프라인 첫 진입에서 이 페이지들이 비어 보이던 회귀를 막음.
+  버전을 `soundmatch-v1` → `soundmatch-v2` 로 bump 해서 옛 캐시는 자동 폐기.
+- stale-while-revalidate 경로에서 캐시가 있을 때 백그라운드 갱신을 안전하게
+  무시하도록 정리. 네트워크 실패가 더 이상 콘솔 노이즈로 전파되지 않는다.
+
 ### Added
 - `/sitemap.xml` 에 카탈로그 곡 딥링크 전부 노출. 새로 들어온 `/catalog?song=`
   와이어링과 결합해서 검색 봇이 곡 단위 유일한 URL 을 인덱싱할 수 있다.

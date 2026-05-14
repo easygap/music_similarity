@@ -109,6 +109,28 @@ def test_i18n_has_favorites_import_export_strings():
         assert text.count(key) >= 2, f"i18n.js 에 '{key}' 가 ko/en 양쪽에 보이지 않습니다."
 
 
+def test_service_worker_shell_includes_subpages():
+    """SW SHELL 에 /catalog, /compare, /favorites.js 가 모두 들어가야 한다.
+
+    안 들어가면 오프라인 첫 진입 시 그 페이지가 안 뜬다.
+    """
+    text = _read("sw.js")
+    for asset in ("/catalog", "/compare", "/favorites.js"):
+        assert f'"{asset}"' in text, f"sw.js SHELL 에 '{asset}' 가 누락되었습니다."
+
+
+def test_service_worker_version_string():
+    """SW VERSION 은 'soundmatch-vN' 형태여야 한다 (캐시 무효화 규약)."""
+    import re
+
+    text = _read("sw.js")
+    match = re.search(r'VERSION\s*=\s*"soundmatch-v(\d+)"', text)
+    assert match, "sw.js 에서 VERSION 상수를 찾을 수 없습니다."
+    version_num = int(match.group(1))
+    # 셸 자산이 갱신될 때마다 한 칸씩 올라가야 하므로 v1 이상.
+    assert version_num >= 2, "SW VERSION 이 자산 추가에 맞춰 bump 되지 않았습니다."
+
+
 def test_app_js_wires_favorites_export_button():
     """app.js 가 export/import 버튼을 실제로 잡아서 핸들러를 달고 있는지 확인."""
     text = _read("js/app.js")
