@@ -1356,31 +1356,49 @@ if FRONTEND_DIR.exists():
 
     @app.get("/sitemap.xml", include_in_schema=False)
     def sitemap():
-        """정적으로 노출되는 페이지 전부를 sitemap 에 적어둔다.
+        """정적 페이지 + 카탈로그 곡 딥링크 전부를 sitemap 에 노출한다.
 
-        결과 페이지(hash URL) 같은 동적 경로는 SEO 대상이 아니라 제외.
+        곡 딥링크는 /catalog?song=<encoded name> 형태. 모달이 자동으로 열리도록
+        와이어링되어 있어서, 검색 봇이 와도 곡 단위 유일한 URL 이 보장된다.
+
+        sitemap 표준이 한 파일당 50k URL / 50MB 라 781곡 규모는 충분히 한 파일.
         """
         from datetime import date
+        from urllib.parse import quote
 
         today = date.today().isoformat()
-        # (loc, priority, changefreq)
-        entries = [
+        # 정적 페이지 (loc, priority, changefreq)
+        static_entries = [
             ("/", "1.0", "weekly"),
             ("/catalog", "0.7", "weekly"),
             ("/compare", "0.6", "monthly"),
             ("/privacy", "0.4", "yearly"),
             ("/terms", "0.4", "yearly"),
         ]
-        url_blocks = "".join(
+        url_blocks = [
             f"<url><loc>{loc}</loc><lastmod>{today}</lastmod>"
             f"<changefreq>{cf}</changefreq><priority>{pri}</priority></url>"
-            for loc, pri, cf in entries
-        )
+            for loc, pri, cf in static_entries
+        ]
+        # 카탈로그 곡 — 모달 딥링크. 곡명에 한글/공백이 흔해서 quote(safe="") 로
+        # 모든 특수문자를 percent-encoding 한다. sitemap 표준상 loc 안의 & 는
+        # &amp; 로 escape 해야 하지만 quote 통과 후엔 & 가 등장하지 않으니 안전.
+        try:
+            engine = get_engine()
+            for name in engine.iter_catalog_names():
+                encoded = quote(name, safe="")
+                url_blocks.append(
+                    f"<url><loc>/catalog?song={encoded}</loc>"
+                    f"<lastmod>{today}</lastmod>"
+                    "<changefreq>monthly</changefreq><priority>0.5</priority></url>"
+                )
+        except Exception:  # noqa: BLE001 - sitemap 은 절대 5xx 로 죽지 않아야 함
+            logger.warning("sitemap_catalog_skip", exc_info=True)
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-            f"{url_blocks}"
-            "</urlset>"
+            + "".join(url_blocks)
+            + "</urlset>"
         )
         return Response(
             body,

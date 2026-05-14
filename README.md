@@ -187,7 +187,7 @@ UI 에서 " - " 로 잘라서 아티스트를 분리 표시한다.
 backend/      FastAPI 앱 (라우트 + 미들웨어 + ML 파이프라인)
 frontend/    SPA + PWA 자산
 data/        카탈로그 CSV
-tests/       pytest 모음 (현재 136 케이스)
+tests/       pytest 모음 (현재 138 케이스)
 scripts/     개발/카탈로그 재빌드 스크립트
 ```
 
