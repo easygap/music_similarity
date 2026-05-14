@@ -6,7 +6,21 @@
 
 ## [Unreleased]
 
+### Fixed
+- `/catalog` 와 `/compare` 페이지에서 `i18n.js` 가 로딩되지 않아 메인 페이지의
+  Language 토글이 서브 페이지에는 반영되지 않던 문제. 두 페이지 모두 i18n.js
+  를 직접 불러오고 정적/동적 텍스트를 모두 `data-i18n` + `i18n.t()` 로 교체.
+  `i18n:change` 이벤트 구독으로 lang 토글 시 즉시 다시 그린다.
+
 ### Added
+- i18n 사전에 `catalog.*` / `compare.*` 키 세트 신규 추가(ko/en 동일 트리).
+  카탈로그 페이지 정렬 옵션, 페이저, 모달 안의 "분석 중", 매칭 없음, 다시
+  시도 메시지 등 23개 키. compare 페이지는 메트릭 라벨 6개 + 헤더 + 빈
+  상태 안내까지 모두 i18n 화.
+- `tests/test_frontend_assets.py` 에 catalog/compare i18n 회귀 안전망 19개
+  추가. 총 135 케이스.
+
+### Added (earlier)
 - 카탈로그 페이지의 모든 필터 상태(검색어 · BPM/에너지 범위 · 정렬 · 페이지 ·
   즐겨찾기 토글) 를 URLSearchParams 로 양방향 동기화. 같은 URL 을 공유하면
   동일한 화면이 그대로 열리고, 새로고침 / 뒤로가기에도 상태가 유지된다.

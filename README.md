@@ -116,6 +116,8 @@ python preview_server.py 8765
 - 결과 카드 펼침/접힘 토글 — 1위는 펼쳐서 두고 2위부터는 접어둬서 모바일에서
   스크롤 부담을 줄임.
 - 한국어 / 영어 토글, 다크 / 라이트 테마, PWA(오프라인 폴백).
+  메인 / 카탈로그 / 비교 페이지 전부 i18n 적용 — Language 토글 한 번이면 모든
+  서브 페이지의 정적·동적 텍스트가 같이 바뀐다.
 - 백엔드: threadpool 으로 librosa 분리, IP별 rate limit, magic-byte 검증,
   CSP / HSTS / X-Frame-Options 등 시큐어 헤더, 구조화 JSON 로그.
 
@@ -183,7 +185,7 @@ UI 에서 " - " 로 잘라서 아티스트를 분리 표시한다.
 backend/      FastAPI 앱 (라우트 + 미들웨어 + ML 파이프라인)
 frontend/    SPA + PWA 자산
 data/        카탈로그 CSV
-tests/       pytest 모음 (현재 116 케이스)
+tests/       pytest 모음 (현재 135 케이스)
 scripts/     개발/카탈로그 재빌드 스크립트
 ```
 

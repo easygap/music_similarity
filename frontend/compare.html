@@ -137,31 +137,46 @@
   </div>
 
   <main class="compare-wrap">
-    <a class="compare-back" href="/">← 메인으로</a>
+    <a class="compare-back" href="/" data-i18n="compare.back">← 메인으로</a>
     <header class="compare-head">
-      <h1>두 곡 나란히 비교하기</h1>
-      <p>최근 분석한 곡 중 두 개를 골라서 메트릭과 1위 매칭을 한 눈에 비교해보세요.</p>
+      <h1 data-i18n="compare.title">두 곡 나란히 비교하기</h1>
+      <p data-i18n="compare.sub">최근 분석한 곡 중 두 개를 골라서 메트릭과 1위 매칭을 한 눈에 비교해보세요.</p>
     </header>
 
     <div class="picker-row">
       <div class="picker">
-        <label for="select-a">왼쪽 곡</label>
+        <label for="select-a" data-i18n="compare.left">왼쪽 곡</label>
         <select id="select-a"></select>
       </div>
       <div class="picker">
-        <label for="select-b">오른쪽 곡</label>
+        <label for="select-b" data-i18n="compare.right">오른쪽 곡</label>
         <select id="select-b"></select>
       </div>
     </div>
 
     <div class="compare-grid" id="compare-grid">
-      <p class="compare-empty">히스토리에 분석 결과가 2건 이상 있어야 비교할 수 있어요.<br>메인 화면에서 음원을 두 곡 이상 분석해 주세요.</p>
+      <p class="compare-empty">
+        <span data-i18n="compare.emptyTitle">히스토리에 분석 결과가 2건 이상 있어야 비교할 수 있어요.</span>
+        <br>
+        <span data-i18n="compare.emptyBody">메인 화면에서 음원을 두 곡 이상 분석해 주세요.</span>
+      </p>
     </div>
   </main>
 
+  <script src="/i18n.js"></script>
   <script>
   (function () {
     var HISTORY_KEY = "soundmatch.history.v1";
+
+    function t(key) {
+      try {
+        if (window.i18n && typeof window.i18n.t === "function") {
+          var args = Array.prototype.slice.call(arguments, 1);
+          return window.i18n.t.apply(null, [key].concat(args));
+        }
+      } catch (e) {}
+      return key;
+    }
 
     function read() {
       try {
@@ -188,13 +203,14 @@
       return bIsBigger ? "delta-down" : "delta-up";
     }
 
+    // 메트릭 라벨은 i18n 키를 통해서만 잡고, render 시점에 resolve 한다.
     var METRICS = [
-      { key: "tempo_bpm", label: "Tempo (BPM)", digits: 1 },
-      { key: "energy_rms", label: "에너지 (RMS)", digits: 3 },
-      { key: "brightness", label: "밝기 (Hz)", digits: 0 },
-      { key: "noisiness", label: "거친 정도", digits: 3 },
-      { key: "harmony_ratio", label: "화성/타악기", digits: 2 },
-      { key: "chroma", label: "크로마", digits: 3 },
+      { key: "tempo_bpm", i18nKey: "compare.metric.tempo", digits: 1 },
+      { key: "energy_rms", i18nKey: "compare.metric.energy", digits: 3 },
+      { key: "brightness", i18nKey: "compare.metric.brightness", digits: 0 },
+      { key: "noisiness", i18nKey: "compare.metric.noisiness", digits: 3 },
+      { key: "harmony_ratio", i18nKey: "compare.metric.harmony", digits: 2 },
+      { key: "chroma", i18nKey: "compare.metric.chroma", digits: 3 },
     ];
 
     function escapeHtml(s) {
@@ -216,23 +232,23 @@
         var cls = deltaClass(b, a, false);
         return [
           '<div class="compare-metric">',
-          '<span class="compare-metric-key">' + escapeHtml(m.label) + '</span>',
+          '<span class="compare-metric-key">' + escapeHtml(t(m.i18nKey)) + '</span>',
           '<span class="compare-metric-val ' + cls + '">' + fmt(a, m.digits) + '</span>',
           '</div>',
         ].join("");
       }).join("");
 
-      var tagsHtml = tags.map(function (t) {
-        return '<span class="compare-tag">' + escapeHtml(t) + '</span>';
+      var tagsHtml = tags.map(function (tg) {
+        return '<span class="compare-tag">' + escapeHtml(tg) + '</span>';
       }).join("");
 
       var topHtml = "";
       if (top) {
         topHtml = [
           '<div class="compare-top">',
-          '<div class="compare-top-label">Top 1 매칭</div>',
+          '<div class="compare-top-label">' + escapeHtml(t("compare.topMatch")) + '</div>',
           '<p class="compare-top-title">' + escapeHtml(top.title || "—") + ' · <span style="color:var(--text-mute)">' + escapeHtml(top.artist || "") + '</span></p>',
-          '<span class="compare-top-percent">' + fmt(top.similarity_percent, 1) + '% 유사도</span>',
+          '<span class="compare-top-percent">' + fmt(top.similarity_percent, 1) + '% ' + escapeHtml(t("compare.topSuffix")) + '</span>',
           '</div>',
         ].join("");
       }
@@ -260,10 +276,11 @@
       }
 
       function buildOptions(target, defaultIdx) {
+        var locale = (window.i18n && window.i18n.lang && window.i18n.lang() === "en") ? "en-US" : "ko-KR";
         target.innerHTML = items.map(function (it, idx) {
           var when = new Date(it.ts);
-          var label = when.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-          var name = it.filename || ("분석 " + (idx + 1));
+          var label = when.toLocaleString(locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+          var name = it.filename || ("Analysis " + (idx + 1));
           return '<option value="' + idx + '"' + (idx === defaultIdx ? ' selected' : '') + '>'
             + escapeHtml(name) + ' · ' + escapeHtml(label) + '</option>';
         }).join("");
@@ -276,7 +293,7 @@
         var a = items[parseInt(selA.value, 10)];
         var b = items[parseInt(selB.value, 10)];
         if (!a || !b) {
-          grid.innerHTML = '<p class="compare-empty">유효하지 않은 선택이에요.</p>';
+          grid.innerHTML = '<p class="compare-empty">' + escapeHtml(t("compare.invalid")) + '</p>';
           return;
         }
         grid.innerHTML = renderCard(a, b) + renderCard(b, a);
@@ -284,6 +301,14 @@
 
       selA.addEventListener("change", rerender);
       selB.addEventListener("change", rerender);
+      // 언어가 바뀌면 옵션 라벨(날짜) 과 카드 메트릭 라벨이 같이 바뀌어야 한다.
+      window.addEventListener("i18n:change", function () {
+        var prevA = selA.value;
+        var prevB = selB.value;
+        buildOptions(selA, parseInt(prevA, 10) || 0);
+        buildOptions(selB, parseInt(prevB, 10) || 1);
+        rerender();
+      });
       rerender();
     }
 
