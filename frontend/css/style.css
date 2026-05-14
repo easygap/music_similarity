@@ -1218,6 +1218,13 @@ main {
   flex-wrap: wrap;
 }
 .catalog-preview-head .info-title { margin: 0; }
+.favorites-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.favorites-actions .link-ghost { white-space: nowrap; }
 .catalog-preview-sub { color: var(--text-mute); margin: 0 0 16px; max-width: 640px; font-size: 14.5px; }
 .catalog-list {
   display: grid;

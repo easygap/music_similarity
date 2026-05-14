@@ -394,7 +394,75 @@
       minBpm: "", maxBpm: "", minEnergy: "", maxEnergy: "", sort: "default",
     };
     var debounceTimer = null;
+    var urlWriteTimer = null;
     var Fav = window.SoundMatchFavorites;
+
+    // ------------------------------------------------------------------
+    // URL <-> state 동기화. 새로고침이나 링크 공유 시 동일한 필터로 복원되도록
+    // q/페이지/필터/정렬/즐겨찾기 모드를 모두 URLSearchParams 에 싣는다.
+    // ------------------------------------------------------------------
+    function clampNumber(raw, lo, hi) {
+      var n = parseFloat(raw);
+      if (!Number.isFinite(n)) return "";
+      if (n < lo) n = lo;
+      if (n > hi) n = hi;
+      // 정수 BPM 은 그대로, 에너지 0~1 은 소수점 두 자리까지.
+      return Math.abs(n - Math.round(n)) < 1e-9 ? String(Math.round(n)) : String(n);
+    }
+
+    function readStateFromUrl() {
+      try {
+        var p = new URLSearchParams(window.location.search);
+        if (p.has("q")) state.q = (p.get("q") || "").slice(0, 200);
+        var pageRaw = parseInt(p.get("page") || "1", 10);
+        if (Number.isFinite(pageRaw) && pageRaw >= 1 && pageRaw <= 1000) state.page = pageRaw;
+        var sizeRaw = parseInt(p.get("size") || "", 10);
+        if (Number.isFinite(sizeRaw) && sizeRaw >= 6 && sizeRaw <= 100) state.size = sizeRaw;
+        var sortRaw = p.get("sort") || "";
+        var allowedSort = ["default", "title", "artist", "bpm", "energy"];
+        if (allowedSort.indexOf(sortRaw) !== -1) state.sort = sortRaw;
+        if (p.has("min_bpm")) state.minBpm = clampNumber(p.get("min_bpm"), 0, 400);
+        if (p.has("max_bpm")) state.maxBpm = clampNumber(p.get("max_bpm"), 0, 400);
+        if (p.has("min_energy")) state.minEnergy = clampNumber(p.get("min_energy"), 0, 1);
+        if (p.has("max_energy")) state.maxEnergy = clampNumber(p.get("max_energy"), 0, 1);
+        if (p.get("fav_only") === "1") state.favOnly = true;
+      } catch (e) {
+        // URL 파싱 실패해도 기본 상태로 그냥 계속.
+      }
+    }
+
+    function writeStateToUrl() {
+      // input 마다 호출되므로 디바운스. 한 번 history.replaceState 만 하면 충분.
+      clearTimeout(urlWriteTimer);
+      urlWriteTimer = setTimeout(function () {
+        try {
+          var p = new URLSearchParams();
+          if (state.q) p.set("q", state.q);
+          if (state.page > 1) p.set("page", String(state.page));
+          if (state.sort && state.sort !== "default") p.set("sort", state.sort);
+          if (state.minBpm !== "") p.set("min_bpm", state.minBpm);
+          if (state.maxBpm !== "") p.set("max_bpm", state.maxBpm);
+          if (state.minEnergy !== "") p.set("min_energy", state.minEnergy);
+          if (state.maxEnergy !== "") p.set("max_energy", state.maxEnergy);
+          if (state.favOnly) p.set("fav_only", "1");
+          var qs = p.toString();
+          var next = window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
+          // history 스택을 망치지 않게 replaceState.
+          window.history.replaceState(null, "", next);
+        } catch (e) {}
+      }, 180);
+    }
+
+    function applyStateToInputs() {
+      // URL 에서 복원된 값을 input/select 에도 반영해야 사용자가 화면을 봤을 때 일치한다.
+      if (input) input.value = state.q || "";
+      if (favOnly) favOnly.checked = !!state.favOnly;
+      if (minBpmEl) minBpmEl.value = state.minBpm;
+      if (maxBpmEl) maxBpmEl.value = state.maxBpm;
+      if (minEEl) minEEl.value = state.minEnergy;
+      if (maxEEl) maxEEl.value = state.maxEnergy;
+      if (sortEl) sortEl.value = state.sort || "default";
+    }
 
     function escapeHtml(s) {
       return String(s == null ? "" : s)
@@ -617,15 +685,21 @@
       debounceTimer = setTimeout(function () {
         state.q = input.value.trim();
         state.page = 1;
+        writeStateToUrl();
         load();
       }, 280);
     });
-    prev.addEventListener("click", function () { if (state.page > 1) { state.page--; load(); } });
-    next.addEventListener("click", function () { if (state.hasMore) { state.page++; load(); } });
+    prev.addEventListener("click", function () {
+      if (state.page > 1) { state.page--; writeStateToUrl(); load(); }
+    });
+    next.addEventListener("click", function () {
+      if (state.hasMore) { state.page++; writeStateToUrl(); load(); }
+    });
     if (favOnly) {
       favOnly.addEventListener("change", function () {
         state.favOnly = favOnly.checked;
         state.page = 1;
+        writeStateToUrl();
         load();
       });
     }
@@ -638,6 +712,7 @@
         t = setTimeout(function () {
           state[stateKey] = el.value;
           state.page = 1;
+          writeStateToUrl();
           load();
         }, 280);
       });
@@ -650,9 +725,17 @@
       sortEl.addEventListener("change", function () {
         state.sort = sortEl.value;
         state.page = 1;
+        writeStateToUrl();
         load();
       });
     }
+
+    // 뒤로가기/앞으로가기 시 URL 이 바뀌면 state 를 다시 읽어와 화면을 갱신.
+    window.addEventListener("popstate", function () {
+      readStateFromUrl();
+      applyStateToInputs();
+      load();
+    });
     // 다른 페이지에서 추가/해제 시 카탈로그 페이지도 즉시 갱신.
     window.addEventListener("favorites:change", function () { load(); });
 
@@ -681,6 +764,9 @@
       }
     })();
 
+    // 초기 URL 파라미터로 state 를 채운 뒤 input/select 에도 반영하고 첫 로드.
+    readStateFromUrl();
+    applyStateToInputs();
     load();
   })();
   </script>
