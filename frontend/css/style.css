@@ -619,7 +619,24 @@ main {
 }
 .results-header h2 { margin: 0; font-size: 28px; letter-spacing: -0.01em; }
 #results-subtitle { color: var(--text-mute); margin: 4px 0 0; font-size: 14px; }
-.results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.results-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.results-sort-wrap { display: inline-flex; align-items: center; }
+.results-sort {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  padding: 8px 30px 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='white' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+:root[data-theme="light"] .results-sort {
+  background-color: white;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%230f172a' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+}
 
 .ghost {
   background: transparent;

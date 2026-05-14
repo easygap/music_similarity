@@ -132,6 +132,114 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_compare(args: argparse.Namespace) -> int:
+    """두 파일을 분석해 메트릭과 태그를 나란히 비교한다.
+
+    같은 카탈로그로 두 곡을 동시에 분석하고, 메트릭 차이를 가독성 있게 출력.
+    각 곡의 1위 매칭도 같이 알려준다 — 두 곡이 카탈로그에서 비슷한 영역에
+    있는지 빠르게 감 잡기에 좋다.
+    """
+    path_a = Path(args.path_a)
+    path_b = Path(args.path_b)
+    for p in (path_a, path_b):
+        if not p.exists():
+            print(f"error: 파일을 찾을 수 없습니다: {p}", file=sys.stderr)
+            return 2
+
+    dataset = Path(args.dataset)
+    try:
+        engine = MusicSimilarityEngine(dataset)
+    except Exception as e:  # noqa: BLE001
+        print(f"error: 카탈로그 로딩 실패: {e}", file=sys.stderr)
+        return 3
+
+    try:
+        fa = extract_features(path_a, max_duration=args.max_duration)
+        fb = extract_features(path_b, max_duration=args.max_duration)
+    except Exception as e:  # noqa: BLE001
+        print(f"error: 오디오 분석 실패: {e}", file=sys.stderr)
+        return 4
+
+    sa = summary_metrics(fa)
+    sb = summary_metrics(fb)
+    ta = derive_tags(fa)
+    tb = derive_tags(fb)
+    hits_a, _ = engine.find_similar(fa, top_n=1)
+    hits_b, _ = engine.find_similar(fb, top_n=1)
+    top_a = hits_a[0] if hits_a else None
+    top_b = hits_b[0] if hits_b else None
+
+    metric_labels = [
+        ("Tempo (BPM)", "tempo_bpm"),
+        ("에너지 (RMS)", "energy_rms"),
+        ("밝기 (Hz)", "brightness"),
+        ("거친 정도", "noisiness"),
+        ("화성/타악기", "harmony_ratio"),
+        ("크로마", "chroma"),
+    ]
+
+    def _fmt(v):
+        if not isinstance(v, int | float):
+            return "—"
+        if abs(v) >= 100:
+            return f"{v:.0f}"
+        if abs(v) >= 1:
+            return f"{v:.1f}"
+        return f"{v:.3f}"
+
+    if args.json:
+        import json as _json
+
+        _json.dump(
+            {
+                "a": {"filename": path_a.name, "summary": sa, "tags": ta,
+                       "top1": _hit_to_dict(top_a) if top_a else None},
+                "b": {"filename": path_b.name, "summary": sb, "tags": tb,
+                       "top1": _hit_to_dict(top_b) if top_b else None},
+                "catalog_size": engine.catalog_size,
+                "engine_version": ENGINE_VERSION,
+            },
+            sys.stdout,
+            ensure_ascii=False,
+            indent=2,
+        )
+        sys.stdout.write("\n")
+        return 0
+
+    print("# 비교 결과")
+    print(f"  A: {path_a.name}")
+    print(f"  B: {path_b.name}")
+    print(f"  카탈로그 {engine.catalog_size}곡 기준")
+    print()
+    print(f"  {'항목':<14} {'A':>12} {'B':>12} {'Δ':>10}")
+    for label, key in metric_labels:
+        va = sa.get(key)
+        vb = sb.get(key)
+        delta = ""
+        if isinstance(va, int | float) and isinstance(vb, int | float):
+            delta = _fmt(vb - va)
+        print(f"  {label:<14} {_fmt(va):>12} {_fmt(vb):>12} {delta:>10}")
+    print()
+    print(f"  태그 A: {' / '.join(ta) if ta else '-'}")
+    print(f"  태그 B: {' / '.join(tb) if tb else '-'}")
+    print()
+    if top_a:
+        print(f"  A 의 1위 매칭: {top_a.name} – {top_a.artist} "
+              f"({top_a.similarity_percent:.1f}%)")
+    if top_b:
+        print(f"  B 의 1위 매칭: {top_b.name} – {top_b.artist} "
+              f"({top_b.similarity_percent:.1f}%)")
+    return 0
+
+
+def _hit_to_dict(hit) -> dict:
+    return {
+        "title": hit.name,
+        "artist": hit.artist,
+        "similarity_percent": hit.similarity_percent,
+    }
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     """uvicorn 으로 backend.main:app 을 띄우는 단축어.
 
@@ -392,6 +500,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="입력과 같은 파일을 덮어써도 되는지 명시적으로 허용",
     )
     dedupe.set_defaults(func=cmd_dedupe_dataset)
+
+    compare = sub.add_parser("compare", help="두 음원 파일을 같은 카탈로그로 분석해 나란히 비교한다.")
+    compare.add_argument("path_a", help="A 음원 파일 경로")
+    compare.add_argument("path_b", help="B 음원 파일 경로")
+    compare.add_argument(
+        "--max-duration",
+        type=float,
+        default=30.0,
+        help="각 파일을 이 초 수까지만 분석에 사용",
+    )
+    compare.add_argument(
+        "--dataset",
+        default="data/dataset.csv",
+        help="카탈로그 CSV 경로",
+    )
+    compare.add_argument("--json", action="store_true", help="결과를 JSON 으로 출력")
+    compare.set_defaults(func=cmd_compare)
 
     serve = sub.add_parser("serve", help="uvicorn 으로 백엔드를 띄운다 (개발 편의용 단축어).")
     serve.add_argument("--host", default="127.0.0.1", help="바인딩할 호스트 (기본 127.0.0.1)")

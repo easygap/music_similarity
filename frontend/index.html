@@ -210,6 +210,14 @@
           <p id="results-subtitle"></p>
         </div>
         <div class="results-actions">
+          <label class="results-sort-wrap">
+            <span class="sr-only" data-i18n="results.sortLabel">정렬 기준</span>
+            <select id="results-sort" class="results-sort">
+              <option value="similarity" data-i18n="results.sortBySimilarity">유사도 높은 순</option>
+              <option value="tempo" data-i18n="results.sortByTempo">Tempo 차이 적은 순</option>
+              <option value="energy" data-i18n="results.sortByEnergy">에너지 차이 적은 순</option>
+            </select>
+          </label>
           <button type="button" class="ghost hidden" id="seed-back-btn" data-i18n="results.seedBack">← 이전 분석으로</button>
           <!-- Web Share API 가 지원되는 환경(주로 모바일)에서만 노출. 그 외엔 hidden. -->
           <button type="button" class="ghost hidden" id="share-btn" aria-label="결과 공유">

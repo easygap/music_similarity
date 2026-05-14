@@ -52,6 +52,7 @@
 
   const resetBtn = $("#reset-btn");
   const seedBackBtn = $("#seed-back-btn");
+  const resultsSortSelect = $("#results-sort");
   const copyLinkBtn = $("#copy-link-btn");
   const copyShareUrlBtn = $("#copy-share-url-btn");
   const exportJsonBtn = $("#export-json-btn");
@@ -611,7 +612,10 @@
 
     hitList.innerHTML = "";
     const tmpl = $("#hit-template");
-    data.results.forEach((hit, idx) => {
+    // 사용자가 선택한 정렬 기준 적용. 원본 배열은 건드리지 않는다.
+    const sortKey = resultsSortSelect ? resultsSortSelect.value : "similarity";
+    const sorted = sortResults(data.results, data.summary || {}, sortKey);
+    sorted.forEach((hit, idx) => {
       const li = tmpl.content.firstElementChild.cloneNode(true);
       li.querySelector(".rank-num").textContent = hit.rank;
       li.querySelector(".rank-label").textContent = t("results.hitRankUnit");
@@ -695,6 +699,38 @@
     }
 
     resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // 결과 카드 정렬. 항상 rank 1~N 라벨은 그대로 유지하되 화면 노출 순서만 바꾼다.
+  function sortResults(results, summary, key) {
+    const copy = results.slice();
+    if (key === "tempo") {
+      const queryBpm = Number(summary.tempo_bpm) || 0;
+      copy.sort((a, b) => {
+        const ad = Math.abs((a.match_summary?.tempo_bpm ?? queryBpm) - queryBpm);
+        const bd = Math.abs((b.match_summary?.tempo_bpm ?? queryBpm) - queryBpm);
+        if (ad !== bd) return ad - bd;
+        return (b.similarity_percent || 0) - (a.similarity_percent || 0);
+      });
+    } else if (key === "energy") {
+      const queryE = Number(summary.energy_rms) || 0;
+      copy.sort((a, b) => {
+        const ad = Math.abs((a.match_summary?.energy_rms ?? queryE) - queryE);
+        const bd = Math.abs((b.match_summary?.energy_rms ?? queryE) - queryE);
+        if (ad !== bd) return ad - bd;
+        return (b.similarity_percent || 0) - (a.similarity_percent || 0);
+      });
+    } else {
+      // 기본: 유사도 내림차순.
+      copy.sort((a, b) => (b.similarity_percent || 0) - (a.similarity_percent || 0));
+    }
+    return copy;
+  }
+
+  if (resultsSortSelect) {
+    resultsSortSelect.addEventListener("change", () => {
+      if (_lastResults) renderResults(_lastResults, /* preserveFile */ true);
+    });
   }
 
   function renderSummary(summary) {

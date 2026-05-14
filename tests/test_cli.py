@@ -150,6 +150,67 @@ def test_cli_dedupe_dataset(tmp_path, feature_columns, capsys):
     assert len(rows) == 3  # 헤더 + 2행
 
 
+def test_cli_compare_two_files(tmp_path, tiny_wav, synthetic_dataset, capsys):
+    """두 음원을 compare 명령으로 처리하면 메트릭 비교 표가 출력된다."""
+    import shutil
+
+    a = tmp_path / "a.wav"
+    b = tmp_path / "b.wav"
+    shutil.copy(tiny_wav, a)
+    shutil.copy(tiny_wav, b)
+
+    code = main([
+        "compare",
+        str(a),
+        str(b),
+        "--dataset", str(synthetic_dataset),
+    ])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "비교 결과" in out
+    assert "Tempo (BPM)" in out
+    assert "A 의 1위 매칭" in out
+    assert "B 의 1위 매칭" in out
+
+
+def test_cli_compare_json(tmp_path, tiny_wav, synthetic_dataset, capsys):
+    """--json 옵션은 stdout 으로 JSON 을 흘려보낸다."""
+    import json as _json
+    import shutil
+
+    a = tmp_path / "a.wav"
+    b = tmp_path / "b.wav"
+    shutil.copy(tiny_wav, a)
+    shutil.copy(tiny_wav, b)
+
+    code = main([
+        "compare",
+        str(a),
+        str(b),
+        "--dataset", str(synthetic_dataset),
+        "--json",
+    ])
+    out = capsys.readouterr().out
+    assert code == 0
+    data = _json.loads(out)
+    assert data["a"]["filename"] == "a.wav"
+    assert data["b"]["filename"] == "b.wav"
+    assert data["catalog_size"] == 3
+    assert data["a"]["top1"] is not None and data["b"]["top1"] is not None
+
+
+def test_cli_compare_missing_file(tmp_path, synthetic_dataset, tiny_wav, capsys):
+    code = main([
+        "compare",
+        str(tmp_path / "no.wav"),
+        str(tiny_wav),
+        "--dataset", str(synthetic_dataset),
+    ])
+    err = capsys.readouterr().err
+    assert code != 0
+    assert "찾을 수 없습니다" in err
+
+
 def test_cli_dedupe_dataset_requires_overwrite_for_same_path(tmp_path, feature_columns, capsys):
     """입력과 같은 파일을 덮어쓸 때는 --overwrite 가 필요해야 한다."""
     import csv as csv_module

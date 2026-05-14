@@ -7,6 +7,15 @@
 ## [Unreleased]
 
 ### Added
+- 결과 페이지 정렬 옵션 — 유사도 (기본) / Tempo 차이 / 에너지 차이 기준으로
+  카드 순서가 즉시 재배치된다. rank 라벨은 그대로 유지.
+- CLI `compare` 서브커먼드: `python -m backend.cli compare a.wav b.wav`.
+  같은 카탈로그로 두 곡을 분석해 메트릭 표 / 태그 / 각자의 1위 매칭을 한 번에
+  비교. `--json` 으로 기계 가독 출력.
+- `.github/workflows/release.yml` — `v*.*.*` 태그를 푸시하면 CHANGELOG 의 해당
+  버전(또는 Unreleased) 섹션을 발췌해서 GitHub Release 를 자동 생성.
+
+### Added (earlier)
 - `GET /api/version` — 버전 / 환경 / 카탈로그 사이즈 / 기능 플래그 / 업로드 한도
   / rate limit 한도를 한 번에 돌려준다. SDK / 클라이언트 호환성 체크용.
 - `/api/analyze/by-catalog` 에 LRU 캐시 적용. 같은 (name, top_n) 입력은

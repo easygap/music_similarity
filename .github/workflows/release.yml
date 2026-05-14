@@ -1,0 +1,62 @@
+# v* 태그가 푸시되면 자동으로 GitHub Release 를 만든다.
+#
+# CHANGELOG.md 의 해당 버전 섹션을 잘라서 release body 로 사용한다 — 따로
+# 수동으로 release notes 를 쓸 필요 없다. main 브랜치 CI 가 그린이라는 전제는
+# release 워크플로가 직접 확인하지 않음 (CI 가 따로 보장).
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  github-release:
+    name: GitHub Release 생성
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 태그 / 버전 추출
+        id: meta
+        run: |
+          TAG="${GITHUB_REF##*/}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: CHANGELOG 섹션 추출
+        id: notes
+        run: |
+          # `## [<version>]` 또는 `## [Unreleased]` 헤더부터 다음 `## [` 까지를 잘라낸다.
+          VERSION="${{ steps.meta.outputs.version }}"
+          python - <<'PY' > release_notes.md
+          import re, pathlib, os
+          version = os.environ["VERSION"]
+          text = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          # 정확히 매칭되는 섹션, 없으면 Unreleased 폴백.
+          for needle in (f"## [{version}]", "## [Unreleased]"):
+              m = re.search(rf"{re.escape(needle)}.*?(?=\n## \[|\Z)", text, flags=re.DOTALL)
+              if m:
+                  print(m.group(0).strip())
+                  break
+          else:
+              print(f"릴리스 노트가 CHANGELOG 에 없습니다 — {version}")
+          PY
+          echo "path=release_notes.md" >> "$GITHUB_OUTPUT"
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+
+      - name: GitHub Release 생성
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.meta.outputs.tag }}" \
+            --title "${{ steps.meta.outputs.tag }}" \
+            --notes-file release_notes.md
