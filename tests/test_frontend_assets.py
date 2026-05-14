@@ -170,6 +170,31 @@ def test_render_mini_metrics_uses_i18n_labels():
     assert "label: \"밝기\"" not in text
 
 
+def test_run_analysis_uses_abort_controller():
+    """runAnalysis 가 AbortController 를 만들어 fetch signal 로 전달하고,
+    이전 진행 중이던 요청은 abort 하도록 되어 있어야 한다.
+    """
+    text = _read("js/app.js")
+    assert "new AbortController()" in text
+    assert "signal: controller.signal" in text
+    # 이전 controller abort
+    assert "_analysisAbortController.abort()" in text
+    # stale 응답 가드
+    assert "_analysisAbortController !== controller" in text
+    # AbortError 는 에러 화면 안 띄우고 그냥 무시
+    assert 'err.name === "AbortError"' in text
+
+
+def test_reset_button_aborts_in_flight_analysis():
+    """리셋 버튼이 진행 중인 분석을 같이 cancel 해야 stale 응답이 빈 화면에
+    안 떠 오른다.
+    """
+    text = _read("js/app.js")
+    # reset 핸들러 안에서 abort 호출.
+    reset_section = text.split("resetBtn.addEventListener", 1)[1].split("});", 1)[0]
+    assert "_analysisAbortController.abort()" in reset_section
+
+
 def test_error_boundary_messages_pass_through_i18n():
     """error-boundary.js 의 토스트 메시지가 한국어 하드코딩이 아니라 i18n
     키를 통과해야 한다. 영어 사용자한테도 일관된 경험.
