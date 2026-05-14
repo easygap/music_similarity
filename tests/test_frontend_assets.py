@@ -69,6 +69,23 @@ def test_catalog_html_writes_url_on_state_changes():
     assert text.count("writeStateToUrl()") >= 5, "writeStateToUrl 가 충분히 호출되지 않습니다."
 
 
+def test_catalog_modal_deeplink_to_url():
+    """모달이 열리고 닫힐 때 URL 에 song= 파라미터를 양방향으로 동기화해야 한다."""
+    text = _read("catalog.html")
+    # state 에 song 필드.
+    assert 'song: ""' in text or "song:''" in text or "song: \"\"" in text
+    # URL 쓰기 / 읽기 양쪽에서 song 다룸.
+    assert 'p.set("song", state.song)' in text
+    assert 'p.has("song")' in text
+    # 모달 열림 시 state.song 갱신.
+    assert "state.song = name" in text
+    # 닫힘 시 state.song 비움.
+    assert 'state.song = ""' in text
+    # 초기 로드 시 URL 에 song 있으면 자동 오픈.
+    assert "if (state.song)" in text
+    assert "openSimilarModal(state.song)" in text
+
+
 @pytest.mark.parametrize(
     "marker",
     [
