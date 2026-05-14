@@ -33,6 +33,47 @@ def test_security_headers_on_index(fastapi_client):
     assert "Content-Security-Policy" in r.headers
 
 
+def test_csp_disallows_inline_script(fastapi_client):
+    """CSP 가 더 이상 'unsafe-inline' 을 허용해서는 안 된다.
+
+    인라인 스크립트가 한 군데 escapeHtml 빠뜨려도 그게 그대로 XSS 가 되는
+    걸 막기 위한 진짜 방어선.
+    """
+    r = fastapi_client.get("/")
+    csp = r.headers.get("Content-Security-Policy", "")
+    assert "script-src 'self'" in csp
+    # 'unsafe-inline' 가 script-src 항목에 다시 들어오면 회귀.
+    # (style-src 의 'unsafe-inline' 은 의도적으로 유지 — 인라인 SVG/그라데이션용.)
+    script_src_block = csp.split("script-src", 1)[1].split(";", 1)[0]
+    assert "'unsafe-inline'" not in script_src_block
+
+
+def test_extracted_js_files_served(fastapi_client):
+    """인라인에서 떨어져 나온 새 JS 파일들이 200 으로 응답해야 한다."""
+    for path in ("/theme-init.js", "/sw-register.js", "/error-boundary.js"):
+        r = fastapi_client.get(path)
+        assert r.status_code == 200, path
+        assert "javascript" in r.headers.get("content-type", ""), (path, r.headers)
+
+
+def test_no_inline_script_in_html_pages(fastapi_client):
+    """모든 HTML 응답에 <script> 인라인 본문이 들어 있으면 안 된다.
+
+    문법: <script>...</script> 사이에 코드가 들어 있는지 확인. 외부
+    <script src="..."></script> 은 자동으로 제외된다.
+    """
+    import re
+
+    for path in ("/", "/catalog", "/compare", "/privacy", "/terms", "/offline.html"):
+        r = fastapi_client.get(path)
+        assert r.status_code == 200, path
+        # 본문이 비어 있지 않은 <script>...</script> 블록을 찾는다.
+        matches = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>([^<]+)</script>", r.text)
+        # 공백만 있는 빈 블록은 OK.
+        meaningful = [m for m in matches if m.strip()]
+        assert not meaningful, f"{path} 에 인라인 스크립트가 남아 있습니다: {meaningful[:1]}"
+
+
 def test_request_id_round_trips(fastapi_client):
     """클라이언트가 보낸 X-Request-ID 가 응답에서도 동일하게 돌아와야 한다."""
     r = fastapi_client.get("/api/health", headers={"X-Request-ID": "abc-123"})

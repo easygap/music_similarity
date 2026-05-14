@@ -42,18 +42,8 @@
   />
   <link rel="stylesheet" href="/style.css" />
 
-  <!-- 첫 페인트에서 테마가 튀는 걸 막기 위해 저장된 값을 인라인으로 먼저 적용. -->
-  <script>
-    (function () {
-      try {
-        var t = localStorage.getItem("soundmatch.theme");
-        if (!t) {
-          t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-        }
-        document.documentElement.setAttribute("data-theme", t);
-      } catch (e) {}
-    })();
-  </script>
+  <!-- 첫 페인트에서 테마가 튀는 걸 막기 위해 외부 동기 스크립트로 먼저 적용. -->
+  <script src="/theme-init.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">본문으로 건너뛰기</a>
@@ -475,76 +465,10 @@
   <script src="/favorites.js"></script>
   <script src="/app.js"></script>
 
-  <!-- 글로벌 에러 boundary. 인라인으로 깔아둬서 외부 JS 가 깨져도 동작한다. -->
-  <script>
-    (function () {
-      function show(msg) {
-        try {
-          var toast = document.getElementById("toast");
-          if (!toast) return;
-          toast.textContent = msg;
-          toast.classList.remove("hidden");
-          toast.classList.add("is-show");
-          setTimeout(function () { toast.classList.remove("is-show"); }, 2400);
-        } catch (e) {}
-      }
-      // 같은 에러를 반복적으로 비콘에 쏘지 않도록 1초 디바운스.
-      var lastBeaconAt = 0;
-      function beacon(body) {
-        try {
-          var now = Date.now();
-          if (now - lastBeaconAt < 1000) return;
-          lastBeaconAt = now;
-          // navigator.sendBeacon 이 가능하면 페이지 이탈 중에도 안전하게 전송.
-          var data = JSON.stringify(body).slice(0, 4000);
-          if (navigator.sendBeacon) {
-            var blob = new Blob([data], { type: "application/json" });
-            navigator.sendBeacon("/api/client-error", blob);
-          } else {
-            fetch("/api/client-error", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: data,
-              keepalive: true,
-            }).catch(function () {});
-          }
-        } catch (e) {}
-      }
-      window.addEventListener("error", function (e) {
-        if (e && e.target && e.target.tagName) return;
-        show("문제가 발생했어요. 새로고침 후 다시 시도해주세요.");
-        console.error("[soundmatch] error:", e.message || e);
-        beacon({
-          kind: "error",
-          message: (e && e.message) || "",
-          source: (e && e.filename) || "",
-          lineno: (e && e.lineno) || null,
-          colno: (e && e.colno) || null,
-          url: location.pathname,
-        });
-      });
-      window.addEventListener("unhandledrejection", function (e) {
-        show("요청 처리 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.");
-        console.error("[soundmatch] unhandled:", (e && e.reason) || e);
-        beacon({
-          kind: "unhandledrejection",
-          message: String((e && e.reason && (e.reason.message || e.reason)) || "")
-            .slice(0, 500),
-          url: location.pathname,
-        });
-      });
-    })();
-  </script>
-
-  <!-- Service Worker 등록. 로컬 dev 에서도 동작하도록 조건 없음. -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", function () {
-        navigator.serviceWorker.register("/sw.js").catch(function (err) {
-          console.warn("SW 등록 실패:", err);
-        });
-      });
-    }
-  </script>
+  <!-- 글로벌 에러 boundary + SW 등록. CSP 의 'unsafe-inline' 제거를 위해
+       인라인이 아닌 외부 파일로 로드한다. error-boundary.js 는 app.js 가
+       깨져도 살아남도록 의도적으로 분리된 채 유지. -->
+  <script src="/error-boundary.js"></script>
+  <script src="/sw-register.js"></script>
 </body>
 </html>

@@ -7,14 +7,7 @@
   <meta name="robots" content="noindex" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/style.css" />
-  <script>
-    // 초기 깜빡임 방지용: 저장된 테마를 즉시 반영한다.
-    try {
-      var t = localStorage.getItem("soundmatch.theme")
-        || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-      document.documentElement.setAttribute("data-theme", t);
-    } catch (e) {}
-  </script>
+  <script src="/theme-init.js"></script>
   <style>
     .not-found-wrap {
       min-height: 100vh;

@@ -7,13 +7,7 @@
   <meta name="description" content="SoundMatch 분석의 비교 대상이 되는 곡 카탈로그를 검색해볼 수 있습니다." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/style.css" />
-  <script>
-    try {
-      var t = localStorage.getItem("soundmatch.theme")
-        || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-      document.documentElement.setAttribute("data-theme", t);
-    } catch (e) {}
-  </script>
+  <script src="/theme-init.js"></script>
   <style>
     .cat-wrap { max-width: 1100px; margin: 0 auto; padding: 56px 24px 120px; }
     .cat-head { margin-bottom: 24px; }
