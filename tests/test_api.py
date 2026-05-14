@@ -420,6 +420,30 @@ def test_sitemap_lists_static_pages(fastapi_client):
         assert f"<loc>{path}</loc>" in body
 
 
+def test_sitemap_includes_catalog_song_deeplinks(fastapi_client):
+    """sitemap.xml 에 카탈로그 곡 딥링크가 percent-encoded 형태로 포함되어야 한다."""
+    from urllib.parse import quote
+
+    r = fastapi_client.get("/sitemap.xml")
+    assert r.status_code == 200
+    body = r.text
+    # 합성 카탈로그(conftest.py)는 Alpha/Beta/Gamma 세 곡을 만든다.
+    # 적어도 하나의 /catalog?song=... 항목이 percent-encoded 형태로 들어가야 한다.
+    assert "/catalog?song=" in body
+    expected = "<loc>/catalog?song=" + quote("Alpha - Tester", safe="") + "</loc>"
+    assert expected in body
+    # 카탈로그 3곡 모두 포함되어야 한다.
+    for name in ("Alpha - Tester", "Beta - Tester", "Gamma - Tester"):
+        assert "<loc>/catalog?song=" + quote(name, safe="") + "</loc>" in body
+
+
+def test_sitemap_caches_for_an_hour(fastapi_client):
+    """sitemap.xml 에 Cache-Control: max-age=3600 헤더가 붙어야 한다."""
+    r = fastapi_client.get("/sitemap.xml")
+    assert r.status_code == 200
+    assert "max-age=3600" in r.headers.get("Cache-Control", "")
+
+
 def test_analyze_returns_tags(fastapi_client, tiny_wav):
     """분석 결과에 휴리스틱 태그 배열이 포함되어야 한다."""
     with tiny_wav.open("rb") as f:
