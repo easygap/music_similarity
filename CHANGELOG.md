@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+### Accessibility
+- 카탈로그 모달이 열리면 Tab / Shift+Tab 으로 모달 안의 조작 가능 요소만
+  순환하도록 포커스 트랩 적용. 닫기 / ★ / → 시드 / 모달 카드 요소를 빠짐없이
+  순회. 열림 직후엔 첫 번째 조작 가능 요소(닫기 버튼) 로 자동 포커스 — 키보드 /
+  스크린리더 사용자가 모달 안에서만 키를 잡고 있도록.
+
 ### Added
 - 알 수 없는 경로 접근 시 styled `/404` 페이지로 자동 폴백. 브라우저 navigation
   (Accept: text/html) 만 styled HTML 응답, 그 외 (API / metrics 등) 는 기존

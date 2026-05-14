@@ -69,6 +69,19 @@ def test_catalog_html_writes_url_on_state_changes():
     assert text.count("writeStateToUrl()") >= 5, "writeStateToUrl 가 충분히 호출되지 않습니다."
 
 
+def test_catalog_modal_has_focus_trap():
+    """카탈로그 모달이 키보드 포커스 트랩과 자동 포커스 이동을 가지고 있어야 한다."""
+    text = _read("catalog.html")
+    # FOCUSABLE selector + 모달 내부 순환.
+    assert "FOCUSABLE_SEL" in text
+    assert "focusableInModal" in text
+    # Tab / Shift+Tab 분기.
+    assert 'e.key !== "Tab"' in text
+    assert "e.shiftKey" in text
+    # 첫 요소로 자동 포커스.
+    assert "nodes[0].focus()" in text
+
+
 def test_catalog_has_empty_state_reset_button():
     """필터로 결과가 0건일 때 사용자가 막다른 골목을 벗어날 수 있는 reset 버튼."""
     text = _read("catalog.html")
