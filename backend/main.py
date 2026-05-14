@@ -1067,13 +1067,18 @@ async def analyze(
     background_tasks.add_task(_cleanup, dest)
 
     # in-flight 카운터를 증가/감소하기 위해 함수 진입 직후에 global 선언.
+    # 이 요청이 실제로 increment 까지 도달했는지 추적해서, finally 에서 짝이
+    # 맞는 decrement 만 수행한다. (extension/size 검증 단계에서 raise 된 경우엔
+    # 다른 정상 요청의 카운터를 잘못 깎아 metrics 가 어긋나는 문제를 막음.)
     global _inflight_analyses
+    inflight_incremented = False
 
     try:
         async with _analysis_semaphore:
             # in-flight 카운터 증가. /metrics 에서 게이지로 노출된다.
             with _inflight_lock:
                 _inflight_analyses += 1
+            inflight_incremented = True
             # 스트리밍 업로드. 누적 사이즈를 체크하면서 첫 16바이트로 매직 시그니처를 확인한다.
             # 동시에 SHA-256 해시도 계산해서 결과 캐시 키로 쓴다 — raw 바이트는 저장 안 함.
             import hashlib
@@ -1274,10 +1279,11 @@ async def analyze(
     finally:
         # 동기적으로 한 번 더 정리. BackgroundTask 가 취소된 경우 대비.
         _cleanup(dest)
-        # in-flight 카운터 차감. 0 미만으로는 떨어지지 않게 가드.
-        with _inflight_lock:
-            if _inflight_analyses > 0:
-                _inflight_analyses -= 1
+        # in-flight 카운터 차감. 이 요청이 실제로 증가까지 도달한 경우에만.
+        if inflight_incremented:
+            with _inflight_lock:
+                if _inflight_analyses > 0:
+                    _inflight_analyses -= 1
 
 
 def _youtube_search_url(title: str, artist: str) -> str:

@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Fixed
+- analyze() 의 in-flight 카운터 race — extension/size 검증 단계에서 일찍
+  실패한 요청이 finally 에서 다른 정상 요청의 카운터를 잘못 깎아 `/metrics`
+  의 `soundmatch_inflight_analyses` 게이지가 실제 동시 처리 수와 어긋나던
+  문제. 로컬 boolean 으로 increment 여부를 추적해 짝이 맞는 decrement 만
+  수행.
 - "이 곡으로 다시 찾기" 버튼이 by-catalog fetch 실패 시 에러 화면을 띄우면서
   사용자가 이전 분석 결과 화면을 통째로 잃던 회귀. 실패 시엔 토스트만 띄우고
   이전 결과 카드를 그대로 다시 그리도록 정정.

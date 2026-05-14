@@ -495,6 +495,34 @@ def test_analyze_returns_tags(fastapi_client, tiny_wav):
     assert len(body["tags"]) >= 1
 
 
+def test_inflight_counter_unaffected_by_early_rejection(fastapi_client, tiny_wav):
+    """확장자 거부로 일찍 실패한 요청은 in-flight 게이지 0 을 깎지 않아야 한다.
+
+    예전엔 finally 가 무조건 decrement(>0 일 때) 를 시도해서, 동시에 실행 중인
+    정상 요청의 in-flight 카운터를 훔쳐가는 race 가 있었음.
+    """
+    import backend.main as backend_main
+
+    # 분석 한 번 돌려서 카운터가 정상 0 으로 끝남을 확인.
+    with tiny_wav.open("rb") as f:
+        r1 = fastapi_client.post(
+            "/api/analyze",
+            files={"file": ("tone.wav", f.read(), "audio/wav")},
+        )
+    assert r1.status_code == 200
+    baseline = backend_main._inflight_analyses
+    assert baseline == 0, baseline
+
+    # 확장자 거부로 일찍 실패 — semaphore 진입 전이라 increment 도달 못 함.
+    r2 = fastapi_client.post(
+        "/api/analyze",
+        files={"file": ("bad.exe", b"MZ\x00\x00", "application/octet-stream")},
+    )
+    assert r2.status_code == 400
+    # in-flight 게이지가 음수 또는 잘못된 값으로 떨어지지 않아야 한다.
+    assert backend_main._inflight_analyses == 0
+
+
 def test_rate_limit_headers_exposed(fastapi_client, tiny_wav):
     """정상 분석 응답에 X-RateLimit-* 헤더가 붙어야 한다."""
     with tiny_wav.open("rb") as f:
