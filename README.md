@@ -162,6 +162,7 @@ curl -X POST http://localhost:8000/api/analyze \
 | `MUSIC_MAX_UPLOAD_BYTES` | `26214400` | 25MB 한도 |
 | `MUSIC_MAX_CONCURRENT` | `4` | 동시 분석 처리 한도 |
 | `MUSIC_RATE_LIMIT_PER_MIN` | `12` | IP당 분당 요청 한도 |
+| `MUSIC_TRUSTED_PROXIES` | "" | 콤마 구분 프록시 IP. 여기 있는 출발지만 `X-Forwarded-For` 신뢰. 비어 있으면 헤더 무시 |
 | `MUSIC_CACHE_TTL_SECONDS` | `600` | 결과 캐시 TTL (10분) |
 | `MUSIC_CACHE_MAX_ENTRIES` | `64` | 결과 캐시 최대 항목 수 |
 | `MUSIC_SKIP_WARMUP` | "" | `1` 이면 부팅 시 librosa 워밍업 생략 (cold-start 측정 / 테스트용) |
@@ -187,7 +188,7 @@ UI 에서 " - " 로 잘라서 아티스트를 분리 표시한다.
 backend/      FastAPI 앱 (라우트 + 미들웨어 + ML 파이프라인)
 frontend/    SPA + PWA 자산
 data/        카탈로그 CSV
-tests/       pytest 모음 (현재 138 케이스)
+tests/       pytest 모음 (현재 152 케이스)
 scripts/     개발/카탈로그 재빌드 스크립트
 ```
 

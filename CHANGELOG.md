@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Security
+- Rate limiter 가 `X-Forwarded-For` 헤더를 무조건 신뢰해 누구나 헤더 위조로
+  분당 요청 한도를 우회할 수 있던 문제 해결. 신규 환경변수
+  `MUSIC_TRUSTED_PROXIES` 에 등록된 출발지에서 온 요청에서만 `X-Forwarded-For`
+  / `X-Real-IP` 를 신뢰하고, 그 외엔 `request.client.host` 만 사용.
+- `_rate_state` dict 가 회전 IP 공격에 한도 없이 자라 메모리 누수가 되던 문제
+  해결. 매 요청마다 가벼운 GC 로 윈도우(60s) 밖의 idle IP 키를 정리.
+
 ### Accessibility
 - 카탈로그 모달이 열리면 Tab / Shift+Tab 으로 모달 안의 조작 가능 요소만
   순환하도록 포커스 트랩 적용. 닫기 / ★ / → 시드 / 모달 카드 요소를 빠짐없이

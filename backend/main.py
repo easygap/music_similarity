@@ -91,6 +91,27 @@ _analysis_semaphore = asyncio.Semaphore(MAX_CONCURRENT_ANALYSES)
 # 간단한 in-process rate limiter (IP별 sliding window).
 # 트래픽이 더 커지면 redis 백엔드 limiter 로 옮기는 게 좋음.
 RATE_LIMIT_PER_MIN = int(os.environ.get("MUSIC_RATE_LIMIT_PER_MIN", 12))
+
+
+def _parse_trusted_proxies(raw: str) -> frozenset[str]:
+    """`MUSIC_TRUSTED_PROXIES` 환경변수 파싱.
+
+    콤마 구분 CIDR / 단일 IP 목록을 받아 normalize 한다. 비어 있으면
+    빈 집합 → X-Forwarded-For 무시 모드.
+    """
+    items: set[str] = set()
+    for piece in (raw or "").split(","):
+        v = piece.strip()
+        if v:
+            items.add(v)
+    return frozenset(items)
+
+
+# 리버스 프록시 IP 목록. 여기 들어 있는 출발지에서 온 요청만 X-Forwarded-For 를
+# 신뢰한다. 빈 값(개발 모드 / 직접 노출) 이면 항상 request.client.host 사용.
+TRUSTED_PROXIES: frozenset[str] = _parse_trusted_proxies(
+    os.environ.get("MUSIC_TRUSTED_PROXIES", "")
+)
 _rate_state: dict[str, list[float]] = {}
 _rate_lock = asyncio.Lock()
 
@@ -369,11 +390,40 @@ if ALLOWED_ORIGINS:
 # 보조 함수
 # ----------------------------------------------------------------------
 def _client_ip(request: Request) -> str:
-    """리버스 프록시 뒤에 있을 수 있으니 X-Forwarded-For 의 첫 IP를 우선 사용."""
-    fwd = request.headers.get("x-forwarded-for")
-    if fwd:
-        return fwd.split(",", 1)[0].strip()
-    return request.client.host if request.client else "unknown"
+    """진짜 클라이언트 IP 를 식별한다.
+
+    프록시 위조 방어:
+      - `MUSIC_TRUSTED_PROXIES` 환경변수에 등록된 IP 에서 온 요청일 때만
+        `X-Forwarded-For` / `X-Real-IP` 를 신뢰한다.
+      - 그 외엔 무조건 `request.client.host` 만 사용 — 누구나 임의의 IP 헤더를
+        붙여 rate limit 을 우회할 수 없게.
+    """
+    peer = request.client.host if request.client else ""
+    if TRUSTED_PROXIES and peer in TRUSTED_PROXIES:
+        # 신뢰 가능한 프록시에서 온 요청만 헤더를 본다.
+        fwd = request.headers.get("x-forwarded-for")
+        if fwd:
+            # XFF 는 "client, proxy1, proxy2" 형태. 가장 앞의 IP 가 원 클라이언트.
+            first = fwd.split(",", 1)[0].strip()
+            if first:
+                return first
+        real = request.headers.get("x-real-ip")
+        if real:
+            return real.strip()
+    return peer or "unknown"
+
+
+def _gc_rate_state(now: float, window: float) -> None:
+    """rate-limit dict 의 옛 키를 정리한다.
+
+    회전 IP / X-Forwarded-For 폭주 공격을 받으면 `_rate_state` 가 한도 없이
+    자라서 메모리 누수로 이어진다. window(60s) 안에 활동이 없는 IP 는 키째
+    삭제. 호출자는 이미 `_rate_lock` 를 잡고 있어야 한다.
+    """
+    cutoff = now - window
+    dead = [ip for ip, hist in _rate_state.items() if not hist or hist[-1] <= cutoff]
+    for ip in dead:
+        _rate_state.pop(ip, None)
 
 
 async def _rate_limit(request: Request) -> None:
@@ -387,6 +437,9 @@ async def _rate_limit(request: Request) -> None:
     now = time.time()
     window = 60.0
     async with _rate_lock:
+        # 매 요청마다 가벼운 GC — dict 크기를 신선한 IP 수만큼만 유지.
+        # 개당 O(N) 비용이지만 N 이 실제 활성 IP 수로 한정돼 안정적.
+        _gc_rate_state(now, window)
         history = _rate_state.setdefault(ip, [])
         # 윈도우 밖의 오래된 항목은 정리.
         cutoff = now - window
