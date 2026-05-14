@@ -218,6 +218,11 @@
           chroma: "크로마",
         },
       },
+      notFound: {
+        title: "요청하신 페이지를 찾을 수 없어요",
+        sub: "주소가 잘못되었거나 페이지가 이동된 것 같습니다. 메인 화면에서 음악을 업로드하면 유사한 곡을 다시 찾아드릴게요.",
+        home: "메인으로 돌아가기",
+      },
     },
     en: {
       nav: { how: "How it works", features: "Features", compare: "Compare", catalog: "Catalog", github: "GitHub" },
@@ -428,6 +433,11 @@
           harmony: "Harmony/Percussion",
           chroma: "Chroma",
         },
+      },
+      notFound: {
+        title: "Page not found",
+        sub: "The URL looks broken, or the page has moved. Head back home and try analysing a track from there.",
+        home: "Back home",
       },
     },
   };

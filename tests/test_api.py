@@ -437,6 +437,42 @@ def test_sitemap_includes_catalog_song_deeplinks(fastapi_client):
         assert "<loc>/catalog?song=" + quote(name, safe="") + "</loc>" in body
 
 
+def test_unknown_browser_route_returns_styled_404(fastapi_client):
+    """브라우저(Accept: text/html) 가 알 수 없는 경로를 치면 styled 404.html 이 떠야 한다."""
+    r = fastapi_client.get(
+        "/this-page-does-not-exist",
+        headers={"Accept": "text/html,application/xhtml+xml"},
+    )
+    assert r.status_code == 404
+    assert "text/html" in r.headers.get("content-type", "")
+    # 404 페이지 본문이 들어 있어야 한다.
+    assert "data-i18n=\"notFound.title\"" in r.text or "404" in r.text
+
+
+def test_unknown_api_route_keeps_json_404(fastapi_client):
+    """API 경로의 404 는 그대로 JSON 으로 유지되어야 한다 (클라이언트 호환성)."""
+    r = fastapi_client.get(
+        "/api/this-endpoint-does-not-exist",
+        headers={"Accept": "application/json"},
+    )
+    assert r.status_code == 404
+    assert "application/json" in r.headers.get("content-type", "")
+    body = r.json()
+    assert "detail" in body
+
+
+def test_unknown_metrics_route_keeps_plain_response(fastapi_client):
+    """/metrics 하위 경로 같은 운영 엔드포인트도 HTML 으로 폴백되면 안 된다."""
+    r = fastapi_client.get(
+        "/metrics/foo",
+        headers={"Accept": "application/json"},
+    )
+    assert r.status_code == 404
+    # JSON 또는 plain text. 둘 다 OK — HTML 페이지가 떠서는 안 된다.
+    ct = r.headers.get("content-type", "")
+    assert "text/html" not in ct
+
+
 def test_sitemap_caches_for_an_hour(fastapi_client):
     """sitemap.xml 에 Cache-Control: max-age=3600 헤더가 붙어야 한다."""
     r = fastapi_client.get("/sitemap.xml")

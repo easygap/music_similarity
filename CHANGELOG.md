@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Added
+- 알 수 없는 경로 접근 시 styled `/404` 페이지로 자동 폴백. 브라우저 navigation
+  (Accept: text/html) 만 styled HTML 응답, 그 외 (API / metrics 등) 는 기존
+  JSON 응답을 유지해서 클라이언트 호환성은 그대로 둔다.
+- 404.html 도 i18n 적용 — `notFound.title` / `sub` / `home` 세 키 신규 (ko/en).
 - 카탈로그 빈 결과 상태에 "필터 초기화" 버튼. 검색어 / BPM / 에너지 / 정렬 /
   즐겨찾기만 보기 / 페이지 / song 모달까지 한 번에 기본값으로 되돌린다.
   필터가 한 개라도 걸린 상태에서만 노출.

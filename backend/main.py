@@ -39,6 +39,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .audio_features import AudioFeatureVector, extract_features, summary_metrics
@@ -1416,4 +1417,28 @@ if FRONTEND_DIR.exists():
                 status_code=404,
                 headers={"Cache-Control": "no-store"},
             )
+        return Response("Not Found", status_code=404, media_type="text/plain")
+
+    # 알 수 없는 경로 처리 — 브라우저 navigation 이면 styled 404.html, API 호출이면
+    # 기존 JSON 응답 그대로. API 응답을 깨지 않으면서 사람한테는 친절한 페이지.
+    @app.exception_handler(StarletteHTTPException)
+    async def _styled_404_handler(request: Request, exc: StarletteHTTPException):  # noqa: D401
+        # 다른 HTTP 에러는 모두 기본 동작에 위임.
+        if exc.status_code != 404:
+            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+        # API / 정적 자산 경로는 JSON 응답이 더 다루기 쉽다.
+        path = request.url.path or ""
+        if path.startswith(("/api/", "/static/", "/metrics", "/docs", "/openapi")):
+            return JSONResponse({"detail": exc.detail or "Not Found"}, status_code=404)
+        # 브라우저 navigation 만 styled 페이지로.
+        accept = (request.headers.get("accept") or "").lower()
+        if "text/html" in accept or "*/*" in accept:
+            nf = FRONTEND_DIR / "404.html"
+            if nf.exists():
+                return FileResponse(
+                    str(nf),
+                    status_code=404,
+                    headers={"Cache-Control": "no-store"},
+                )
+        # HTML 도 아니고 알려진 정적 경로도 아니면 그냥 plain text.
         return Response("Not Found", status_code=404, media_type="text/plain")
