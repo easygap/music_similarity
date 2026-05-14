@@ -7,13 +7,7 @@
   <meta name="description" content="SoundMatch 서비스를 이용할 때 적용되는 약관 안내." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/style.css" />
-  <script>
-    try {
-      var t = localStorage.getItem("soundmatch.theme")
-        || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-      document.documentElement.setAttribute("data-theme", t);
-    } catch (e) {}
-  </script>
+  <script src="/theme-init.js"></script>
   <style>
     .legal-wrap {
       max-width: 760px;

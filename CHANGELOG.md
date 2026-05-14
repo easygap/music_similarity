@@ -6,6 +6,17 @@
 
 ## [Unreleased]
 
+### Security
+- CSP `script-src` 에서 `'unsafe-inline'` 제거. 그동안 모든 인라인 스크립트
+  실행을 허용해서, 결과 카드 어딘가에 `escapeHtml` 하나만 빠져도 그대로 XSS
+  가 됐었음. 이제 같은 출처에서 받은 외부 JS 만 실행 가능.
+- 인라인이던 테마 초기화 / SW 등록 / 글로벌 에러 boundary 코드를 각각
+  `frontend/js/theme-init.js`, `sw-register.js`, `error-boundary.js` 로 분리.
+  `theme-init.js` 는 모든 HTML 페이지가 공통으로 사용, 나머지 둘은 메인
+  페이지에서만. SW SHELL 에도 새 파일 3개 + VERSION bump (v2 → v3).
+- 회귀 안전망 3개: CSP 에 unsafe-inline 다시 들어오면 / 새 JS 파일이
+  404 가 되면 / HTML 페이지에 인라인 `<script>` 본문이 살아 있으면 모두 fail.
+
 ### Tests
 - `tests/test_spectrogram.py` 신규 13 케이스 — `_downsample_2d`, `_color_for`,
   `_render_svg`, `build_mel_spectrogram_svg` 의 경계 / 극단값 / aria-label /

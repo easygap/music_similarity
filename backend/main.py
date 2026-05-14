@@ -287,9 +287,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     CSP = (
         "default-src 'self'; "
-        # 인라인 SW 등록 + 글로벌 에러 boundary 가 index.html 에 inline script 로
-        # 들어 있어 'unsafe-inline' 이 필요. 외부 JS 는 같은 출처만 허용한다.
-        "script-src 'self' 'unsafe-inline'; "
+        # 인라인 스크립트는 사용하지 않는다 (theme-init / sw-register /
+        # error-boundary 모두 외부 파일로 분리됨). 같은 출처에서 받은 JS 만 허용.
+        "script-src 'self'; "
         "img-src 'self' data:; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
@@ -1352,6 +1352,18 @@ if FRONTEND_DIR.exists():
     @app.get("/favorites.js", include_in_schema=False)
     def favorites_js():
         return _cached_file_response(FRONTEND_DIR / "js" / "favorites.js")
+
+    @app.get("/theme-init.js", include_in_schema=False)
+    def theme_init_js():
+        return _cached_file_response(FRONTEND_DIR / "js" / "theme-init.js")
+
+    @app.get("/sw-register.js", include_in_schema=False)
+    def sw_register_js():
+        return _cached_file_response(FRONTEND_DIR / "js" / "sw-register.js")
+
+    @app.get("/error-boundary.js", include_in_schema=False)
+    def error_boundary_js():
+        return _cached_file_response(FRONTEND_DIR / "js" / "error-boundary.js")
 
     @app.get("/favicon.svg", include_in_schema=False)
     def favicon():

@@ -7,13 +7,7 @@
   <meta name="description" content="SoundMatch 가 사용자 음원과 분석 결과를 어떻게 다루는지에 대한 안내." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/style.css" />
-  <script>
-    try {
-      var t = localStorage.getItem("soundmatch.theme")
-        || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-      document.documentElement.setAttribute("data-theme", t);
-    } catch (e) {}
-  </script>
+  <script src="/theme-init.js"></script>
   <style>
     .legal-wrap {
       max-width: 760px;

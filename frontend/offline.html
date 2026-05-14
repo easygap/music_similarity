@@ -7,14 +7,7 @@
   <meta name="robots" content="noindex" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/style.css" />
-  <script>
-    // 첫 페인트에 테마가 튀지 않도록 저장 값을 인라인으로 먼저 반영.
-    try {
-      var t = localStorage.getItem("soundmatch.theme")
-        || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-      document.documentElement.setAttribute("data-theme", t);
-    } catch (e) {}
-  </script>
+  <script src="/theme-init.js"></script>
   <style>
     .offline-wrap {
       min-height: 100vh;
