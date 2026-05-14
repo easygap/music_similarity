@@ -792,10 +792,11 @@
   function renderMiniMetrics(query, match) {
     if (!match) return "";
     // 표시할 메트릭 + 정규화 범위. radar 와 같은 룰을 따라간다.
+    // 라벨은 i18n.t() 로 해서 ko/en 토글에 즉시 반응하도록.
     const axes = [
-      { key: "tempo_bpm", label: "Tempo", min: 60, max: 200, unit: " BPM", digits: 0 },
-      { key: "energy_rms", label: "에너지", min: 0, max: 0.5, unit: "", digits: 3 },
-      { key: "brightness", label: "밝기", min: 800, max: 6000, unit: " Hz", digits: 0 },
+      { key: "tempo_bpm", labelKey: "summary.tempo", min: 60, max: 200, unit: " BPM", digits: 0 },
+      { key: "energy_rms", labelKey: "summary.energy", min: 0, max: 0.5, unit: "", digits: 3 },
+      { key: "brightness", labelKey: "summary.brightness", min: 800, max: 6000, unit: " Hz", digits: 0 },
     ];
     function norm(v, ax) {
       const x = Number(v);
@@ -813,9 +814,10 @@
         const mv = Number(match[ax.key]);
         const qp = (norm(qv, ax) * 100).toFixed(1);
         const mp = (norm(mv, ax) * 100).toFixed(1);
+        const label = t(ax.labelKey);
         return `
           <li>
-            <span class="mini-label">${escapeHtml(ax.label)}</span>
+            <span class="mini-label">${escapeHtml(label)}</span>
             <span class="mini-bars">
               <span class="mini-bar mini-bar-q" style="width: ${qp}%"></span>
               <span class="mini-bar mini-bar-m" style="width: ${mp}%"></span>
@@ -914,9 +916,15 @@
       seedBackBtn.classList.remove("hidden");
     } catch (err) {
       stopLoadingMessages();
-      showError(err.message || String(err));
-      // 실패 시 이전 결과를 잃지 않게 복원.
-      if (_seedPrev) _lastResults = _seedPrev;
+      // 실패 시: 이전 결과가 있으면 그 화면을 그대로 되돌려주고 토스트로만 알린다.
+      // (showError 가 전체 결과 영역을 hide 해버려서 사용자가 직전 분석을 잃어버리던 회귀를 막음.)
+      if (_seedPrev) {
+        _lastResults = _seedPrev;
+        renderResults(_seedPrev, /* preserveFile */ true);
+        toast(t("results.seedFailedToast") || (err.message || String(err)));
+      } else {
+        showError(err.message || String(err));
+      }
     }
   }
 

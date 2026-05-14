@@ -153,6 +153,31 @@ def test_service_worker_version_string():
     assert version_num >= 2, "SW VERSION 이 자산 추가에 맞춰 bump 되지 않았습니다."
 
 
+def test_render_mini_metrics_uses_i18n_labels():
+    """미니 메트릭 라벨이 한국어 하드코딩이 아니라 i18n 키를 통해 그려져야 한다.
+
+    예전엔 axes 의 label 이 "Tempo", "에너지", "밝기" 로 박혀 있어서 EN 토글
+    상태에서도 한국어가 그대로 보였음.
+    """
+    text = _read("js/app.js")
+    # 새 구현: labelKey + t() 호출.
+    assert "labelKey: \"summary.tempo\"" in text
+    assert "labelKey: \"summary.energy\"" in text
+    assert "labelKey: \"summary.brightness\"" in text
+    # 옛 하드코딩 라벨은 모두 사라져야 한다 — 무심코 부활하면 회귀.
+    assert "label: \"Tempo\"" not in text
+    assert "label: \"에너지\"" not in text
+    assert "label: \"밝기\"" not in text
+
+
+def test_seed_from_hit_failure_restores_previous_results():
+    """seedFromHit 가 실패해도 이전 결과 화면이 그대로 남아야 한다."""
+    text = _read("js/app.js")
+    # catch 블록이 _seedPrev 가 있을 때 renderResults 로 복원하고 토스트만 띄움.
+    assert "renderResults(_seedPrev" in text
+    assert 't("results.seedFailedToast")' in text
+
+
 def test_app_js_wires_favorites_export_button():
     """app.js 가 export/import 버튼을 실제로 잡아서 핸들러를 달고 있는지 확인."""
     text = _read("js/app.js")

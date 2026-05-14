@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+### Fixed
+- "이 곡으로 다시 찾기" 버튼이 by-catalog fetch 실패 시 에러 화면을 띄우면서
+  사용자가 이전 분석 결과 화면을 통째로 잃던 회귀. 실패 시엔 토스트만 띄우고
+  이전 결과 카드를 그대로 다시 그리도록 정정.
+- 결과 카드의 mini-metric 라벨이 "Tempo / 에너지 / 밝기" 로 하드코딩되어 있어
+  EN 토글 상태에서도 한국어로 보이던 문제. `summary.tempo / energy / brightness`
+  i18n 키를 재사용하도록 정정 — 토글 즉시 라벨이 같이 바뀜.
+- 신규 `results.seedFailedToast` i18n 키 (ko/en).
+
 ### Security
 - Rate limiter 가 `X-Forwarded-For` 헤더를 무조건 신뢰해 누구나 헤더 위조로
   분당 요청 한도를 우회할 수 있던 문제 해결. 신규 환경변수
