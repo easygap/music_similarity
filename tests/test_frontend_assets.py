@@ -102,3 +102,82 @@ def test_app_js_wires_favorites_export_button():
     assert "Blob([" in text
     assert "URL.createObjectURL" in text
     assert "importJson" in text
+
+
+@pytest.mark.parametrize("page", ["catalog.html", "compare.html"])
+def test_subpages_load_i18n(page: str):
+    """카탈로그 / 비교 페이지도 i18n.js 를 직접 로딩해야 lang 토글이 동작한다."""
+    text = _read(page)
+    assert '<script src="/i18n.js">' in text, f"{page} 가 i18n.js 를 불러오지 않습니다."
+
+
+@pytest.mark.parametrize(
+    "marker",
+    [
+        'data-i18n="catalog.title"',
+        'data-i18n="catalog.sub"',
+        'data-i18n-attr="placeholder:catalog.searchPlaceholder"',
+        'data-i18n="catalog.favoritesOnly"',
+        'data-i18n="catalog.sortLabel"',
+        'data-i18n="catalog.sortDefault"',
+        'data-i18n="catalog.prev"',
+        'data-i18n="catalog.next"',
+        'data-i18n="catalog.bpmDist"',
+    ],
+)
+def test_catalog_html_has_i18n_markers(marker: str):
+    """catalog.html 의 정적 텍스트가 모두 i18n 키로 표시되어 있어야 한다."""
+    text = _read("catalog.html")
+    assert marker in text, f"catalog.html 에 '{marker}' 가 없습니다."
+
+
+@pytest.mark.parametrize(
+    "marker",
+    [
+        'data-i18n="compare.title"',
+        'data-i18n="compare.sub"',
+        'data-i18n="compare.left"',
+        'data-i18n="compare.right"',
+        'data-i18n="compare.emptyTitle"',
+        'data-i18n="compare.emptyBody"',
+    ],
+)
+def test_compare_html_has_i18n_markers(marker: str):
+    """compare.html 의 정적 텍스트가 모두 i18n 키로 표시되어 있어야 한다."""
+    text = _read("compare.html")
+    assert marker in text, f"compare.html 에 '{marker}' 가 없습니다."
+
+
+def test_catalog_js_uses_i18n_runtime():
+    """카탈로그의 동적 텍스트(meta, modal, sub) 도 t() / i18n.t() 호출을 거쳐야 한다."""
+    text = _read("catalog.html")
+    # 안전 폴백 t() 헬퍼가 있고, 핵심 메시지들이 그 헬퍼를 통해 갱신되어야 한다.
+    assert "window.i18n && typeof window.i18n.t === \"function\"" in text
+    for key in (
+        't("catalog.loading")',
+        't("catalog.empty")',
+        't("catalog.metaRange"',
+        't("catalog.cardHint")',
+        't("catalog.modalSub"',
+        't("catalog.modalLoading")',
+        't("catalog.modalFail")',
+    ):
+        assert key in text, f"catalog.html 에 '{key}' 호출이 없습니다."
+
+
+def test_compare_js_uses_i18n_runtime():
+    """compare.html 도 메트릭 라벨을 t() 로 resolve 해야 한다."""
+    text = _read("compare.html")
+    assert "window.i18n && typeof window.i18n.t === \"function\"" in text
+    for key in (
+        "compare.metric.tempo",
+        "compare.metric.energy",
+        "compare.metric.brightness",
+        "compare.metric.noisiness",
+        "compare.metric.harmony",
+        "compare.metric.chroma",
+        't("compare.topMatch")',
+        't("compare.topSuffix")',
+        't("compare.invalid")',
+    ):
+        assert key in text, f"compare.html 에 '{key}' 가 없습니다."

@@ -291,10 +291,10 @@
   </div>
 
   <main class="cat-wrap">
-    <a class="cat-back" href="/">← 메인으로</a>
+    <a class="cat-back" href="/" data-i18n="catalog.back">← 메인으로</a>
     <header class="cat-head">
-      <h1>카탈로그 둘러보기</h1>
-      <p>업로드한 음원이 비교되는 카탈로그입니다. 같은 장르 / 음색의 곡이 보이면 매칭이 더 잘 됩니다.</p>
+      <h1 data-i18n="catalog.title">카탈로그 둘러보기</h1>
+      <p data-i18n="catalog.sub">업로드한 음원이 비교되는 카탈로그입니다. 같은 장르 / 음색의 곡이 보이면 매칭이 더 잘 됩니다.</p>
     </header>
 
     <div class="cat-search-row">
@@ -303,16 +303,17 @@
         class="cat-search"
         id="cat-search-input"
         placeholder="제목이나 아티스트로 검색"
+        data-i18n-attr="placeholder:catalog.searchPlaceholder"
         autocomplete="off"
         spellcheck="false"
       />
-      <span class="cat-meta" id="cat-meta">불러오는 중…</span>
+      <span class="cat-meta" id="cat-meta" data-i18n="catalog.loading">불러오는 중…</span>
     </div>
 
     <div class="cat-filter-row">
       <label>
         <input type="checkbox" id="cat-favorites-only">
-        즐겨찾기만 보기
+        <span data-i18n="catalog.favoritesOnly">즐겨찾기만 보기</span>
       </label>
       <label class="cat-filter-range">
         BPM
@@ -321,19 +322,19 @@
         <input type="number" id="cat-max-bpm" placeholder="max" min="0" max="400" step="1">
       </label>
       <label class="cat-filter-range">
-        에너지
+        <span data-i18n="summary.energy">에너지</span>
         <input type="number" id="cat-min-energy" placeholder="min" min="0" max="1" step="0.05">
         ~
         <input type="number" id="cat-max-energy" placeholder="max" min="0" max="1" step="0.05">
       </label>
       <label class="cat-filter-range">
-        정렬
+        <span data-i18n="catalog.sortLabel">정렬</span>
         <select id="cat-sort">
-          <option value="default">기본</option>
-          <option value="title">곡명</option>
-          <option value="artist">아티스트</option>
-          <option value="bpm">BPM 낮은 순</option>
-          <option value="energy">에너지 낮은 순</option>
+          <option value="default" data-i18n="catalog.sortDefault">기본</option>
+          <option value="title" data-i18n="catalog.sortTitle">곡명</option>
+          <option value="artist" data-i18n="catalog.sortArtist">아티스트</option>
+          <option value="bpm" data-i18n="catalog.sortBpm">BPM 낮은 순</option>
+          <option value="energy" data-i18n="catalog.sortEnergy">에너지 낮은 순</option>
         </select>
       </label>
     </div>
@@ -341,8 +342,8 @@
     <!-- BPM 분포 미니 차트 (페이지 처음 진입 시 한 번만 로드). -->
     <div class="cat-hist" id="cat-hist" aria-hidden="true">
       <div class="cat-hist-head">
-        <span>BPM 분포</span>
-        <span class="cat-hist-sub" id="cat-hist-sub">불러오는 중…</span>
+        <span data-i18n="catalog.bpmDist">BPM 분포</span>
+        <span class="cat-hist-sub" id="cat-hist-sub" data-i18n="catalog.loading">불러오는 중…</span>
       </div>
       <div class="cat-hist-bars" id="cat-hist-bars"></div>
     </div>
@@ -350,9 +351,9 @@
     <div class="cat-grid" id="cat-grid"></div>
 
     <div class="cat-pager">
-      <button type="button" id="cat-prev">← 이전</button>
+      <button type="button" id="cat-prev" data-i18n="catalog.prev">← 이전</button>
       <span class="cat-page-label" id="cat-page-label">1</span>
-      <button type="button" id="cat-next">다음 →</button>
+      <button type="button" id="cat-next" data-i18n="catalog.next">다음 →</button>
     </div>
   </main>
 
@@ -364,15 +365,17 @@
           <h2 class="modal-title" id="modal-title">—</h2>
           <p class="modal-sub" id="modal-sub">—</p>
         </div>
-        <button type="button" class="modal-close" id="modal-close" aria-label="닫기">×</button>
+        <button type="button" class="modal-close" id="modal-close"
+                aria-label="닫기" data-i18n-attr="aria-label:catalog.modalClose">×</button>
       </header>
       <div class="modal-tags" id="modal-tags"></div>
       <div id="modal-body">
-        <p class="modal-loading">불러오는 중…</p>
+        <p class="modal-loading" data-i18n="catalog.modalLoading">불러오는 중…</p>
       </div>
     </div>
   </div>
 
+  <script src="/i18n.js"></script>
   <script src="/favorites.js"></script>
   <script>
   (function () {
@@ -396,6 +399,16 @@
     var debounceTimer = null;
     var urlWriteTimer = null;
     var Fav = window.SoundMatchFavorites;
+    // i18n 이 아직 안 붙은 경우의 안전 폴백. 키를 그대로 돌려줘서 UI 가 깨지지 않음.
+    function t(key) {
+      try {
+        if (window.i18n && typeof window.i18n.t === "function") {
+          var args = Array.prototype.slice.call(arguments, 1);
+          return window.i18n.t.apply(null, [key].concat(args));
+        }
+      } catch (e) {}
+      return key;
+    }
 
     // ------------------------------------------------------------------
     // URL <-> state 동기화. 새로고침이나 링크 공유 시 동일한 필터로 복원되도록
@@ -471,7 +484,7 @@
     }
 
     async function load() {
-      meta.textContent = "불러오는 중…";
+      meta.textContent = t("catalog.loading");
 
       // 즐겨찾기 전용 모드는 백엔드 호출 없이 localStorage 만 사용한다.
       if (state.favOnly && Fav) {
@@ -488,11 +501,11 @@
         state.hasMore = end < favs.length;
         render(slice);
         if (favs.length === 0) {
-          meta.textContent = "즐겨찾기 없음";
+          meta.textContent = t("catalog.emptyFavorites");
         } else {
           var rs = start + 1;
           var re = Math.min(rs + slice.length - 1, favs.length);
-          meta.textContent = favs.length.toLocaleString("ko-KR") + "곡 중 " + rs + "–" + re;
+          meta.textContent = t("catalog.metaRange", favs.length, rs, re);
         }
         pageLabel.textContent = "p. " + state.page;
         prev.disabled = state.page <= 1;
@@ -521,33 +534,35 @@
         var rangeStart = (state.page - 1) * state.size + 1;
         var rangeEnd = Math.min(rangeStart + data.items.length - 1, data.total);
         if (data.total === 0) {
-          meta.textContent = "결과 없음";
+          meta.textContent = t("catalog.empty");
         } else {
-          meta.textContent = data.total.toLocaleString("ko-KR") + "곡 중 "
-            + rangeStart + "–" + rangeEnd;
+          meta.textContent = t("catalog.metaRange", data.total, rangeStart, rangeEnd);
         }
         pageLabel.textContent = "p. " + state.page;
         prev.disabled = state.page <= 1;
         next.disabled = !state.hasMore;
       } catch (e) {
-        meta.textContent = "불러오기에 실패했어요";
-        grid.innerHTML = '<p class="cat-empty">잠시 후 다시 시도해주세요.</p>';
+        meta.textContent = t("catalog.loadFail");
+        grid.innerHTML = '<p class="cat-empty">' + escapeHtml(t("catalog.retryHint")) + '</p>';
       }
     }
 
     function render(items) {
       if (!items || !items.length) {
         var msg = state.favOnly
-          ? '즐겨찾기에 저장된 곡이 없어요. 카탈로그 카드의 ★ 버튼으로 추가해보세요.'
-          : '해당하는 곡이 없어요. 다른 키워드로 검색해보세요.';
-        grid.innerHTML = '<p class="cat-empty">' + msg + '</p>';
+          ? t("catalog.emptyFavoritesHint")
+          : t("catalog.emptyHint");
+        grid.innerHTML = '<p class="cat-empty">' + escapeHtml(msg) + '</p>';
         return;
       }
+      var cardHint = t("catalog.cardHint");
+      var favAdd = t("catalog.favAdd");
+      var favRemove = t("catalog.favRemove");
       grid.innerHTML = items.map(function (it) {
         var key = it.title + ' - ' + it.artist;
         var isFav = Fav ? Fav.has(key) : false;
         return '<div class="cat-card" data-key="' + escapeHtml(key) + '"'
-          + ' title="이 곡과 유사한 다른 곡 보기" tabindex="0" role="button">'
+          + ' title="' + escapeHtml(cardHint) + '" tabindex="0" role="button">'
           + '<div class="cat-card-head">'
           +   '<div class="cat-card-body">'
           +     '<span class="cat-title">' + escapeHtml(it.title) + '</span>'
@@ -557,7 +572,7 @@
           +     '" data-title="' + escapeHtml(it.title) + '" data-artist="' + escapeHtml(it.artist)
           +     '" data-active="' + (isFav ? 'true' : 'false')
           +     '" aria-pressed="' + (isFav ? 'true' : 'false')
-          +     '" title="' + (isFav ? '즐겨찾기 해제' : '즐겨찾기 추가') + '">★</button>'
+          +     '" title="' + escapeHtml(isFav ? favRemove : favAdd) + '">★</button>'
           + '</div>'
           + '</div>';
       }).join("");
@@ -585,7 +600,7 @@
           var nowActive = Fav.has(key);
           btn.setAttribute("data-active", nowActive ? "true" : "false");
           btn.setAttribute("aria-pressed", nowActive ? "true" : "false");
-          btn.title = nowActive ? "즐겨찾기 해제" : "즐겨찾기 추가";
+          btn.title = nowActive ? t("catalog.favRemove") : t("catalog.favAdd");
           // favOnly 모드에서 마지막 항목을 풀면 화면이 비어버려야 한다.
           if (state.favOnly) load();
         });
@@ -619,23 +634,24 @@
       modal.classList.add("is-open");
       document.body.style.overflow = "hidden";
       modalTitle.textContent = "—";
-      modalSub.textContent = "분석 중…";
+      modalSub.textContent = t("catalog.modalAnalysing");
       modalTags.innerHTML = "";
-      modalBody.innerHTML = '<p class="modal-loading">불러오는 중…</p>';
+      modalBody.innerHTML = '<p class="modal-loading">' + escapeHtml(t("catalog.modalLoading")) + '</p>';
       try {
         var url = "/api/analyze/by-catalog?top_n=5&name=" + encodeURIComponent(name);
         var res = await fetch(url);
         if (!res.ok) throw new Error("HTTP " + res.status);
         var data = await res.json();
         modalTitle.textContent = data.title;
-        modalSub.textContent = data.artist + " · " + data.catalog_size.toLocaleString("ko-KR") + "곡과 비교";
+        modalSub.textContent = t("catalog.modalSub", data.artist, data.catalog_size);
         modalTags.innerHTML = (data.tags || []).map(function (tg) {
           return '<span class="modal-tag">' + escapeHtml(tg) + '</span>';
         }).join("");
         if (!data.results || !data.results.length) {
-          modalBody.innerHTML = '<p class="modal-loading">유사한 곡을 찾지 못했어요.</p>';
+          modalBody.innerHTML = '<p class="modal-loading">' + escapeHtml(t("catalog.modalNone")) + '</p>';
           return;
         }
+        var seedTitle = t("catalog.modalSeed");
         modalBody.innerHTML = '<ol class="modal-hits">' + data.results.map(function (r) {
           var fullName = r.title + " - " + r.artist;
           var isFav = Fav ? Fav.has(fullName) : false;
@@ -647,9 +663,9 @@
             + '<button type="button" class="modal-fav" data-fav-name="' + escapeHtml(fullName)
             + '" data-fav-title="' + escapeHtml(r.title) + '" data-fav-artist="' + escapeHtml(r.artist)
             + '" data-active="' + (isFav ? 'true' : 'false')
-            + '" aria-pressed="' + (isFav ? 'true' : 'false') + '" title="즐겨찾기 토글">★</button>'
+            + '" aria-pressed="' + (isFav ? 'true' : 'false') + '" title="★">★</button>'
             + '<button type="button" class="modal-seed" data-seed="' + escapeHtml(fullName)
-            + '" title="이 곡 기준으로 다시 보기">→</button>'
+            + '" title="' + escapeHtml(seedTitle) + '">→</button>'
             + '</span>'
             + '<span class="modal-percent">' + r.similarity_percent.toFixed(1) + '%</span>'
             + '</li>';
@@ -675,7 +691,7 @@
           });
         });
       } catch (e) {
-        modalBody.innerHTML = '<p class="modal-loading">불러오기에 실패했어요. 잠시 후 다시 시도해주세요.</p>';
+        modalBody.innerHTML = '<p class="modal-loading">' + escapeHtml(t("catalog.modalFail")) + '</p>';
       }
     }
 
@@ -756,13 +772,15 @@
           var tip = b.from.toFixed(0) + "–" + b.to.toFixed(0) + " BPM · " + b.count + "곡";
           return '<div class="cat-hist-bar" title="' + escapeHtml(tip) + '" style="height: ' + h + '%"></div>';
         }).join("");
-        sub.textContent =
-          "평균 " + (data.bpm && data.bpm.avg ? data.bpm.avg.toFixed(1) : "?") +
-          " · 곡 수 " + (data.total || 0);
+        var avg = data.bpm && data.bpm.avg ? data.bpm.avg.toFixed(1) : "?";
+        sub.textContent = t("catalog.bpmDistAvg", avg, data.total || 0);
       } catch (e) {
         host.style.display = "none";
       }
     })();
+
+    // 언어가 바뀌면 동적 텍스트도 다시 그려야 한다 (cat-meta 같은 건 data-i18n 만으로 못 잡음).
+    window.addEventListener("i18n:change", function () { load(); });
 
     // 초기 URL 파라미터로 state 를 채운 뒤 input/select 에도 반영하고 첫 로드.
     readStateFromUrl();
