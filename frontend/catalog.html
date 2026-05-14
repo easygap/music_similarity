@@ -681,8 +681,45 @@
     modal.addEventListener("click", function (e) {
       if (e.target === modal) closeModal();
     });
+
+    // 모달이 열린 상태에서 키 처리. Esc 로 닫고, Tab 이면 포커스를 모달 안에서만 순환.
+    var FOCUSABLE_SEL =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    function focusableInModal() {
+      var nodes = modal.querySelectorAll(FOCUSABLE_SEL);
+      var visible = [];
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        // hidden / disabled 요소는 제외.
+        if (el.disabled) continue;
+        if (el.getAttribute("aria-hidden") === "true") continue;
+        if (el.offsetWidth === 0 && el.offsetHeight === 0 && el.getClientRects().length === 0) continue;
+        visible.push(el);
+      }
+      return visible;
+    }
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+      if (!modal.classList.contains("is-open")) return;
+      if (e.key === "Escape") {
+        closeModal();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      // 포커스 트랩 — Tab/Shift+Tab 시 모달 내부 첫/끝 요소를 wrap.
+      var nodes = focusableInModal();
+      if (!nodes.length) return;
+      var first = nodes[0];
+      var last = nodes[nodes.length - 1];
+      var active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !modal.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     });
 
     async function openSimilarModal(name) {
@@ -696,6 +733,12 @@
       modalSub.textContent = t("catalog.modalAnalysing");
       modalTags.innerHTML = "";
       modalBody.innerHTML = '<p class="modal-loading">' + escapeHtml(t("catalog.modalLoading")) + '</p>';
+      // 닫기 버튼 같은 첫 조작 가능 요소로 포커스 이동 — 키보드 사용자 / 스크린리더 사용자한테 필수.
+      // microtask 한 박자 늦춰서 display:none → flex 전환 직후의 layout flush 를 기다린다.
+      setTimeout(function () {
+        var nodes = focusableInModal();
+        if (nodes.length) nodes[0].focus();
+      }, 0);
       try {
         var url = "/api/analyze/by-catalog?top_n=5&name=" + encodeURIComponent(name);
         var res = await fetch(url);
