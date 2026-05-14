@@ -248,7 +248,25 @@
       grid-column: 1 / -1;
       text-align: center;
       color: var(--text-mute);
-      padding: 40px 20px;
+      padding: 40px 20px 16px;
+    }
+    .cat-empty-reset {
+      grid-column: 1 / -1;
+      display: block;
+      margin: 0 auto 28px;
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      cursor: pointer;
+      transition: border-color 0.18s, color 0.18s;
+    }
+    .cat-empty-reset:hover, .cat-empty-reset:focus-visible {
+      border-color: var(--accent-1);
+      color: var(--accent-1);
+      outline: none;
     }
     .cat-pager {
       display: flex;
@@ -482,6 +500,24 @@
       if (sortEl) sortEl.value = state.sort || "default";
     }
 
+    // 빈 결과 상태에서 호출 — 모든 필터를 기본값으로 되돌리고 다시 로드.
+    function resetFilters() {
+      state.q = "";
+      state.minBpm = "";
+      state.maxBpm = "";
+      state.minEnergy = "";
+      state.maxEnergy = "";
+      state.sort = "default";
+      state.favOnly = false;
+      state.page = 1;
+      state.song = ""; // 혹시 모달이 열려 있으면 같이 닫는다.
+      modal.classList.remove("is-open");
+      document.body.style.overflow = "";
+      applyStateToInputs();
+      writeStateToUrl();
+      load();
+    }
+
     function escapeHtml(s) {
       return String(s == null ? "" : s)
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -557,7 +593,17 @@
         var msg = state.favOnly
           ? t("catalog.emptyFavoritesHint")
           : t("catalog.emptyHint");
-        grid.innerHTML = '<p class="cat-empty">' + escapeHtml(msg) + '</p>';
+        // 필터가 한 개라도 걸려 있으면 "초기화" 버튼도 같이 노출.
+        var hasFilters = !!(state.q || state.minBpm || state.maxBpm
+          || state.minEnergy || state.maxEnergy
+          || (state.sort && state.sort !== "default") || state.favOnly);
+        var resetBtn = hasFilters
+          ? '<button type="button" class="cat-empty-reset" id="cat-empty-reset">'
+            + escapeHtml(t("catalog.resetFilters")) + '</button>'
+          : "";
+        grid.innerHTML = '<p class="cat-empty">' + escapeHtml(msg) + '</p>' + resetBtn;
+        var btn = document.getElementById("cat-empty-reset");
+        if (btn) btn.addEventListener("click", resetFilters);
         return;
       }
       var cardHint = t("catalog.cardHint");
