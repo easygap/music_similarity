@@ -102,6 +102,13 @@ _result_cache = AnalysisResultCache(
     ttl_seconds=CACHE_TTL_SECONDS,
 )
 
+# 카탈로그 곡끼리 비교(by-catalog) 도 같은 입력이면 결과가 항상 같다 — 가볍게 캐시.
+# 키는 (name, top_n). 카탈로그가 바뀌면 어차피 워커가 재시작되므로 invalidation 불필요.
+_by_catalog_cache = AnalysisResultCache(
+    max_entries=int(os.environ.get("MUSIC_BY_CATALOG_CACHE_MAX", 256)),
+    ttl_seconds=int(os.environ.get("MUSIC_BY_CATALOG_CACHE_TTL", 1800)),
+)
+
 logger = logging.getLogger("music_similarity")
 
 # ----------------------------------------------------------------------
@@ -510,6 +517,43 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
 
 
 @app.get(
+    "/api/version",
+    summary="버전 + 기능 플래그 (클라이언트 호환성 체크용)",
+    tags=["system"],
+)
+def version_info():
+    """SDK/클라이언트가 호환성을 확인할 때 가볍게 호출하는 메타 엔드포인트.
+
+    /api/health 와 달리 데이터셋 상태에 의존하지 않으므로 항상 200 을 돌려준다.
+    카탈로그 사이즈는 이미 로딩됐을 때만 채워서 보낸다 — 빠르게 응답하기 위해서.
+    """
+    try:
+        catalog_size = _engine.catalog_size if _engine is not None else 0
+    except Exception:  # noqa: BLE001
+        catalog_size = 0
+    return {
+        "name": "soundmatch",
+        "version": app.version,
+        "env": ENV,
+        "catalog_size": catalog_size,
+        "features": {
+            "spectrogram": True,
+            "by_catalog": True,
+            "share_url": True,
+            "metrics": True,
+            "pwa": True,
+            "ko_en_i18n": True,
+            "result_export_svg_png": True,
+            "favorites": True,
+            "compare_page": True,
+            "result_cache": True,
+        },
+        "max_upload_bytes": MAX_UPLOAD_BYTES,
+        "rate_limit_per_min": RATE_LIMIT_PER_MIN,
+    }
+
+
+@app.get(
     "/api/catalog",
     response_model=CatalogResponse,
     summary="카탈로그 메타데이터",
@@ -698,11 +742,20 @@ def analyze_by_catalog(
 
     파일 업로드도 librosa 호출도 없으므로 ``/api/analyze`` 보다 훨씬 빠르다.
     카탈로그 페이지에서 "이 곡과 비슷한 다른 곡 보기" 액션을 위해 만들었다.
+    같은 (name, top_n) 입력은 LRU 캐시에서 즉시 응답한다.
     """
     eng = get_engine()
     raw = eng.catalog_row_raw(name)
     if raw is None:
         raise HTTPException(status_code=404, detail="카탈로그에서 해당 곡을 찾을 수 없습니다.")
+
+    cache_key = _by_catalog_cache.make_key(name, top_n)
+    cached_payload = _by_catalog_cache.get(cache_key)
+    if cached_payload is not None:
+        # cached 플래그를 켜서 클라이언트가 알 수 있게.
+        out = dict(cached_payload)
+        out["cached"] = True
+        return JSONResponse(out, headers={"Cache-Control": "public, max-age=300"})
 
     features = AudioFeatureVector(name=name, values=raw)
     hits, _ = eng.find_similar(features, top_n=top_n + 1)
@@ -737,20 +790,20 @@ def analyze_by_catalog(
         })
 
     title, _, artist = name.partition(" - ")
-    return JSONResponse(
-        {
-            "source": "catalog",
-            "name": name,
-            "title": title.strip() or name,
-            "artist": artist.strip() or "Unknown",
-            "summary": summary_metrics(features),
-            "tags": derive_tags(features),
-            "results": results,
-            "catalog_size": eng.catalog_size,
-            "engine_version": app.version,
-        },
-        headers={"Cache-Control": "public, max-age=300"},
-    )
+    payload = {
+        "source": "catalog",
+        "name": name,
+        "title": title.strip() or name,
+        "artist": artist.strip() or "Unknown",
+        "summary": summary_metrics(features),
+        "tags": derive_tags(features),
+        "results": results,
+        "catalog_size": eng.catalog_size,
+        "engine_version": app.version,
+        "cached": False,
+    }
+    _by_catalog_cache.set(cache_key, payload)
+    return JSONResponse(payload, headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.post(

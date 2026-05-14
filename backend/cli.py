@@ -132,6 +132,28 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    """uvicorn 으로 backend.main:app 을 띄우는 단축어.
+
+    팀원이 처음 클론했을 때 ``python -m backend.cli serve`` 한 줄이면 동작
+    하도록 만들기 위한 편의 명령. 운영 환경에선 직접 uvicorn 을 쓰는 편이
+    옵션을 더 세밀하게 줄 수 있다.
+    """
+    try:
+        import uvicorn
+    except ImportError:
+        print("error: uvicorn 이 설치되어 있지 않습니다. pip install uvicorn", file=sys.stderr)
+        return 7
+    uvicorn.run(
+        "backend.main:app",
+        host=args.host,
+        port=args.port,
+        reload=args.reload,
+        log_level=args.log_level,
+    )
+    return 0
+
+
 def cmd_validate_dataset(args: argparse.Namespace) -> int:
     """카탈로그 CSV 가 엔진에 안전하게 로딩 가능한지 미리 점검한다.
 
@@ -370,6 +392,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="입력과 같은 파일을 덮어써도 되는지 명시적으로 허용",
     )
     dedupe.set_defaults(func=cmd_dedupe_dataset)
+
+    serve = sub.add_parser("serve", help="uvicorn 으로 백엔드를 띄운다 (개발 편의용 단축어).")
+    serve.add_argument("--host", default="127.0.0.1", help="바인딩할 호스트 (기본 127.0.0.1)")
+    serve.add_argument("--port", type=int, default=8000, help="리스닝 포트 (기본 8000)")
+    serve.add_argument("--reload", action="store_true", help="코드 변경 시 자동 재시작")
+    serve.add_argument(
+        "--log-level",
+        default="info",
+        choices=["debug", "info", "warning", "error", "critical"],
+    )
+    serve.set_defaults(func=cmd_serve)
     return parser
 
 

@@ -6,7 +6,17 @@
 
 ## [Unreleased]
 
-### Added / Changed
+### Added
+- `GET /api/version` — 버전 / 환경 / 카탈로그 사이즈 / 기능 플래그 / 업로드 한도
+  / rate limit 한도를 한 번에 돌려준다. SDK / 클라이언트 호환성 체크용.
+- `/api/analyze/by-catalog` 에 LRU 캐시 적용. 같은 (name, top_n) 입력은
+  두 번째 호출부터 `cached: true` 로 즉시 응답.
+- 분석이 끝나면 결과를 `location.hash` 에 자동으로 직렬화 (history.replaceState).
+  새로고침 / 북마크 만으로도 결과가 살아남는다. URL 이 8KB 를 넘으면 안전상 skip.
+- `python -m backend.cli serve [--host] [--port] [--reload]` 서브커먼드.
+  uvicorn 실행 단축어, `pip install` 없이 호출 가능 (uvicorn 누락 시 친절 에러).
+
+### Added / Changed (earlier)
 - 엔진이 카탈로그의 중복 키(같은 "곡명 - 아티스트") 를 자동으로 제거하고
   `dropped_duplicate_count` 로 노출. 첫 번째 행을 유지하고 나머지를 떨군다.
   중복이 있으면 운영 로그에 `catalog_duplicates_dropped` 경고.

@@ -248,6 +248,32 @@ def test_catalog_search_validates_size_bound(fastapi_client):
     assert r.status_code == 422
 
 
+def test_version_endpoint(fastapi_client):
+    """/api/version 이 메타 정보를 정상 반환해야 한다."""
+    r = fastapi_client.get("/api/version")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["name"] == "soundmatch"
+    assert body["version"]
+    assert "features" in body and isinstance(body["features"], dict)
+    assert body["features"]["spectrogram"] is True
+    assert body["features"]["by_catalog"] is True
+    assert isinstance(body["max_upload_bytes"], int)
+    assert isinstance(body["rate_limit_per_min"], int)
+
+
+def test_by_catalog_cache_marks_second_call(fastapi_client):
+    """같은 (name, top_n) 으로 두 번 호출하면 두 번째는 cached: true 가 돼야 한다."""
+    name = "Alpha - Tester"
+    r1 = fastapi_client.get(f"/api/analyze/by-catalog?name={name}&top_n=2")
+    r2 = fastapi_client.get(f"/api/analyze/by-catalog?name={name}&top_n=2")
+    assert r1.status_code == 200 and r2.status_code == 200
+    assert r1.json().get("cached") is False
+    assert r2.json().get("cached") is True
+    # 결과 자체는 동일해야 한다.
+    assert r1.json()["results"] == r2.json()["results"]
+
+
 def test_analyze_by_catalog_returns_results(fastapi_client):
     """카탈로그 곡 이름으로 by-catalog 호출하면 자기 자신은 제외하고 응답해야 한다."""
     r = fastapi_client.get("/api/analyze/by-catalog?name=Alpha%20-%20Tester&top_n=2")

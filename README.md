@@ -32,6 +32,9 @@ python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 uvicorn backend.main:app --reload --port 8000
+
+# 단축어로 띄우고 싶다면:
+python -m backend.cli serve --reload
 ```
 
 Docker 가 편하면 `docker compose up --build`.
@@ -102,7 +105,8 @@ python preview_server.py 8765
 
 ```
 POST /api/analyze              # multipart 업로드, top_n=1~20
-GET  /api/analyze/by-catalog   # 카탈로그 곡끼리 즉시 비교 (librosa 호출 없음)
+GET  /api/analyze/by-catalog   # 카탈로그 곡끼리 즉시 비교 (librosa 호출 없음, LRU 캐시)
+GET  /api/version              # 버전 + 기능 플래그 (호환성 체크)
 GET  /api/health               # 라이브니스, ?strict=1 이면 librosa/디스크까지 점검
 GET  /api/catalog              # 사용 중인 특성 컬럼
 GET  /api/catalog/sample       # 카탈로그 일부 미리보기

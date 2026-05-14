@@ -390,6 +390,9 @@
       addToHistory(data);
       await setAudioPreview(file);
       renderResults(data);
+      // 분석이 끝났으니 URL hash 에 결과를 자동으로 직렬화 — 새로고침 /
+      // 북마크 만으로도 결과가 살아남는다. 실패는 무시 (선택적 기능).
+      updateLocationHash(data).catch(() => {});
     } catch (err) {
       stopLoadingMessages();
       showError(err.message || String(err));
@@ -809,6 +812,10 @@
     if (seedBackBtn) seedBackBtn.classList.add("hidden");
     fileInput.value = "";
     hideAll();
+    // 결과가 박혀있던 hash 를 비워준다.
+    try {
+      history.replaceState(null, "", `${location.pathname}${location.search}`);
+    } catch {}
     form.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
@@ -872,6 +879,22 @@
     const out = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
     return out;
+  }
+
+  // 분석이 끝나면 결과를 URL hash 에 살짝 박아준다 — 새로고침이나 북마크로도
+  // 결과가 살아남게. URL 이 너무 길어지면(약 12KB+) 그냥 hash 갱신을 포기한다.
+  async function updateLocationHash(data) {
+    if (!data) return;
+    const token = await encodeForShare(data);
+    if (!token) return;
+    const newHash = `#r=${token}`;
+    // 6KB(~base64 8000자) 보다 길면 일부 모바일 브라우저가 거부하니 안전선.
+    if (newHash.length > 8000) return;
+    try {
+      history.replaceState(null, "", `${location.pathname}${location.search}${newHash}`);
+    } catch {
+      // history API 가 막힌 환경은 그냥 pass.
+    }
   }
 
   // 페이지 로드 시 hash 에 결과가 들어있으면 자동 복원.
