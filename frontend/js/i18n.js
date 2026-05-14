@@ -52,6 +52,8 @@
         title: "분석에 실패했습니다.",
         retry: "다시 시도",
         rateLimit: "요청이 너무 잦습니다. 잠시 후 다시 시도해주세요.",
+        globalToast: "문제가 발생했어요. 새로고침 후 다시 시도해주세요.",
+        unhandledToast: "요청 처리 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.",
       },
       results: {
         title: "분석 결과",
@@ -271,6 +273,8 @@
         title: "Analysis failed.",
         retry: "Try again",
         rateLimit: "Too many requests. Please try again shortly.",
+        globalToast: "Something went wrong. Please refresh and try again.",
+        unhandledToast: "Something went wrong handling the request. Please try again shortly.",
       },
       results: {
         title: "Results",

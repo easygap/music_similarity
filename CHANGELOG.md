@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Fixed
+- 글로벌 에러 boundary 의 토스트 문구가 한국어로 하드코딩되어 EN 토글
+  상태의 사용자에게도 한국어로 보이던 위화감. `error-boundary.js` 가
+  `window.i18n` 을 가능하면 사용하고, 없으면 한국어로 폴백.
+- 신규 i18n 키 `error.globalToast`, `error.unhandledToast` (ko/en parity).
 - 분석 히스토리 항목이 ~320KB 짜리 멜 스펙트로그램 SVG 를 통째로
   localStorage 에 저장해서, 5건만 쌓여도 1.6MB. 즐겨찾기와 같은 5MB 도메인
   쿼터를 빠르게 잠식하던 문제. 히스토리 저장 시 SVG 필드를 비운

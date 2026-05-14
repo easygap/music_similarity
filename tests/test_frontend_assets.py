@@ -170,6 +170,31 @@ def test_render_mini_metrics_uses_i18n_labels():
     assert "label: \"밝기\"" not in text
 
 
+def test_error_boundary_messages_pass_through_i18n():
+    """error-boundary.js 의 토스트 메시지가 한국어 하드코딩이 아니라 i18n
+    키를 통과해야 한다. 영어 사용자한테도 일관된 경험.
+    """
+    text = _read("js/error-boundary.js")
+    # 키 호출이 들어가 있어야 한다.
+    assert 'tr("error.globalToast")' in text
+    assert 'tr("error.unhandledToast")' in text
+    # 옛 한국어 하드코딩이 토스트 호출 부분에 남아 있으면 회귀.
+    # (폴백 dict 안에는 한국어가 있어도 됨 — 그건 i18n.js 로드 실패 대비.)
+    assert 'show("문제가 발생했어요' not in text
+    assert 'show("요청 처리 중' not in text
+
+
+def test_error_boundary_loaded_after_i18n():
+    """index.html 에서 error-boundary.js 는 i18n.js 보다 뒤에 로드되어야
+    `tr()` 호출 시점에 window.i18n 이 이미 정의되어 있음.
+    """
+    text = _read("index.html")
+    i18n_pos = text.find('src="/i18n.js"')
+    eb_pos = text.find('src="/error-boundary.js"')
+    assert i18n_pos != -1 and eb_pos != -1
+    assert i18n_pos < eb_pos
+
+
 def test_history_strips_spectrogram_svg_before_saving():
     """addToHistory 가 localStorage 에 저장하기 전 ~320KB 짜리 spectrogram_svg
     를 빈 문자열로 trim 해야 한다. 그렇지 않으면 5건만으로 5MB 쿼터를 거의
