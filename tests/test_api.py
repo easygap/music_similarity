@@ -286,6 +286,35 @@ def test_client_error_beacon(fastapi_client):
     assert "soundmatch_client_errors_total" in m
 
 
+def test_client_error_beacon_accepts_non_dict_payload(fastapi_client):
+    """비콘이 배열/문자열 같은 비-dict JSON 을 보내도 안전하게 받아야 한다."""
+    r = fastapi_client.post(
+        "/api/client-error",
+        json=["just", "an", "array"],
+    )
+    assert r.status_code == 204
+
+
+def test_client_error_beacon_accepts_malformed_payload(fastapi_client):
+    """JSON 으로 파싱이 안 되는 본문이 와도 500 으로 죽지 않아야 한다."""
+    r = fastapi_client.post(
+        "/api/client-error",
+        content=b"{this is not json",
+        headers={"Content-Type": "application/json"},
+    )
+    assert r.status_code == 204
+
+
+def test_client_error_beacon_truncates_oversize_payload(fastapi_client):
+    """500바이트보다 긴 message / source 도 잘려서 로그 폭주 없이 받아진다."""
+    huge_msg = "x" * 5000
+    r = fastapi_client.post(
+        "/api/client-error",
+        json={"kind": "error", "message": huge_msg, "source": huge_msg},
+    )
+    assert r.status_code == 204
+
+
 def test_version_endpoint(fastapi_client):
     """/api/version 이 메타 정보를 정상 반환해야 한다."""
     r = fastapi_client.get("/api/version")
