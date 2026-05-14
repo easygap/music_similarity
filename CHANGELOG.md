@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Fixed
+- 분석 진행 중에 새 파일을 올리거나 "새 분석" 으로 돌아갈 때 이전 fetch 가
+  그대로 끝까지 진행되어 두 결과가 뒤섞이는 race. `runAnalysis` 에
+  `AbortController` 를 도입해 이전 요청을 cancel, 응답이 도착할 때 controller
+  identity 가 바뀌어 있으면 화면 갱신을 건너뛴다. 리셋 버튼도 진행 중인
+  분석을 같이 cancel. `AbortError` 는 에러 화면을 안 띄우고 조용히 종료.
 - 글로벌 에러 boundary 의 토스트 문구가 한국어로 하드코딩되어 EN 토글
   상태의 사용자에게도 한국어로 보이던 위화감. `error-boundary.js` 가
   `window.i18n` 을 가능하면 사용하고, 없으면 한국어로 폴백.

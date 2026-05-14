@@ -400,6 +400,10 @@
   let _lastResults = null;
   let _lastFile = null;
   let _analysisInFlight = false;
+  // 분석 요청을 도중에 취소할 때 쓰는 AbortController. 사용자가 분석 중
+  // 다른 파일을 새로 올리거나 "새 분석" 으로 돌아가면 이전 fetch 는 취소되어
+  // 결과가 뒤섞이는 race 를 막는다.
+  let _analysisAbortController = null;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -413,6 +417,14 @@
   });
 
   async function runAnalysis(file) {
+    // 이전에 진행 중이던 분석이 있으면 abort. 같은 핸들러 안에서 새 fetch 가
+    // 시작되기 전에 옛 요청을 끊어줘야 결과가 뒤섞이는 race 가 안 생긴다.
+    if (_analysisAbortController) {
+      try { _analysisAbortController.abort(); } catch (_) {}
+    }
+    const controller = new AbortController();
+    _analysisAbortController = controller;
+
     hideAll();
     showSkeletonResults();
     startLoadingMessages();
@@ -430,6 +442,7 @@
       const res = await fetch(`/api/analyze?top_n=${topN}`, {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
       stopLoadingMessages();
 
@@ -440,6 +453,9 @@
       }
 
       const data = await res.json();
+      // 응답 도착 직전에 새 분석이 시작돼서 controller 가 바뀌었다면
+      // 이 응답은 stale. 화면 갱신을 건너뛴다.
+      if (_analysisAbortController !== controller) return;
       _lastResults = data;
       addToHistory(data);
       await setAudioPreview(file);
@@ -448,10 +464,17 @@
       // 북마크 만으로도 결과가 살아남는다. 실패는 무시 (선택적 기능).
       updateLocationHash(data).catch(() => {});
     } catch (err) {
+      // AbortError 는 사용자가 의도적으로 cancel 한 것이라 에러 화면을 띄우지 않음.
+      if (err && err.name === "AbortError") return;
       stopLoadingMessages();
       showError(err.message || String(err));
     } finally {
-      _analysisInFlight = false;
+      // 이 호출이 시작한 분석만 in-flight 플래그를 끈다 (새 분석이 이미
+      // 시작된 경우엔 그 controller 가 살아 있어야 함).
+      if (_analysisAbortController === controller) {
+        _analysisInFlight = false;
+        _analysisAbortController = null;
+      }
     }
   }
 
@@ -946,6 +969,13 @@
   // 초기화
   // ----------------------------------------------------------------------
   resetBtn.addEventListener("click", () => {
+    // 진행 중인 분석이 있으면 같이 cancel — 그 응답이 나중에 도착해서 빈
+    // 화면에 결과가 갑자기 떠오르는 일을 막는다.
+    if (_analysisAbortController) {
+      try { _analysisAbortController.abort(); } catch (_) {}
+      _analysisAbortController = null;
+      _analysisInFlight = false;
+    }
     setFile(null);
     setAudioPreview(null);
     _lastResults = null;
