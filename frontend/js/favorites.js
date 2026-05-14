@@ -24,8 +24,16 @@
   function write(items) {
     try {
       localStorage.setItem(KEY, JSON.stringify(items.slice(0, MAX)));
-    } catch {
-      // 쿼터 초과나 사파리 시크릿 모드 등은 조용히 무시.
+      return true;
+    } catch (err) {
+      // 쿼터 초과 (히스토리와 같은 5MB 쿼터 공유) / 사파리 시크릿 모드 등.
+      // 조용히 무시하지 않고 외부에서 알 수 있도록 이벤트 한 번 쏴준다.
+      // 외부 (app.js) 가 토스트로 안내한다.
+      console.warn("[soundmatch] favorites write failed:", err);
+      try {
+        window.dispatchEvent(new CustomEvent("favorites:storage-full"));
+      } catch (_) {}
+      return false;
     }
   }
 

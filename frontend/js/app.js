@@ -285,6 +285,11 @@
   }
 
   window.addEventListener("favorites:change", renderFavorites);
+  // favorites.js 가 쿼터 초과로 저장 실패하면 신호. 사용자한테 알려야
+  // 영문도 모르는 상태로 즐겨찾기가 안 쌓이는 일을 막을 수 있다.
+  window.addEventListener("favorites:storage-full", () => {
+    toast(t("favorites.storageFull") || t("history.storageFull"));
+  });
   window.addEventListener("i18n:change", renderFavorites);
   renderFavorites();
 
@@ -1397,22 +1402,42 @@
   function writeHistory(items) {
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, HISTORY_LIMIT)));
-    } catch {
-      // 사용자가 storage 비활성화한 경우 등 — 조용히 무시.
+      return true;
+    } catch (err) {
+      // localStorage 쿼터(5MB) 초과 / private mode 등에서 실패. silently
+      // no-op 이면 사용자는 "히스토리가 안 늘어남" 만 보고 영문을 모름.
+      // 토스트로 알리되 분석 자체는 계속 동작하도록 그대로 둔다.
+      console.warn("[soundmatch] writeHistory failed:", err);
+      try {
+        toast(t("history.storageFull"));
+      } catch (e) {
+        // 토스트 헬퍼가 없으면 무시.
+      }
+      return false;
     }
   }
   function addToHistory(data) {
     const items = readHistory();
+    // 히스토리는 메타 정보 위주로 가볍게 저장한다. 멜 스펙트로그램 SVG 는
+    // ~320KB 라 5건만으로 1.6MB 를 점유 → 즐겨찾기와 같은 5MB 쿼터를 빠르게
+    // 잠식. radar / waveform 같은 그래프는 결과 화면을 다시 그릴 때 매번
+    // 새로 계산하므로 저장하지 않아도 영향 없음.
+    const trimmed = Object.assign({}, data, { spectrogram_svg: "" });
     const entry = {
       ts: Date.now(),
       filename: data.filename,
       topTitle: data.results && data.results[0] && data.results[0].title,
       topArtist: data.results && data.results[0] && data.results[0].artist,
       topPercent: data.results && data.results[0] && data.results[0].similarity_percent,
-      data,
+      data: trimmed,
     };
     items.unshift(entry);
-    writeHistory(items);
+    if (!writeHistory(items)) {
+      // 쓰기 실패한 상황에서는 in-memory render 도 무의미 (다음 로드 때
+      // 동기화가 안 되어 사용자가 혼란). 그냥 기존 히스토리만 다시 그린다.
+      renderHistory();
+      return;
+    }
     renderHistory();
   }
   function renderHistory() {
