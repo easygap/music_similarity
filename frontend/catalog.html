@@ -395,6 +395,8 @@
     var state = {
       q: "", page: 1, size: 24, total: 0, hasMore: false, favOnly: false,
       minBpm: "", maxBpm: "", minEnergy: "", maxEnergy: "", sort: "default",
+      // 현재 열려 있는 모달 곡 이름. 모달이 닫히면 빈 문자열.
+      song: "",
     };
     var debounceTimer = null;
     var urlWriteTimer = null;
@@ -439,6 +441,8 @@
         if (p.has("min_energy")) state.minEnergy = clampNumber(p.get("min_energy"), 0, 1);
         if (p.has("max_energy")) state.maxEnergy = clampNumber(p.get("max_energy"), 0, 1);
         if (p.get("fav_only") === "1") state.favOnly = true;
+        // song 은 길이 제한만 두고 그대로 받는다 — "Title - Artist" 형태.
+        if (p.has("song")) state.song = (p.get("song") || "").slice(0, 400);
       } catch (e) {
         // URL 파싱 실패해도 기본 상태로 그냥 계속.
       }
@@ -458,6 +462,7 @@
           if (state.minEnergy !== "") p.set("min_energy", state.minEnergy);
           if (state.maxEnergy !== "") p.set("max_energy", state.maxEnergy);
           if (state.favOnly) p.set("fav_only", "1");
+          if (state.song) p.set("song", state.song);
           var qs = p.toString();
           var next = window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
           // history 스택을 망치지 않게 replaceState.
@@ -620,6 +625,11 @@
       modal.classList.remove("is-open");
       document.body.style.overflow = "";
       if (_lastFocusedEl) _lastFocusedEl.focus();
+      // URL 에서 song= 도 같이 제거. 다른 필터는 그대로 유지.
+      if (state.song) {
+        state.song = "";
+        writeStateToUrl();
+      }
     }
     modalClose.addEventListener("click", closeModal);
     modal.addEventListener("click", function (e) {
@@ -630,6 +640,9 @@
     });
 
     async function openSimilarModal(name) {
+      // 상태 + URL 에 곡 이름을 박아두고 열기 — 새로고침이나 공유 시 같은 모달이 열린다.
+      state.song = name || "";
+      writeStateToUrl();
       _lastFocusedEl = document.activeElement;
       modal.classList.add("is-open");
       document.body.style.overflow = "hidden";
@@ -748,9 +761,17 @@
 
     // 뒤로가기/앞으로가기 시 URL 이 바뀌면 state 를 다시 읽어와 화면을 갱신.
     window.addEventListener("popstate", function () {
+      var prevSong = state.song;
       readStateFromUrl();
       applyStateToInputs();
       load();
+      // 모달 상태도 URL 에 맞춰 동기화.
+      if (state.song && state.song !== prevSong) {
+        openSimilarModal(state.song);
+      } else if (!state.song && prevSong) {
+        modal.classList.remove("is-open");
+        document.body.style.overflow = "";
+      }
     });
     // 다른 페이지에서 추가/해제 시 카탈로그 페이지도 즉시 갱신.
     window.addEventListener("favorites:change", function () { load(); });
@@ -786,6 +807,12 @@
     readStateFromUrl();
     applyStateToInputs();
     load();
+    // URL 에 ?song=... 이 있으면 그 곡 기준 모달을 자동으로 띄운다.
+    if (state.song) {
+      // load() 와 충돌 안 나게 한 타이밍 늦춤. fetch 가 두 번 가는 건 어쩔 수 없는데
+      // 둘 다 LRU 캐시에 의해 두 번째부터는 즉시 응답한다.
+      setTimeout(function () { openSimilarModal(state.song); }, 0);
+    }
   })();
   </script>
 </body>
