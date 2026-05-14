@@ -69,6 +69,15 @@ def test_catalog_html_writes_url_on_state_changes():
     assert text.count("writeStateToUrl()") >= 5, "writeStateToUrl 가 충분히 호출되지 않습니다."
 
 
+def test_catalog_has_empty_state_reset_button():
+    """필터로 결과가 0건일 때 사용자가 막다른 골목을 벗어날 수 있는 reset 버튼."""
+    text = _read("catalog.html")
+    # resetFilters 함수 본체 + i18n 키 호출이 같이 있어야 한다.
+    assert "function resetFilters()" in text
+    assert 't("catalog.resetFilters")' in text
+    assert 'id="cat-empty-reset"' in text
+
+
 def test_catalog_modal_deeplink_to_url():
     """모달이 열리고 닫힐 때 URL 에 song= 파라미터를 양방향으로 동기화해야 한다."""
     text = _read("catalog.html")

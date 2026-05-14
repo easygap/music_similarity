@@ -196,6 +196,7 @@
         modalSub: (artist, size) => `${artist} · ${size.toLocaleString("ko-KR")}곡과 비교`,
         modalSeed: "이 곡 기준으로 다시 보기",
         modalClose: "닫기",
+        resetFilters: "필터 초기화",
       },
       compare: {
         back: "← 메인으로",
@@ -406,6 +407,7 @@
         modalSub: (artist, size) => `${artist} · compared with ${size.toLocaleString("en-US")} tracks`,
         modalSeed: "Use this track as the seed",
         modalClose: "Close",
+        resetFilters: "Reset filters",
       },
       compare: {
         back: "← Back home",

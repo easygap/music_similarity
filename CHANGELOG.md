@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+### Added
+- 카탈로그 빈 결과 상태에 "필터 초기화" 버튼. 검색어 / BPM / 에너지 / 정렬 /
+  즐겨찾기만 보기 / 페이지 / song 모달까지 한 번에 기본값으로 되돌린다.
+  필터가 한 개라도 걸린 상태에서만 노출.
+
 ### Fixed
 - Service Worker 의 precache SHELL 에 `/catalog`, `/compare`, `/favorites.js`
   가 빠져 있던 문제. 오프라인 첫 진입에서 이 페이지들이 비어 보이던 회귀를 막음.
