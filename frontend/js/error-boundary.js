@@ -3,6 +3,22 @@
 // 제거하면서 외부 파일로 옮긴다.)
 
 (function () {
+  // 메시지 i18n 헬퍼. i18n.js 가 같이 로드되어 있으면 사용자의 lang() 에
+  // 맞춰 토스트 텍스트를 가져오고, 없으면 한국어 폴백.
+  function tr(key) {
+    try {
+      if (window.i18n && typeof window.i18n.t === "function") {
+        var v = window.i18n.t(key);
+        if (v && v !== key) return v;
+      }
+    } catch (e) {}
+    var fallback = {
+      "error.globalToast": "문제가 발생했어요. 새로고침 후 다시 시도해주세요.",
+      "error.unhandledToast": "요청 처리 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.",
+    };
+    return fallback[key] || "";
+  }
+
   function show(msg) {
     try {
       var toast = document.getElementById("toast");
@@ -39,7 +55,7 @@
 
   window.addEventListener("error", function (e) {
     if (e && e.target && e.target.tagName) return;
-    show("문제가 발생했어요. 새로고침 후 다시 시도해주세요.");
+    show(tr("error.globalToast"));
     console.error("[soundmatch] error:", (e && e.message) || e);
     beacon({
       kind: "error",
@@ -52,7 +68,7 @@
   });
 
   window.addEventListener("unhandledrejection", function (e) {
-    show("요청 처리 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.");
+    show(tr("error.unhandledToast"));
     console.error("[soundmatch] unhandled:", (e && e.reason) || e);
     beacon({
       kind: "unhandledrejection",
