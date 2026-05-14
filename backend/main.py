@@ -397,10 +397,15 @@ def _client_ip(request: Request) -> str:
         `X-Forwarded-For` / `X-Real-IP` 를 신뢰한다.
       - 그 외엔 무조건 `request.client.host` 만 사용 — 누구나 임의의 IP 헤더를
         붙여 rate limit 을 우회할 수 없게.
+      - 특수 값 `*` 를 쓰면 모든 출발지를 신뢰한다. Fly.io / Render 처럼 우리
+        쪽에서 edge 프록시 IP 를 정확히 알 수 없는 PaaS 위에 띄울 때 사용.
+        이런 환경에서는 외부에서 직접 들어오는 경로 자체가 막혀 있으므로
+        XFF 위조 위험이 없다.
     """
     peer = request.client.host if request.client else ""
-    if TRUSTED_PROXIES and peer in TRUSTED_PROXIES:
-        # 신뢰 가능한 프록시에서 온 요청만 헤더를 본다.
+    trust_all = "*" in TRUSTED_PROXIES
+    if trust_all or (TRUSTED_PROXIES and peer in TRUSTED_PROXIES):
+        # 신뢰 가능한 출발지에서 온 요청만 헤더를 본다.
         fwd = request.headers.get("x-forwarded-for")
         if fwd:
             # XFF 는 "client, proxy1, proxy2" 형태. 가장 앞의 IP 가 원 클라이언트.

@@ -162,14 +162,14 @@ curl -X POST http://localhost:8000/api/analyze \
 | `MUSIC_MAX_UPLOAD_BYTES` | `26214400` | 25MB 한도 |
 | `MUSIC_MAX_CONCURRENT` | `4` | 동시 분석 처리 한도 |
 | `MUSIC_RATE_LIMIT_PER_MIN` | `12` | IP당 분당 요청 한도 |
-| `MUSIC_TRUSTED_PROXIES` | "" | 콤마 구분 프록시 IP. 여기 있는 출발지만 `X-Forwarded-For` 신뢰. 비어 있으면 헤더 무시 |
+| `MUSIC_TRUSTED_PROXIES` | "" | 콤마 구분 프록시 IP. 여기 있는 출발지만 `X-Forwarded-For` 신뢰. 비어 있으면 헤더 무시. PaaS 위에 띄울 때처럼 edge IP 가 자동 발급이면 `*` 을 써서 와일드카드 신뢰 (Fly / Render 기본값) |
 | `MUSIC_CACHE_TTL_SECONDS` | `600` | 결과 캐시 TTL (10분) |
 | `MUSIC_CACHE_MAX_ENTRIES` | `64` | 결과 캐시 최대 항목 수 |
 | `MUSIC_SKIP_WARMUP` | "" | `1` 이면 부팅 시 librosa 워밍업 생략 (cold-start 측정 / 테스트용) |
 | `MUSIC_ALLOWED_ORIGINS` | "" (개발은 `*`) | CORS 허용 origin, 콤마 구분 |
 | `MUSIC_LOG_LEVEL` | `INFO` | JSON 로그 레벨 |
 | `PORT` | `8000` | 리스닝 포트 (Fly.io 등 PaaS 호환) |
-| `WEB_CONCURRENCY` | `2` | uvicorn worker 수 |
+| `WEB_CONCURRENCY` | `2` | uvicorn worker 수. **production 권장 `1`** — rate limit / 결과 캐시 / metrics 가 in-memory 라 다중 워커면 한도가 워커 수만큼 곱해진다 (`fly.toml` / `render.yaml` 도 1 로 명시). |
 
 ## 카탈로그 다시 만들기
 

@@ -18,6 +18,15 @@ services:
         value: "4"
       - key: MUSIC_RATE_LIMIT_PER_MIN
         value: "30"
+      # Render 의 edge IP 도 고정 화이트리스트가 어려워 와일드카드로 신뢰.
+      # 외부에서 PaaS 프록시를 우회해 직접 들어오는 경로는 없다.
+      - key: MUSIC_TRUSTED_PROXIES
+        value: "*"
+      # 단일 worker 강제. in-memory rate limit / cache / metrics 가 파편화
+      # 되지 않도록 한 프로세스 내에서만 상태를 유지. 트래픽이 늘면 Render
+      # 인스턴스 수직 확장이나 Redis 백엔드 도입으로 풀어야 한다.
+      - key: WEB_CONCURRENCY
+        value: "1"
       - key: MUSIC_ALLOWED_ORIGINS
         # /api 요청을 허용할 origin 을 콤마로 구분해 입력.
         # 비워두면 CORS 자체를 끄고 same-origin 만 허용한다.

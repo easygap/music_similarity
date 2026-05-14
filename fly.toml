@@ -16,6 +16,14 @@ primary_region = "nrt"  # Tokyo — 한국 사용자 기준 가장 가까움.
   MUSIC_LOG_LEVEL = "INFO"
   MUSIC_MAX_CONCURRENT = "4"
   MUSIC_RATE_LIMIT_PER_MIN = "30"
+  # Fly.io 의 edge 프록시 IP 가 자동 발급이라 고정 화이트리스트가 어렵다.
+  # PaaS 외부 직접 노출 경로가 없으므로 와일드카드(*) 로 XFF 신뢰. 자세한
+  # 보안 모델은 README "환경 변수" 표 참고.
+  MUSIC_TRUSTED_PROXIES = "*"
+  # 단일 worker 운영. _rate_state / 결과 캐시 / metrics 가 모두 in-memory 라
+  # 다중 워커면 값이 파편화되어 rate limit 한도가 실제로 워커 수만큼 곱해진다.
+  # Redis 백엔드를 붙이기 전까지는 1 워커 + 수직 확장 + 멀티 머신으로 처리.
+  WEB_CONCURRENCY = "1"
   PORT = "8000"
 
 [http_service]
