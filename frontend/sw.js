@@ -4,13 +4,18 @@
 //   2) 네트워크가 끊긴 상황에서 친절한 오프라인 폴백 페이지 노출.
 // API 응답(POST/api/analyze 등)은 캐시하지 않는다.
 
-const VERSION = "soundmatch-v1";
+// 캐시 키는 빌드별로 바뀌어야 한다 — 새 자산을 추가하거나 기존 자산을 고치면
+// 이 문자열을 한 칸 올려서 옛 캐시를 강제로 무효화한다.
+const VERSION = "soundmatch-v2";
 const SHELL = [
   "/",
+  "/catalog",
+  "/compare",
   "/style.css",
   "/app.js",
   "/i18n.js",
   "/visualizers.js",
+  "/favorites.js",
   "/favicon.svg",
   "/og-image.svg",
   "/offline.html",
@@ -80,7 +85,8 @@ async function staleWhileRevalidate(req) {
       return res;
     })
     .catch(async () => {
-      // 네트워크 실패 + 캐시도 없으면 오프라인 페이지.
+      // 네트워크 실패 시 navigation 요청이면 무조건 오프라인 페이지로 폴백.
+      // (호출자 입장에서 cached 가 없는 경우만 여기 도달함)
       if (req.mode === "navigate") {
         const fallback = await cache.match("/offline.html");
         if (fallback) return fallback;
@@ -88,5 +94,13 @@ async function staleWhileRevalidate(req) {
       throw new Error("offline");
     });
 
-  return cached || network;
+  // 캐시 히트 + 네트워크 실패 / 응답 늦음 모두 안전하게 처리.
+  // 네트워크가 떨어졌어도 navigation 이면 어차피 fallback 으로 떨어지므로
+  // cached 가 없으면 그 결과를 기다린다.
+  if (cached) {
+    // 백그라운드 갱신은 그냥 굴린다 — 결과 무시 OK.
+    network.catch(() => {});
+    return cached;
+  }
+  return network;
 }
