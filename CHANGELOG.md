@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- `/api/catalog/search` 확장: `min_bpm`, `max_bpm`, `min_energy`, `max_energy`,
+  `sort=default|title|artist|bpm|energy` 쿼리 추가. 카탈로그 페이지에
+  BPM/에너지 범위 input + 정렬 select UI 노출.
+- `POST /api/client-error` 비콘 엔드포인트 + `soundmatch_client_errors_total`
+  카운터. 프론트엔드 글로벌 에러 boundary 가 `navigator.sendBeacon` 으로
+  에러 메타(없으면 fetch keepalive)를 백엔드로 전송. 1초 디바운스.
+
+### Added (earlier)
 - 결과 페이지 정렬 옵션 — 유사도 (기본) / Tempo 차이 / 에너지 차이 기준으로
   카드 순서가 즉시 재배치된다. rank 라벨은 그대로 유지.
 - CLI `compare` 서브커먼드: `python -m backend.cli compare a.wav b.wav`.

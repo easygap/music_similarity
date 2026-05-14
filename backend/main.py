@@ -123,6 +123,7 @@ _metrics_counters: dict[str, int] = {
     "soundmatch_rate_limited_total": 0,
     "soundmatch_cache_hits_total": 0,
     "soundmatch_cache_misses_total": 0,
+    "soundmatch_client_errors_total": 0,
 }
 
 # 현재 동시에 처리 중인 분석 요청 수. 게이지로 노출.
@@ -516,6 +517,48 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
     }
 
 
+@app.post(
+    "/api/client-error",
+    summary="프론트엔드 글로벌 에러 비콘",
+    tags=["system"],
+    include_in_schema=False,
+)
+async def client_error(request: Request):
+    """frontend window.onerror / unhandledrejection 에서 보내는 에러 비콘.
+
+    저장이나 가공은 하지 않고, 구조화 로그 한 줄 + 카운터 1 증가만 한다.
+    악의적 트래픽으로 디스크가 차는 일을 막기 위해 본문 사이즈도 cap 한다.
+    """
+    _bump("soundmatch_client_errors_total")
+    request_id = getattr(request.state, "request_id", uuid.uuid4().hex)
+    try:
+        body = await request.json()
+        if not isinstance(body, dict):
+            body = {"raw": str(body)[:500]}
+    except Exception:  # noqa: BLE001
+        body = {"raw": (await request.body())[:500].decode("utf-8", errors="replace")}
+
+    # 비콘에 PII 가 들어올 수 있으니 가능한 한 필드만 추려 로그.
+    # logging.LogRecord 가 이미 가지고 있는 키('message' 등) 와 충돌하지 않도록
+    # 접두사를 붙여둔다.
+    client_msg = str(body.get("message", ""))[:500]
+    src = str(body.get("source", ""))[:300]
+    ua = (request.headers.get("user-agent") or "")[:200]
+    logger.warning(
+        "client_error",
+        extra={
+            "request_id": request_id,
+            "client_message": client_msg,
+            "client_source": src,
+            "user_agent": ua,
+            "client_lineno": body.get("lineno"),
+            "client_colno": body.get("colno"),
+        },
+    )
+    # 비콘이라 응답은 비워둔다.
+    return Response(status_code=204)
+
+
 @app.get(
     "/api/version",
     summary="버전 + 기능 플래그 (클라이언트 호환성 체크용)",
@@ -595,6 +638,7 @@ def metrics():
         "soundmatch_rate_limited_total": "rate limit 으로 차단된 요청 수",
         "soundmatch_cache_hits_total": "결과 캐시 히트 — librosa 재실행 안 한 케이스",
         "soundmatch_cache_misses_total": "결과 캐시 미스 — 새로 분석한 케이스",
+        "soundmatch_client_errors_total": "프론트엔드에서 보고된 클라이언트 에러 수",
     }
     for name, doc in counter_help.items():
         lines.append(f"# HELP {name} {doc}")
@@ -695,18 +739,59 @@ def catalog_search(
     q: str = Query("", description="제목/아티스트 부분 일치(대소문자 무시). 빈 값이면 전체 목록."),  # noqa: B008
     page: int = Query(1, ge=1, le=10_000),  # noqa: B008
     size: int = Query(24, ge=1, le=100),  # noqa: B008
+    min_bpm: float | None = Query(None, ge=0, le=400, description="BPM 하한"),  # noqa: B008
+    max_bpm: float | None = Query(None, ge=0, le=400, description="BPM 상한"),  # noqa: B008
+    min_energy: float | None = Query(None, ge=0, le=1, description="RMS 에너지 하한"),  # noqa: B008
+    max_energy: float | None = Query(None, ge=0, le=1, description="RMS 에너지 상한"),  # noqa: B008
+    sort: str = Query("default", pattern="^(default|title|artist|bpm|energy)$"),  # noqa: B008
 ):
     """카탈로그 곡 목록을 검색/페이지네이션 형태로 돌려준다.
 
     매번 카탈로그 전체를 메모리에서 필터링한다. 곡 수가 십수만 이상으로
     커지면 별도 인덱스(예: SQLite FTS) 가 필요하지만, 현재 1000곡 규모에선
     이 정도로 충분히 빠르다.
+
+    필터:
+        - bpm/energy 범위: 카탈로그 raw 행에서 직접 확인.
+        - sort: default(사전식) / title / artist / bpm / energy 오름차순.
     """
     eng = get_engine()
     needle = (q or "").strip().lower()
     names = eng.iter_catalog_names()
+
+    # 이름 키워드 부분일치.
     if needle:
         names = [n for n in names if needle in n.lower()]
+
+    # BPM/에너지 범위 필터.
+    if any(v is not None for v in (min_bpm, max_bpm, min_energy, max_energy)):
+        filtered: list[str] = []
+        for n in names:
+            row = eng.catalog_row_raw(n) or {}
+            bpm = float(row.get("bpm", 0.0) or 0.0)
+            energy = float(row.get("rms_mean", 0.0) or 0.0)
+            if min_bpm is not None and bpm < min_bpm:
+                continue
+            if max_bpm is not None and bpm > max_bpm:
+                continue
+            if min_energy is not None and energy < min_energy:
+                continue
+            if max_energy is not None and energy > max_energy:
+                continue
+            filtered.append(n)
+        names = filtered
+
+    # 정렬.
+    if sort == "title":
+        names = sorted(names, key=lambda n: _split_catalog_name(n)["title"].lower())
+    elif sort == "artist":
+        names = sorted(names, key=lambda n: _split_catalog_name(n)["artist"].lower())
+    elif sort == "bpm":
+        names = sorted(names, key=lambda n: float((eng.catalog_row_raw(n) or {}).get("bpm", 0.0) or 0.0))
+    elif sort == "energy":
+        names = sorted(names, key=lambda n: float((eng.catalog_row_raw(n) or {}).get("rms_mean", 0.0) or 0.0))
+    # default 정렬은 이미 iter_catalog_names 가 사전식으로 반환.
+
     total = len(names)
     start = (page - 1) * size
     end = start + size

@@ -248,6 +248,44 @@ def test_catalog_search_validates_size_bound(fastapi_client):
     assert r.status_code == 422
 
 
+def test_catalog_search_sort_title(fastapi_client):
+    """sort=title 이면 곡명 사전식 정렬."""
+    r = fastapi_client.get("/api/catalog/search?sort=title")
+    assert r.status_code == 200
+    items = r.json()["items"]
+    titles = [it["title"].lower() for it in items]
+    assert titles == sorted(titles)
+
+
+def test_catalog_search_filter_min_bpm(fastapi_client):
+    """min_bpm 필터로 카탈로그 행을 줄일 수 있어야 한다.
+
+    합성 카탈로그의 bpm 값은 1 미만이라, min_bpm=300 (Query 가 허용하는 상한
+    400 안쪽) 을 주면 결과가 0 건이 된다.
+    """
+    r = fastapi_client.get("/api/catalog/search?min_bpm=300")
+    assert r.status_code == 200
+    assert r.json()["total"] == 0
+
+
+def test_catalog_search_invalid_sort(fastapi_client):
+    """허용되지 않은 sort 값은 422 로 막힌다."""
+    r = fastapi_client.get("/api/catalog/search?sort=bogus")
+    assert r.status_code == 422
+
+
+def test_client_error_beacon(fastapi_client):
+    """/api/client-error 가 비콘을 받아 204 로 응답해야 한다."""
+    r = fastapi_client.post(
+        "/api/client-error",
+        json={"kind": "error", "message": "test", "source": "tests"},
+    )
+    assert r.status_code == 204
+    # 카운터에도 잡혔는지 /metrics 로 확인.
+    m = fastapi_client.get("/metrics").text
+    assert "soundmatch_client_errors_total" in m
+
+
 def test_version_endpoint(fastapi_client):
     """/api/version 이 메타 정보를 정상 반환해야 한다."""
     r = fastapi_client.get("/api/version")

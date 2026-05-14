@@ -105,6 +105,22 @@
       color: var(--text-mute);
     }
     .cat-filter-row label { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .cat-filter-range input[type="number"],
+    .cat-filter-range select {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 5px 8px;
+      border-radius: 8px;
+      font-size: 13px;
+      width: 70px;
+    }
+    .cat-filter-range select { width: auto; padding-right: 20px; }
+    :root[data-theme="light"] .cat-filter-range input[type="number"],
+    :root[data-theme="light"] .cat-filter-range select {
+      background: white;
+    }
+    .cat-filter-row { flex-wrap: wrap; }
 
     /* 결과 모달 — 카탈로그 카드 클릭 시 그 자리에서 유사 곡을 보여준다. */
     .modal-backdrop {
@@ -265,6 +281,28 @@
         <input type="checkbox" id="cat-favorites-only">
         즐겨찾기만 보기
       </label>
+      <label class="cat-filter-range">
+        BPM
+        <input type="number" id="cat-min-bpm" placeholder="min" min="0" max="400" step="1">
+        ~
+        <input type="number" id="cat-max-bpm" placeholder="max" min="0" max="400" step="1">
+      </label>
+      <label class="cat-filter-range">
+        에너지
+        <input type="number" id="cat-min-energy" placeholder="min" min="0" max="1" step="0.05">
+        ~
+        <input type="number" id="cat-max-energy" placeholder="max" min="0" max="1" step="0.05">
+      </label>
+      <label class="cat-filter-range">
+        정렬
+        <select id="cat-sort">
+          <option value="default">기본</option>
+          <option value="title">곡명</option>
+          <option value="artist">아티스트</option>
+          <option value="bpm">BPM 낮은 순</option>
+          <option value="energy">에너지 낮은 순</option>
+        </select>
+      </label>
     </div>
 
     <div class="cat-grid" id="cat-grid"></div>
@@ -303,8 +341,16 @@
     var next = document.getElementById("cat-next");
     var pageLabel = document.getElementById("cat-page-label");
     var favOnly = document.getElementById("cat-favorites-only");
+    var minBpmEl = document.getElementById("cat-min-bpm");
+    var maxBpmEl = document.getElementById("cat-max-bpm");
+    var minEEl = document.getElementById("cat-min-energy");
+    var maxEEl = document.getElementById("cat-max-energy");
+    var sortEl = document.getElementById("cat-sort");
 
-    var state = { q: "", page: 1, size: 24, total: 0, hasMore: false, favOnly: false };
+    var state = {
+      q: "", page: 1, size: 24, total: 0, hasMore: false, favOnly: false,
+      minBpm: "", maxBpm: "", minEnergy: "", maxEnergy: "", sort: "default",
+    };
     var debounceTimer = null;
     var Fav = window.SoundMatchFavorites;
 
@@ -345,8 +391,17 @@
       }
 
       try {
-        var url = "/api/catalog/search?q=" + encodeURIComponent(state.q)
-          + "&page=" + state.page + "&size=" + state.size;
+        var qs = [
+          "q=" + encodeURIComponent(state.q),
+          "page=" + state.page,
+          "size=" + state.size,
+          "sort=" + encodeURIComponent(state.sort || "default"),
+        ];
+        if (state.minBpm !== "") qs.push("min_bpm=" + encodeURIComponent(state.minBpm));
+        if (state.maxBpm !== "") qs.push("max_bpm=" + encodeURIComponent(state.maxBpm));
+        if (state.minEnergy !== "") qs.push("min_energy=" + encodeURIComponent(state.minEnergy));
+        if (state.maxEnergy !== "") qs.push("max_energy=" + encodeURIComponent(state.maxEnergy));
+        var url = "/api/catalog/search?" + qs.join("&");
         var res = await fetch(url);
         if (!res.ok) throw new Error("HTTP " + res.status);
         var data = await res.json();
@@ -528,6 +583,30 @@
     if (favOnly) {
       favOnly.addEventListener("change", function () {
         state.favOnly = favOnly.checked;
+        state.page = 1;
+        load();
+      });
+    }
+
+    function bindFilterInput(el, stateKey) {
+      if (!el) return;
+      var t;
+      el.addEventListener("input", function () {
+        clearTimeout(t);
+        t = setTimeout(function () {
+          state[stateKey] = el.value;
+          state.page = 1;
+          load();
+        }, 280);
+      });
+    }
+    bindFilterInput(minBpmEl, "minBpm");
+    bindFilterInput(maxBpmEl, "maxBpm");
+    bindFilterInput(minEEl, "minEnergy");
+    bindFilterInput(maxEEl, "maxEnergy");
+    if (sortEl) {
+      sortEl.addEventListener("change", function () {
+        state.sort = sortEl.value;
         state.page = 1;
         load();
       });
