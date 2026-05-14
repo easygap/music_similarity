@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- `GET /api/catalog/stats` — BPM / 에너지 / 밝기의 min/max/avg + BPM 분포
+  히스토그램(기본 10 bin, 60~200 BPM 고정 범위). 5분 캐시.
+- 카탈로그 페이지 상단에 BPM 분포 미니 막대 차트 (`/api/catalog/stats`).
+  곡 수 / 평균 BPM 라벨도 옆에 노출.
+- 결과 hit 카드 안에 매칭 곡 vs 업로드 곡의 핵심 메트릭(Tempo/에너지/밝기)
+  를 가로 mini-bar 로 비교. 같은 정규화 범위라 한 눈에 차이가 보임.
+
+### Added (earlier)
 - `/api/catalog/search` 확장: `min_bpm`, `max_bpm`, `min_energy`, `max_energy`,
   `sort=default|title|artist|bpm|energy` 쿼리 추가. 카탈로그 페이지에
   BPM/에너지 범위 input + 정렬 select UI 노출.

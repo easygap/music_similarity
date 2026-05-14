@@ -634,6 +634,12 @@
 
       li.querySelector(".hit-summary").innerHTML = renderInlineMarkdown(hit.reason.summary || "");
 
+      // 매칭 곡과 업로드 곡의 핵심 메트릭을 가로 mini-bar 로 비교 노출.
+      const miniEl = li.querySelector(".hit-mini-metrics");
+      if (miniEl) {
+        miniEl.innerHTML = renderMiniMetrics(data.summary || {}, hit.match_summary);
+      }
+
       const groupsEl = li.querySelector(".hit-groups");
       groupsEl.innerHTML = "";
       (hit.reason.groups || []).forEach((g) => {
@@ -731,6 +737,45 @@
     resultsSortSelect.addEventListener("change", () => {
       if (_lastResults) renderResults(_lastResults, /* preserveFile */ true);
     });
+  }
+
+  // 매칭 곡의 핵심 메트릭을 업로드한 곡과 가로 mini-bar 로 비교.
+  // 빈 값이거나 매칭 메타가 없으면 아무것도 안 그린다.
+  function renderMiniMetrics(query, match) {
+    if (!match) return "";
+    // 표시할 메트릭 + 정규화 범위. radar 와 같은 룰을 따라간다.
+    const axes = [
+      { key: "tempo_bpm", label: "Tempo", min: 60, max: 200, unit: " BPM", digits: 0 },
+      { key: "energy_rms", label: "에너지", min: 0, max: 0.5, unit: "", digits: 3 },
+      { key: "brightness", label: "밝기", min: 800, max: 6000, unit: " Hz", digits: 0 },
+    ];
+    function norm(v, ax) {
+      const x = Number(v);
+      if (!isFinite(x)) return 0;
+      if (ax.max === ax.min) return 0.5;
+      return Math.max(0, Math.min(1, (x - ax.min) / (ax.max - ax.min)));
+    }
+    function fmt(v, d) {
+      if (typeof v !== "number" || !isFinite(v)) return "—";
+      return v.toFixed(d);
+    }
+    return axes
+      .map((ax) => {
+        const qv = Number(query[ax.key]);
+        const mv = Number(match[ax.key]);
+        const qp = (norm(qv, ax) * 100).toFixed(1);
+        const mp = (norm(mv, ax) * 100).toFixed(1);
+        return `
+          <li>
+            <span class="mini-label">${escapeHtml(ax.label)}</span>
+            <span class="mini-bars">
+              <span class="mini-bar mini-bar-q" style="width: ${qp}%"></span>
+              <span class="mini-bar mini-bar-m" style="width: ${mp}%"></span>
+            </span>
+            <span class="mini-vals">${fmt(qv, ax.digits)}${ax.unit} → ${fmt(mv, ax.digits)}${ax.unit}</span>
+          </li>`;
+      })
+      .join("");
   }
 
   function renderSummary(summary) {

@@ -331,6 +331,27 @@ def test_analyze_by_catalog_unknown_name(fastapi_client):
     assert r.status_code == 404
 
 
+def test_catalog_stats(fastapi_client):
+    """카탈로그 통계가 min/max/avg + BPM 히스토그램을 돌려줘야 한다."""
+    r = fastapi_client.get("/api/catalog/stats?bpm_bins=6")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 3
+    for key in ("bpm", "energy", "brightness"):
+        agg = body[key]
+        assert {"min", "max", "avg", "count"}.issubset(agg.keys())
+    hist = body["bpm_histogram"]
+    assert isinstance(hist, list)
+    assert len(hist) == 6
+    for bin_ in hist:
+        assert {"from", "to", "count"}.issubset(bin_.keys())
+
+
+def test_catalog_stats_validates_bpm_bins(fastapi_client):
+    r = fastapi_client.get("/api/catalog/stats?bpm_bins=999")
+    assert r.status_code == 422
+
+
 def test_catalog_random(fastapi_client):
     """랜덤 추천 엔드포인트가 정상 응답하고 limit 범위 안에서 곡을 돌려준다."""
     r = fastapi_client.get("/api/catalog/random?n=2")

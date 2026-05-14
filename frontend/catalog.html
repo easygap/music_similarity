@@ -122,6 +122,39 @@
     }
     .cat-filter-row { flex-wrap: wrap; }
 
+    .cat-hist {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+    }
+    .cat-hist-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      color: var(--text-mute);
+      margin-bottom: 8px;
+    }
+    .cat-hist-sub { font-family: "JetBrains Mono", monospace; }
+    .cat-hist-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 64px;
+    }
+    .cat-hist-bar {
+      flex: 1;
+      background: var(--grad-primary);
+      border-radius: 4px 4px 0 0;
+      opacity: 0.85;
+      min-height: 4px;
+      position: relative;
+      cursor: help;
+    }
+    .cat-hist-bar:hover { opacity: 1; }
+
     /* 결과 모달 — 카탈로그 카드 클릭 시 그 자리에서 유사 곡을 보여준다. */
     .modal-backdrop {
       position: fixed;
@@ -303,6 +336,15 @@
           <option value="energy">에너지 낮은 순</option>
         </select>
       </label>
+    </div>
+
+    <!-- BPM 분포 미니 차트 (페이지 처음 진입 시 한 번만 로드). -->
+    <div class="cat-hist" id="cat-hist" aria-hidden="true">
+      <div class="cat-hist-head">
+        <span>BPM 분포</span>
+        <span class="cat-hist-sub" id="cat-hist-sub">불러오는 중…</span>
+      </div>
+      <div class="cat-hist-bars" id="cat-hist-bars"></div>
     </div>
 
     <div class="cat-grid" id="cat-grid"></div>
@@ -613,6 +655,31 @@
     }
     // 다른 페이지에서 추가/해제 시 카탈로그 페이지도 즉시 갱신.
     window.addEventListener("favorites:change", function () { load(); });
+
+    // BPM 분포 미니 차트는 페이지 진입 시 한 번만 그린다.
+    (async function loadHist() {
+      var host = document.getElementById("cat-hist");
+      var bars = document.getElementById("cat-hist-bars");
+      var sub = document.getElementById("cat-hist-sub");
+      try {
+        var res = await fetch("/api/catalog/stats?bpm_bins=12");
+        if (!res.ok) throw new Error("fail");
+        var data = await res.json();
+        var hist = Array.isArray(data.bpm_histogram) ? data.bpm_histogram : [];
+        if (!hist.length) { host.style.display = "none"; return; }
+        var maxCount = Math.max.apply(null, hist.map(function (b) { return b.count; }));
+        bars.innerHTML = hist.map(function (b) {
+          var h = maxCount > 0 ? Math.max(4, Math.round((b.count / maxCount) * 100)) : 4;
+          var tip = b.from.toFixed(0) + "–" + b.to.toFixed(0) + " BPM · " + b.count + "곡";
+          return '<div class="cat-hist-bar" title="' + escapeHtml(tip) + '" style="height: ' + h + '%"></div>';
+        }).join("");
+        sub.textContent =
+          "평균 " + (data.bpm && data.bpm.avg ? data.bpm.avg.toFixed(1) : "?") +
+          " · 곡 수 " + (data.total || 0);
+      } catch (e) {
+        host.style.display = "none";
+      }
+    })();
 
     load();
   })();

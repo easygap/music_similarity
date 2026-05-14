@@ -706,6 +706,83 @@ def catalog_sample(limit: int = Query(12, ge=1, le=50)):  # noqa: B008
 
 
 @app.get(
+    "/api/catalog/stats",
+    summary="카탈로그 BPM/에너지/밝기 분포 통계",
+    tags=["system"],
+)
+def catalog_stats(bpm_bins: int = Query(10, ge=4, le=40)):  # noqa: B008
+    """카탈로그 전체에 대한 가벼운 통계를 돌려준다.
+
+    - bpm / energy_rms / spectral_centroid_mean 의 min / max / avg.
+    - BPM 분포는 ``bpm_bins`` 개 구간으로 나눈 히스토그램으로 같이 노출.
+
+    카탈로그 페이지에서 작은 막대 차트를 그릴 때 사용한다. raw 행을 매번
+    훑지만 ~1000곡 규모에선 충분히 빠르고, 결과는 5분 캐시.
+    """
+    eng = get_engine()
+    names = eng.iter_catalog_names()
+    bpms: list[float] = []
+    energies: list[float] = []
+    brights: list[float] = []
+    for n in names:
+        row = eng.catalog_row_raw(n) or {}
+        try:
+            bpm = float(row.get("bpm", 0.0) or 0.0)
+            energy = float(row.get("rms_mean", 0.0) or 0.0)
+            bright = float(row.get("spectral_centroid_mean", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            continue
+        if bpm > 0:
+            bpms.append(bpm)
+        if energy > 0:
+            energies.append(energy)
+        if bright > 0:
+            brights.append(bright)
+
+    def _agg(vals: list[float]) -> dict[str, float]:
+        if not vals:
+            return {"min": 0.0, "max": 0.0, "avg": 0.0, "count": 0}
+        return {
+            "min": round(min(vals), 3),
+            "max": round(max(vals), 3),
+            "avg": round(sum(vals) / len(vals), 3),
+            "count": len(vals),
+        }
+
+    # BPM 히스토그램. 표시용으로 60~200 구간에 고정 — 그 바깥은 outlier.
+    hist_min, hist_max = 60.0, 200.0
+    bins = [0] * bpm_bins
+    step = (hist_max - hist_min) / bpm_bins
+    for b in bpms:
+        if b < hist_min:
+            bins[0] += 1
+        elif b >= hist_max:
+            bins[-1] += 1
+        else:
+            idx = int((b - hist_min) / step)
+            bins[min(idx, bpm_bins - 1)] += 1
+    bpm_hist = [
+        {
+            "from": round(hist_min + i * step, 1),
+            "to": round(hist_min + (i + 1) * step, 1),
+            "count": bins[i],
+        }
+        for i in range(bpm_bins)
+    ]
+
+    return JSONResponse(
+        {
+            "total": eng.catalog_size,
+            "bpm": _agg(bpms),
+            "energy": _agg(energies),
+            "brightness": _agg(brights),
+            "bpm_histogram": bpm_hist,
+        },
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@app.get(
     "/api/catalog/random",
     summary="카탈로그에서 무작위 곡 추천",
     tags=["system"],
