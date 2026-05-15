@@ -91,6 +91,19 @@ def test_catalog_has_empty_state_reset_button():
     assert 'id="cat-empty-reset"' in text
 
 
+def test_catalog_search_highlights_matched_substring():
+    """검색어와 매칭된 부분을 <mark> 로 강조하는 헬퍼가 catalog.html 에 존재해야 한다."""
+    text = _read("catalog.html")
+    assert "function highlightMatch(" in text
+    # 대소문자 무시 매칭.
+    assert "toLowerCase()" in text
+    # mark 클래스
+    assert "cat-highlight" in text
+    # title / artist 모두 highlight 호출을 거치도록 적용.
+    assert "highlightMatch(it.title, needle)" in text
+    assert "highlightMatch(it.artist, needle)" in text
+
+
 def test_catalog_bpm_histogram_is_clickable():
     """BPM 히스토그램 막대가 button + 클릭 핸들러로 인터랙티브 해야 한다."""
     text = _read("catalog.html")

@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 페이지 검색 결과에 매칭 부분 highlight. 검색어와 case-insensitive
+  로 일치하는 곡명/아티스트 substring 을 `<mark class="cat-highlight">` 로
+  강조해서, 왜 이 곡이 결과에 떴는지 한눈에 보인다. dark/light 두 테마 모두
+  accent 계열 톤으로 자연스럽게 녹아들도록 CSS 조정.
 - 카탈로그 페이지에 🎲 무작위 정렬 옵션. `/api/catalog/search?sort=shuffle` 도
   지원. 매 요청마다 새 순서가 나오도록 응답에 `Cache-Control: no-store`.
   사용자가 카탈로그를 둘러볼 때 늘 같은 알파벳 순서만 보지 않고 우연히
