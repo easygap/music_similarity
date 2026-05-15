@@ -91,6 +91,20 @@ def test_catalog_has_empty_state_reset_button():
     assert 'id="cat-empty-reset"' in text
 
 
+def test_catalog_bpm_histogram_is_clickable():
+    """BPM 히스토그램 막대가 button + 클릭 핸들러로 인터랙티브 해야 한다."""
+    text = _read("catalog.html")
+    # 막대 element 가 button 으로 그려진다.
+    assert 'button type="button" class="cat-hist-bar"' in text
+    # 클릭하면 state 의 BPM 범위에 bin 값이 들어간다.
+    assert "state.minBpm = minVal" in text
+    assert "state.maxBpm = maxVal" in text
+    # active 상태 동기화 헬퍼가 존재.
+    assert "function _syncHistActiveState()" in text
+    # toggle off 동작 (같은 막대 다시 누르면 해제).
+    assert "state.minBpm === minVal && state.maxBpm === maxVal" in text
+
+
 def test_catalog_modal_deeplink_to_url():
     """모달이 열리고 닫힐 때 URL 에 song= 파라미터를 양방향으로 동기화해야 한다."""
     text = _read("catalog.html")
