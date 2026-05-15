@@ -134,6 +134,31 @@
   }
   loadCatalogStat();
 
+  // Hero 영역에 누적 분석 횟수를 작게 노출 — social proof. /api/version 응답의
+  // analyses_total 활용. 횟수가 0 이면 (아직 한 번도 분석 안 됨) 그냥 숨겨둔다.
+  async function loadSocialProof() {
+    const el = $("#hero-social-proof");
+    if (!el) return;
+    try {
+      const res = await fetch("/api/version");
+      if (!res.ok) throw new Error("offline");
+      const data = await res.json();
+      const total = Number(data.analyses_total) || 0;
+      if (total <= 0) {
+        el.hidden = true;
+        return;
+      }
+      const isEn = window.i18n && window.i18n.lang() === "en";
+      const formatted = isEn ? total.toLocaleString("en-US") : total.toLocaleString("ko-KR");
+      el.textContent = t("hero.totalAnalyses", formatted);
+      el.hidden = false;
+    } catch {
+      el.hidden = true;
+    }
+  }
+  loadSocialProof();
+  window.addEventListener("i18n:change", loadSocialProof);
+
   // hero stat 의 "평균 분석 시간" 을 실시간 latency P50 으로 갱신 + 카탈로그
   // 갱신 일자(catalog_updated_at) 도 같은 응답에서 가져와 stat 카드에 작게 표시.
   // health 엔드포인트는 ring buffer 의 P50 을 같이 내려준다 — 샘플이 없으면 0.

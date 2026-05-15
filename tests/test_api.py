@@ -406,6 +406,23 @@ def test_version_endpoint(fastapi_client):
     assert body["features"]["by_catalog"] is True
     assert isinstance(body["max_upload_bytes"], int)
     assert isinstance(body["rate_limit_per_min"], int)
+    # 누적 분석 카운트도 함께 — 사용자 측 social proof.
+    assert "analyses_total" in body
+    assert isinstance(body["analyses_total"], int)
+    assert body["analyses_total"] >= 0
+
+
+def test_version_analyses_total_increments_after_analyze(fastapi_client, tiny_wav):
+    """분석을 한 번 돌리면 /api/version 의 analyses_total 이 증가해야 한다."""
+    before = fastapi_client.get("/api/version").json()["analyses_total"]
+    with tiny_wav.open("rb") as f:
+        r = fastapi_client.post(
+            "/api/analyze",
+            files={"file": ("tone.wav", f.read(), "audio/wav")},
+        )
+    assert r.status_code == 200
+    after = fastapi_client.get("/api/version").json()["analyses_total"]
+    assert after == before + 1
 
 
 def test_by_catalog_cache_marks_second_call(fastapi_client):
