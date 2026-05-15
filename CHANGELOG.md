@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+### Added
+- 결과 영역에 "CSV 저장" 버튼 추가. JSON 외에 엑셀 친화 CSV 로도 결과를 받을
+  수 있다. RFC 4180 escape (쌍따옴표 두 번, 본문은 quote 감싸기) + UTF-8 BOM
+  으로 한글이 엑셀에서 깨지지 않게. 파일명에 ISO date stamp 포함
+  (`<원본>.soundmatch-2026-05-15.csv`). 신규 i18n 키 `results.exportCsv` (ko/en).
+
 ## [1.3.0] — 2026-05-15
 
 이번 사이클의 테마: **production-grade hardening**. 5개의 audit finding 을 모두

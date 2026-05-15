@@ -184,6 +184,21 @@ def test_render_mini_metrics_uses_i18n_labels():
     assert "label: \"밝기\"" not in text
 
 
+def test_results_csv_export_button_present_and_wired():
+    """결과 영역에 CSV 다운로드 버튼이 있고, app.js 가 핸들러를 달고 있어야 한다."""
+    html = _read("index.html")
+    assert 'id="export-csv-btn"' in html
+    assert 'data-i18n="results.exportCsv"' in html
+    js = _read("js/app.js")
+    assert 'getElementById("export-csv-btn")' in js or '$("#export-csv-btn")' in js
+    # 직렬화 헬퍼.
+    assert "function buildResultsCsv(" in js
+    # RFC 4180 escape 흔적.
+    assert "/[\",\\r\\n]/" in js
+    # UTF-8 BOM (한글 깨짐 방지).
+    assert '"﻿"' in js or "'﻿'" in js
+
+
 def test_run_analysis_uses_abort_controller():
     """runAnalysis 가 AbortController 를 만들어 fetch signal 로 전달하고,
     이전 진행 중이던 요청은 abort 하도록 되어 있어야 한다.
