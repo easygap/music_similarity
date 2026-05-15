@@ -16,6 +16,7 @@ import hashlib
 import threading
 import time
 from collections import OrderedDict
+from copy import deepcopy as _deepcopy
 from typing import Any
 
 
@@ -40,7 +41,15 @@ class AnalysisResultCache:
     def make_key(sha256_hex: str, top_n: int) -> str:
         return f"{sha256_hex}:{top_n}"
 
-    def get(self, key: str) -> Any | None:
+    def get(self, key: str, *, copy: bool = False) -> Any | None:
+        """캐시 항목을 조회한다.
+
+        ``copy=True`` 면 ``deepcopy`` 된 사본을 돌려준다. 호출 측이 결과를
+        제자리 수정하더라도 캐시 entry 자체가 오염되지 않도록 보장. 결과
+        payload 처럼 중첩 dict / list 가 있는 값에 안전. 기본값 False 는
+        호출 측이 read-only 로만 다룰 때 (혹은 명시적으로 자기 사본을
+        만들 때) 성능 부담 없이 그대로 반환.
+        """
         now = time.time()
         with self._lock:
             entry = self._data.get(key)
@@ -56,7 +65,7 @@ class AnalysisResultCache:
             # LRU 갱신: 가장 최근 사용으로 표시.
             self._data.move_to_end(key)
             self.hits += 1
-            return value
+            return _deepcopy(value) if copy else value
 
     def set(self, key: str, value: Any) -> None:
         now = time.time()

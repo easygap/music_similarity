@@ -971,12 +971,12 @@ def analyze_by_catalog(
         raise HTTPException(status_code=404, detail="카탈로그에서 해당 곡을 찾을 수 없습니다.")
 
     cache_key = _by_catalog_cache.make_key(name, top_n)
-    cached_payload = _by_catalog_cache.get(cache_key)
+    # copy=True 로 받아 캐시 entry 가 호출 측 수정에 오염되지 않게 보장.
+    cached_payload = _by_catalog_cache.get(cache_key, copy=True)
     if cached_payload is not None:
         # cached 플래그를 켜서 클라이언트가 알 수 있게.
-        out = dict(cached_payload)
-        out["cached"] = True
-        return JSONResponse(out, headers={"Cache-Control": "public, max-age=300"})
+        cached_payload["cached"] = True
+        return JSONResponse(cached_payload, headers={"Cache-Control": "public, max-age=300"})
 
     features = AudioFeatureVector(name=name, values=raw)
     hits, _ = eng.find_similar(features, top_n=top_n + 1)
@@ -1113,12 +1113,15 @@ async def analyze(
 
             # 결과 캐시 hit 이면 librosa/sklearn 다 건너뛰고 바로 응답.
             cache_key = _result_cache.make_key(hasher.hexdigest(), top_n)
-            cached_value = _result_cache.get(cache_key)
+            # copy=True 로 받아 캐시 entry 의 results / summary 같은 중첩
+            # 구조가 호출 측 수정에 오염되지 않도록. 현재 코드는 dict 최상위
+            # 필드만 갈아끼지만 future-proofing 차원.
+            cached_value = _result_cache.get(cache_key, copy=True)
             if cached_value is not None:
                 _bump("soundmatch_cache_hits_total")
                 _bump("soundmatch_analyze_success_total")
                 # 동적 필드만 새 요청용으로 교체. 나머지는 그대로 재사용.
-                payload = dict(cached_value)
+                payload = cached_value
                 payload["request_id"] = request_id
                 payload["filename"] = safe_name
                 payload["cached"] = True

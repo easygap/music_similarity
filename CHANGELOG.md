@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+### Changed
+- `AnalysisResultCache.get()` 에 `copy=True` 옵션 추가. 캐시 entry 의 중첩
+  구조(예: `results` 리스트, `summary` dict) 가 호출 측의 제자리 수정에
+  오염되지 않도록 deepcopy 사본을 반환한다. `/api/analyze` 와
+  `/api/analyze/by-catalog` 의 캐시 hit 경로를 모두 `copy=True` 로 갈아끼움.
+  현재 코드는 dict 최상위 필드만 갈아끼지만 future-proofing 차원의 안전망.
+  기본값(`copy=False`) 은 성능을 위해 같은 참조를 그대로 반환 — 읽기 전용
+  케이스용. 신규 회귀 테스트 2 케이스 (총 193 passed).
+
 ### Added
 - 결과 영역에 "모두 펼치기 / 모두 접기" 토글 버튼. 사용자가 선택한 모드는
   localStorage 키 `soundmatch.hit-expand-mode` 에 저장되어 다음 분석에도 유지.
