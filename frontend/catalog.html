@@ -358,6 +358,7 @@
           <option value="artist" data-i18n="catalog.sortArtist">아티스트</option>
           <option value="bpm" data-i18n="catalog.sortBpm">BPM 낮은 순</option>
           <option value="energy" data-i18n="catalog.sortEnergy">에너지 낮은 순</option>
+          <option value="shuffle" data-i18n="catalog.sortShuffle">🎲 무작위</option>
         </select>
       </label>
     </div>
@@ -457,7 +458,7 @@
         var sizeRaw = parseInt(p.get("size") || "", 10);
         if (Number.isFinite(sizeRaw) && sizeRaw >= 6 && sizeRaw <= 100) state.size = sizeRaw;
         var sortRaw = p.get("sort") || "";
-        var allowedSort = ["default", "title", "artist", "bpm", "energy"];
+        var allowedSort = ["default", "title", "artist", "bpm", "energy", "shuffle"];
         if (allowedSort.indexOf(sortRaw) !== -1) state.sort = sortRaw;
         if (p.has("min_bpm")) state.minBpm = clampNumber(p.get("min_bpm"), 0, 400);
         if (p.has("max_bpm")) state.maxBpm = clampNumber(p.get("max_bpm"), 0, 400);

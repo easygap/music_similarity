@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Added
+- 카탈로그 페이지에 🎲 무작위 정렬 옵션. `/api/catalog/search?sort=shuffle` 도
+  지원. 매 요청마다 새 순서가 나오도록 응답에 `Cache-Control: no-store`.
+  사용자가 카탈로그를 둘러볼 때 늘 같은 알파벳 순서만 보지 않고 우연히
+  새 곡을 발견할 수 있게. URL 영구화 / lang 토글 / 회귀 안전망 모두 적용.
+  신규 i18n 키 `catalog.sortShuffle` (ko/en parity).
+
 ### Changed
 - `AnalysisResultCache.get()` 에 `copy=True` 옵션 추가. 캐시 entry 의 중첩
   구조(예: `results` 리스트, `summary` dict) 가 호출 측의 제자리 수정에

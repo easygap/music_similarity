@@ -879,7 +879,7 @@ def catalog_search(
     max_bpm: float | None = Query(None, ge=0, le=400, description="BPM 상한"),  # noqa: B008
     min_energy: float | None = Query(None, ge=0, le=1, description="RMS 에너지 하한"),  # noqa: B008
     max_energy: float | None = Query(None, ge=0, le=1, description="RMS 에너지 상한"),  # noqa: B008
-    sort: str = Query("default", pattern="^(default|title|artist|bpm|energy)$"),  # noqa: B008
+    sort: str = Query("default", pattern="^(default|title|artist|bpm|energy|shuffle)$"),  # noqa: B008
 ):
     """카탈로그 곡 목록을 검색/페이지네이션 형태로 돌려준다.
 
@@ -926,12 +926,22 @@ def catalog_search(
         names = sorted(names, key=lambda n: float((eng.catalog_row_raw(n) or {}).get("bpm", 0.0) or 0.0))
     elif sort == "energy":
         names = sorted(names, key=lambda n: float((eng.catalog_row_raw(n) or {}).get("rms_mean", 0.0) or 0.0))
+    elif sort == "shuffle":
+        # 무작위 셔플. 매 요청마다 다른 순서가 나오도록 seed 를 안 박는다.
+        # discovery 용도라 페이지를 넘겨도 같은 무작위 순서가 유지될 필요는
+        # 없음 — 새로고침 = 새로운 셔플. 캐시 헤더도 함께 짧게 가져간다.
+        import random as _random
+
+        names = list(names)
+        _random.shuffle(names)
     # default 정렬은 이미 iter_catalog_names 가 사전식으로 반환.
 
     total = len(names)
     start = (page - 1) * size
     end = start + size
     items = [_split_catalog_name(n) for n in names[start:end]]
+    # shuffle 모드는 매 호출이 새 순서여야 하므로 캐시 금지. 일반 정렬은 짧게.
+    cache_header = "no-store" if sort == "shuffle" else "public, max-age=120"
     return JSONResponse(
         {
             "total": total,
@@ -940,7 +950,7 @@ def catalog_search(
             "has_more": end < total,
             "items": items,
         },
-        headers={"Cache-Control": "public, max-age=120"},
+        headers={"Cache-Control": cache_header},
     )
 
 

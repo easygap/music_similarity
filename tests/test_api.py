@@ -315,6 +315,24 @@ def test_catalog_search_invalid_sort(fastapi_client):
     assert r.status_code == 422
 
 
+def test_catalog_search_shuffle_returns_all_items(fastapi_client):
+    """sort=shuffle 도 정상 200 + 카탈로그 항목 그대로 반환 (순서만 무작위)."""
+    r = fastapi_client.get("/api/catalog/search?sort=shuffle&size=10")
+    assert r.status_code == 200
+    body = r.json()
+    # 합성 카탈로그는 3곡.
+    assert body["total"] == 3
+    titles = [it["title"] for it in body["items"]]
+    assert sorted(titles) == ["Alpha", "Beta", "Gamma"]
+
+
+def test_catalog_search_shuffle_disables_caching(fastapi_client):
+    """shuffle 응답은 매번 다른 순서여야 하므로 Cache-Control: no-store."""
+    r = fastapi_client.get("/api/catalog/search?sort=shuffle")
+    assert r.status_code == 200
+    assert "no-store" in r.headers.get("Cache-Control", "")
+
+
 def test_client_error_beacon(fastapi_client):
     """/api/client-error 가 비콘을 받아 204 로 응답해야 한다."""
     r = fastapi_client.post(
