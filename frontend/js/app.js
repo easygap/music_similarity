@@ -56,6 +56,7 @@
   const copyLinkBtn = $("#copy-link-btn");
   const copyShareUrlBtn = $("#copy-share-url-btn");
   const exportJsonBtn = $("#export-json-btn");
+  const exportCsvBtn = $("#export-csv-btn");
   const exportSvgBtn = $("#export-svg-btn");
   const exportPngBtn = $("#export-png-btn");
   const yearSpan = $("#year");
@@ -1174,6 +1175,74 @@
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 500);
   });
+
+  // ----- CSV 다운로드 ---------------------------------------------------
+  // 비개발자가 엑셀에서 바로 가공할 수 있도록 결과를 CSV 로 떨궈준다. 외부
+  // 라이브러리 없이 RFC 4180 기준 escape (큰따옴표는 두 번, 본문은 quote 감싸기)
+  // + UTF-8 BOM (한글이 엑셀에서 깨지지 않도록).
+  function buildResultsCsv(data) {
+    const rows = Array.isArray(data && data.results) ? data.results : [];
+    const summary = (data && data.summary) || {};
+
+    const header = [
+      "rank",
+      "title",
+      "artist",
+      "similarity",
+      "similarity_percent",
+      "youtube_search_url",
+      "spotify_search_url",
+      // 업로드 곡의 핵심 메트릭은 모든 행에 함께 박아둔다 — 엑셀에서 1위만 보고
+      // 비교하는 흔한 사용 패턴 대비.
+      "query_tempo_bpm",
+      "query_energy_rms",
+      "query_brightness",
+    ];
+
+    function esc(v) {
+      if (v == null) return "";
+      const s = String(v);
+      // CRLF / 콤마 / 쌍따옴표가 들어가면 quote 로 감싼다. 항상 감싸도 무방하지만,
+      // 짧은 셀은 quote 없이 더 깔끔.
+      if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }
+
+    const lines = [header.join(",")];
+    for (const r of rows) {
+      lines.push([
+        r.rank,
+        r.title,
+        r.artist,
+        typeof r.similarity === "number" ? r.similarity.toFixed(6) : "",
+        typeof r.similarity_percent === "number" ? r.similarity_percent.toFixed(2) : "",
+        r.youtube_search_url || "",
+        r.spotify_search_url || "",
+        typeof summary.tempo_bpm === "number" ? summary.tempo_bpm.toFixed(2) : "",
+        typeof summary.energy_rms === "number" ? summary.energy_rms.toFixed(4) : "",
+        typeof summary.brightness === "number" ? summary.brightness.toFixed(1) : "",
+      ].map(esc).join(","));
+    }
+    return "﻿" + lines.join("\r\n") + "\r\n"; // BOM + CRLF.
+  }
+
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener("click", () => {
+      if (!_lastResults) return;
+      const csv = buildResultsCsv(_lastResults);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const baseName = (_lastResults.filename || "soundmatch").replace(/\.[^.]+$/, "");
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `${baseName}.soundmatch-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    });
+  }
 
   // 결과 한 페이지를 SVG 카드로 떨궈주기 — SNS 공유 / 보관 용.
   // 외부 라이브러리 없이 직접 SVG 문자열을 짜서 Blob 다운로드한다.
