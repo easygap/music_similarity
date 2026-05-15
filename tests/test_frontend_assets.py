@@ -135,6 +135,18 @@ def test_catalog_search_highlights_matched_substring():
     assert "highlightMatch(it.artist, needle)" in text
 
 
+def test_catalog_search_has_clear_button():
+    """카탈로그 검색 input 에 clear (×) 버튼 + Escape 키 핸들러가 있어야 한다."""
+    text = _read("catalog.html")
+    assert 'id="cat-search-clear"' in text
+    assert "function clearSearch()" in text
+    assert "function syncSearchClearVisibility()" in text
+    # Escape 키 처리.
+    assert 'e.key === "Escape"' in text
+    # i18n attr.
+    assert 'data-i18n-attr="aria-label:catalog.searchClear"' in text
+
+
 def test_catalog_favorites_toggle_shows_count():
     """카탈로그 즐겨찾기만 보기 토글에 현재 카운트 chip 이 노출되어야 한다."""
     text = _read("catalog.html")

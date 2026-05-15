@@ -19,19 +19,54 @@
       align-items: center;
       margin: 24px 0 18px;
     }
-    .cat-search {
+    .cat-search-wrap {
       flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .cat-search {
+      width: 100%;
       background: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--border-strong);
       color: var(--text);
-      padding: 12px 16px;
+      padding: 12px 38px 12px 16px;
       border-radius: 12px;
       font-size: 15px;
     }
+    /* WebKit 의 기본 type=search clear (×) 아이콘 제거 — 우리 커스텀 버튼 사용. */
+    .cat-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
     :root[data-theme="light"] .cat-search { background: white; }
     .cat-search:focus {
       outline: 2px solid var(--accent-2);
       outline-offset: 2px;
+    }
+    .cat-search-clear {
+      position: absolute;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .cat-search-clear:hover, .cat-search-clear:focus-visible {
+      background: rgba(124, 92, 255, 0.35);
+      outline: none;
+    }
+    :root[data-theme="light"] .cat-search-clear {
+      background: rgba(0, 0, 0, 0.08);
+    }
+    :root[data-theme="light"] .cat-search-clear:hover {
+      background: rgba(124, 92, 255, 0.2);
     }
     .cat-meta { color: var(--text-mute); font-size: 13px; }
     .cat-grid {
@@ -349,15 +384,25 @@
     </header>
 
     <div class="cat-search-row">
-      <input
-        type="search"
-        class="cat-search"
-        id="cat-search-input"
-        placeholder="제목이나 아티스트로 검색"
-        data-i18n-attr="placeholder:catalog.searchPlaceholder"
-        autocomplete="off"
-        spellcheck="false"
-      />
+      <div class="cat-search-wrap">
+        <input
+          type="search"
+          class="cat-search"
+          id="cat-search-input"
+          placeholder="제목이나 아티스트로 검색"
+          data-i18n-attr="placeholder:catalog.searchPlaceholder"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button
+          type="button"
+          class="cat-search-clear"
+          id="cat-search-clear"
+          aria-label="검색어 지우기"
+          data-i18n-attr="aria-label:catalog.searchClear"
+          hidden
+        >×</button>
+      </div>
       <span class="cat-meta" id="cat-meta" data-i18n="catalog.loading">불러오는 중…</span>
     </div>
 
@@ -859,7 +904,30 @@
       }
     }
 
+    // 검색 input 의 clear (×) 버튼 — 검색어가 있을 때만 보임.
+    var searchClearBtn = document.getElementById("cat-search-clear");
+
+    function syncSearchClearVisibility() {
+      if (!searchClearBtn) return;
+      searchClearBtn.hidden = !input.value;
+    }
+
+    function clearSearch() {
+      input.value = "";
+      state.q = "";
+      state.page = 1;
+      syncSearchClearVisibility();
+      writeStateToUrl();
+      load();
+      input.focus();
+    }
+
+    if (searchClearBtn) {
+      searchClearBtn.addEventListener("click", clearSearch);
+    }
+
     input.addEventListener("input", function () {
+      syncSearchClearVisibility();
       // 입력 직후 바로 fetch 하면 한글 IME 입력마다 호출되므로 280ms 디바운스.
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(function () {
@@ -868,6 +936,13 @@
         writeStateToUrl();
         load();
       }, 280);
+    });
+    // Esc 키 — 검색 input 에 포커스가 있을 때만 검색어 지움.
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && input.value) {
+        e.preventDefault();
+        clearSearch();
+      }
     });
     prev.addEventListener("click", function () {
       if (state.page > 1) { state.page--; writeStateToUrl(); load(); }
@@ -1036,6 +1111,7 @@
     // 초기 URL 파라미터로 state 를 채운 뒤 input/select 에도 반영하고 첫 로드.
     readStateFromUrl();
     applyStateToInputs();
+    syncSearchClearVisibility();
     load();
     // URL 에 ?song=... 이 있으면 그 곡 기준 모달을 자동으로 띄운다.
     if (state.song) {
