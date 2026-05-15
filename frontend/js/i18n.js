@@ -165,7 +165,7 @@
       controls: {
         themeToggle: "테마 전환",
         langToggle: "Language: English",
-        shortcuts: "단축키: / 업로드 포커스 · Esc 결과 닫기 · Space 재생",
+        shortcuts: "단축키: / 업로드 · Esc 결과 닫기 · Space 재생 · j/k 결과 이동 · Enter 펼침",
       },
       install: {
         title: "앱으로 설치",
@@ -394,7 +394,7 @@
       controls: {
         themeToggle: "Toggle theme",
         langToggle: "언어: 한국어",
-        shortcuts: "Shortcuts: / focus upload · Esc close result · Space play",
+        shortcuts: "Shortcuts: / upload · Esc close result · Space play · j/k navigate · Enter toggle",
       },
       install: {
         title: "Install as app",

@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- 결과 페이지에 키보드 네비게이션 추가 — `j` / `ArrowDown` 으로 다음 hit
+  카드, `k` / `ArrowUp` 으로 이전 카드 선택. 선택된 카드는 accent ring 으로
+  시각적으로 강조 + smooth scrollIntoView. `Enter` 키로 선택된 카드의
+  펼침/접힘 토글. input/textarea 안에서는 동작하지 않아 일반 타이핑에
+  방해 안 됨. shortcuts 라벨도 갱신.
 - 카탈로그 검색 input 안에 clear (×) 버튼. 검색어가 있을 때만 노출되며,
   클릭하면 검색 상태 + URL 영구화 + 결과 grid 가 한 번에 초기화된다.
   Esc 키를 눌러도 같은 동작. WebKit 의 기본 search 클리어 아이콘은 숨기고
