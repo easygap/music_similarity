@@ -52,6 +52,7 @@
 
   const resetBtn = $("#reset-btn");
   const seedBackBtn = $("#seed-back-btn");
+  const expandToggleBtn = $("#expand-toggle-btn");
   const resultsSortSelect = $("#results-sort");
   const copyLinkBtn = $("#copy-link-btn");
   const copyShareUrlBtn = $("#copy-share-url-btn");
@@ -625,6 +626,61 @@
   }
 
   // ----------------------------------------------------------------------
+  // 결과 카드 펼침 모드 — 사용자 선호를 localStorage 에 저장
+  // ----------------------------------------------------------------------
+  const EXPAND_MODE_KEY = "soundmatch.hit-expand-mode";
+
+  function readExpandMode() {
+    try {
+      const v = localStorage.getItem(EXPAND_MODE_KEY);
+      return v === "all" ? "all" : "compact";
+    } catch (_) {
+      return "compact";
+    }
+  }
+
+  function writeExpandMode(mode) {
+    try {
+      localStorage.setItem(EXPAND_MODE_KEY, mode === "all" ? "all" : "compact");
+    } catch (_) {
+      // localStorage 비활성화면 무시 — 화면 토글은 일회성으로 동작.
+    }
+  }
+
+  function syncExpandToggleButton() {
+    if (!expandToggleBtn) return;
+    const mode = readExpandMode();
+    const label = expandToggleBtn.querySelector(".expand-toggle-label");
+    if (label) {
+      label.textContent = mode === "all" ? t("results.collapseAll") : t("results.expandAll");
+    }
+    expandToggleBtn.setAttribute("aria-pressed", mode === "all" ? "true" : "false");
+  }
+
+  function applyExpandModeToVisibleCards(mode) {
+    // 이미 렌더된 결과 카드들의 펼침 상태를 일괄 변경. 1위는 "compact" 모드에서도
+    // 펼쳐진 상태가 기본이라 그대로 둔다.
+    document.querySelectorAll(".hit-list .hit").forEach((li, idx) => {
+      const expanded = mode === "all" || idx === 0;
+      li.dataset.expanded = expanded ? "true" : "false";
+      const tb = li.querySelector(".hit-toggle");
+      if (tb) tb.setAttribute("aria-expanded", expanded ? "true" : "false");
+    });
+  }
+
+  if (expandToggleBtn) {
+    expandToggleBtn.addEventListener("click", () => {
+      const next = readExpandMode() === "all" ? "compact" : "all";
+      writeExpandMode(next);
+      syncExpandToggleButton();
+      applyExpandModeToVisibleCards(next);
+    });
+    // 페이지 로드 시 한 번, 그리고 lang 토글 시 한 번 라벨 동기화.
+    syncExpandToggleButton();
+    window.addEventListener("i18n:change", syncExpandToggleButton);
+  }
+
+  // ----------------------------------------------------------------------
   // 결과 렌더링
   // ----------------------------------------------------------------------
   function renderResults(data, preserveFile = false) {
@@ -761,10 +817,12 @@
         });
       }
 
-      // 펼침 토글 — 1위 카드는 펼친 채로, 2위부터는 접어둔다.
-      // 그래야 결과가 10개여도 첫 인상이 깔끔하고 모바일 스크롤이 짧다.
+      // 펼침 토글. 모드:
+      //   "compact" (기본) — 1위만 펼침, 나머지 접힘. 첫 인상이 깔끔하고 모바일 스크롤이 짧다.
+      //   "all"             — 모두 펼침. 사용자가 헤더의 토글로 선택 가능 (선호 localStorage 저장).
       const toggleBtn = li.querySelector(".hit-toggle");
-      const expanded = idx === 0;
+      const mode = readExpandMode();
+      const expanded = mode === "all" || idx === 0;
       li.dataset.expanded = expanded ? "true" : "false";
       toggleBtn.setAttribute("aria-expanded", expanded ? "true" : "false");
       toggleBtn.addEventListener("click", () => {
