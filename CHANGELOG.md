@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+### Added
+- 카탈로그 BPM 히스토그램 막대 클릭 → 그 구간으로 자동 필터링. 같은 막대를
+  다시 누르면 토글로 해제. 막대는 `<button>` 으로 그려서 키보드 탭 / Enter
+  모두 동작. 현재 필터 범위와 정확히 일치하는 막대에는 시각적 active 표시
+  (가속 색 underline). 신규 i18n 키 `catalog.histClickHint` (ko/en).
+
 ### Fixed
 - 분석 진행 중에 새 파일을 올리거나 "새 분석" 으로 돌아갈 때 이전 fetch 가
   그대로 끝까지 진행되어 두 결과가 뒤섞이는 race. `runAnalysis` 에
