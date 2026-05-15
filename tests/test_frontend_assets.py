@@ -91,6 +91,18 @@ def test_catalog_has_empty_state_reset_button():
     assert 'id="cat-empty-reset"' in text
 
 
+def test_hero_stat_shows_catalog_freshness():
+    """Hero stat 카드에 카탈로그 갱신 일자가 노출되어야 한다."""
+    html = _read("index.html")
+    assert 'id="stat-catalog-fresh"' in html
+    js = _read("js/app.js")
+    # /api/health 응답의 catalog_updated_at 을 읽어서 stat-catalog-fresh 채움.
+    assert "catalog_updated_at" in js
+    assert 't("hero.catalogFresh"' in js
+    # lang 토글 시 라벨 재계산.
+    assert 'loadLatencyStat()' in js
+
+
 def test_style_has_print_media_block():
     """style.css 에 결과 페이지를 인쇄/PDF 친화로 만드는 @media print 블록이 있어야 한다."""
     text = _read("css/style.css")
