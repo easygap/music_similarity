@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Added
+- 메인 페이지 Hero stat 카드의 "분석 가능한 곡" 아래에 카탈로그 마지막 갱신
+  일자(`최근 갱신 · 2026-05-15` / `Updated · 2026-05-15`) 를 작게 노출. 사용자
+  입장에서 데이터 신선도 / 운영 상태가 한눈에 보임. 신규 i18n 키
+  `hero.catalogFresh` (ko/en). `/api/health.catalog_updated_at` 활용.
 - `/api/health` 응답에 `catalog_updated_at` (ISO 8601 UTC) 필드 추가. 운영자가
   현재 떠 있는 카탈로그가 언제 갱신된 데이터인지 즉시 확인 가능. 파일 stat
   실패 시 null.

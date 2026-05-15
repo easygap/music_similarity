@@ -134,26 +134,42 @@
   }
   loadCatalogStat();
 
-  // hero stat 의 "평균 분석 시간" 을 실시간 latency P50 으로 갱신.
+  // hero stat 의 "평균 분석 시간" 을 실시간 latency P50 으로 갱신 + 카탈로그
+  // 갱신 일자(catalog_updated_at) 도 같은 응답에서 가져와 stat 카드에 작게 표시.
   // health 엔드포인트는 ring buffer 의 P50 을 같이 내려준다 — 샘플이 없으면 0.
   async function loadLatencyStat() {
-    const el = $("#stat-latency");
-    if (!el) return;
+    const latencyEl = $("#stat-latency");
+    const freshEl = $("#stat-catalog-fresh");
+    if (!latencyEl && !freshEl) return;
     try {
       const res = await fetch("/api/health");
       if (!res.ok) throw new Error("offline");
       const data = await res.json();
-      const p50 = Number(data.analyze_latency_p50_seconds) || 0;
-      if (p50 > 0) {
-        // 1초 미만이면 "0.7s", 1초 이상이면 "~3s" 식으로.
-        el.textContent = p50 < 1 ? `${p50.toFixed(1)}s` : `~${Math.round(p50)}s`;
+
+      if (latencyEl) {
+        const p50 = Number(data.analyze_latency_p50_seconds) || 0;
+        if (p50 > 0) {
+          // 1초 미만이면 "0.7s", 1초 이상이면 "~3s" 식으로.
+          latencyEl.textContent = p50 < 1 ? `${p50.toFixed(1)}s` : `~${Math.round(p50)}s`;
+        }
+        // 샘플이 없으면 정적 기본값을 그대로 둔다.
       }
-      // 샘플이 없으면 정적 기본값을 그대로 둔다.
+
+      if (freshEl) {
+        const iso = data.catalog_updated_at;
+        if (typeof iso === "string" && iso.length >= 10) {
+          const date = iso.slice(0, 10);  // YYYY-MM-DD
+          freshEl.textContent = t("hero.catalogFresh", date);
+          freshEl.hidden = false;
+        }
+      }
     } catch {
       /* health 가 안 잡혀도 기본 문구 유지 */
     }
   }
   loadLatencyStat();
+  // 언어 토글 시 "최근 갱신:" 라벨도 다시 그려야 한다.
+  window.addEventListener("i18n:change", () => loadLatencyStat());
   rebuildLocalizedSelectOptions();
   if (langToggleBtn) langToggleBtn.textContent = t("controls.langToggle");
 
