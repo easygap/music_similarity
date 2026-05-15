@@ -500,6 +500,32 @@ def _all_finite(values: Iterable[float]) -> bool:
     return bool(np.isfinite(arr).all())
 
 
+def _dataset_mtime_iso() -> str | None:
+    """카탈로그 CSV 의 마지막 수정 시각을 ISO 8601 (UTC) 로 돌려준다.
+
+    파일이 없거나 stat 권한 / FS 이슈로 실패하면 None. 운영자가 어느
+    버전의 카탈로그가 떠 있는지 확인하는 용도로 /api/health 와 sitemap 의
+    catalog song deep-link 의 lastmod 양쪽에 같은 값을 쓴다.
+    """
+    try:
+        mtime = DATASET_PATH.stat().st_mtime
+    except OSError:
+        return None
+    from datetime import datetime
+
+    return datetime.fromtimestamp(mtime, tz=UTC).isoformat(timespec="seconds")
+
+
+def _dataset_mtime_date() -> str:
+    """sitemap <lastmod> 용 YYYY-MM-DD 짧은 포맷. 실패 시 오늘 날짜."""
+    iso = _dataset_mtime_iso()
+    if iso:
+        return iso[:10]
+    from datetime import date
+
+    return date.today().isoformat()
+
+
 # ----------------------------------------------------------------------
 # 라우트
 # ----------------------------------------------------------------------
@@ -573,6 +599,7 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
         "version": app.version,
         "uptime_seconds": uptime,
         "analyze_latency_p50_seconds": round(_latency_percentile(0.50), 3),
+        "catalog_updated_at": _dataset_mtime_iso(),
     }
 
 
@@ -1457,6 +1484,10 @@ if FRONTEND_DIR.exists():
         from urllib.parse import quote
 
         today = date.today().isoformat()
+        # 카탈로그 곡 deep-link 의 lastmod 는 실제 dataset.csv mtime 으로
+        # 잡아준다 — 검색 봇 입장에서 데이터셋이 안 바뀌었으면 재크롤할 동기가
+        # 없고, 바뀌었으면 곡별로 lastmod 가 바뀐 게 보여서 인덱스가 정확해진다.
+        catalog_lastmod = _dataset_mtime_date()
         # 정적 페이지 (loc, priority, changefreq)
         static_entries = [
             ("/", "1.0", "weekly"),
@@ -1479,7 +1510,7 @@ if FRONTEND_DIR.exists():
                 encoded = quote(name, safe="")
                 url_blocks.append(
                     f"<url><loc>/catalog?song={encoded}</loc>"
-                    f"<lastmod>{today}</lastmod>"
+                    f"<lastmod>{catalog_lastmod}</lastmod>"
                     "<changefreq>monthly</changefreq><priority>0.5</priority></url>"
                 )
         except Exception:  # noqa: BLE001 - sitemap 은 절대 5xx 로 죽지 않아야 함

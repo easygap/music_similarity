@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- `/api/health` 응답에 `catalog_updated_at` (ISO 8601 UTC) 필드 추가. 운영자가
+  현재 떠 있는 카탈로그가 언제 갱신된 데이터인지 즉시 확인 가능. 파일 stat
+  실패 시 null.
+- `/sitemap.xml` 의 catalog song deep-link `<lastmod>` 를 정적 페이지의 today
+  대신 실제 dataset.csv mtime 으로 매핑. 검색 봇 입장에서 곡 데이터가 안
+  바뀌었으면 재크롤 동기가 줄어들고, 바뀌었으면 lastmod 가 같이 변해 인덱스
+  정확도가 올라간다. 정적 페이지 lastmod 는 오늘 그대로.
 - 결과 페이지 인쇄 / PDF 변환 친화 CSS (`@media print`). nav / footer /
   install 배너 / audio player / radar / spectrogram / 액션 버튼 같은 화면 전용
   요소는 모두 숨기고, 결과 카드만 흑백 톤으로 깔끔하게 남긴다. 다크 테마
