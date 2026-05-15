@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- 결과 페이지 인쇄 / PDF 변환 친화 CSS (`@media print`). nav / footer /
+  install 배너 / audio player / radar / spectrogram / 액션 버튼 같은 화면 전용
+  요소는 모두 숨기고, 결과 카드만 흑백 톤으로 깔끔하게 남긴다. 다크 테마
+  사용자가 인쇄해도 토너 / 잉크가 절약되도록 강제 light 톤 + 카드 사이
+  `break-inside: avoid` 로 페이지가 카드 중간에서 끊기지 않게.
 - 카탈로그 페이지 검색 결과에 매칭 부분 highlight. 검색어와 case-insensitive
   로 일치하는 곡명/아티스트 substring 을 `<mark class="cat-highlight">` 로
   강조해서, 왜 이 곡이 결과에 떴는지 한눈에 보인다. dark/light 두 테마 모두

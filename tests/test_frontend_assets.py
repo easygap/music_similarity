@@ -91,6 +91,15 @@ def test_catalog_has_empty_state_reset_button():
     assert 'id="cat-empty-reset"' in text
 
 
+def test_style_has_print_media_block():
+    """style.css 에 결과 페이지를 인쇄/PDF 친화로 만드는 @media print 블록이 있어야 한다."""
+    text = _read("css/style.css")
+    assert "@media print" in text
+    # 핵심 요소들이 숨김 처리되는지 빠르게 확인.
+    for marker in (".site-nav,", ".results-actions,", ".audio-player,", "break-inside: avoid"):
+        assert marker in text, f"@media print 블록에 '{marker}' 가 없습니다."
+
+
 def test_catalog_search_highlights_matched_substring():
     """검색어와 매칭된 부분을 <mark> 로 강조하는 헬퍼가 catalog.html 에 존재해야 한다."""
     text = _read("catalog.html")
