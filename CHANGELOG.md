@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Tests
+- `tests/test_middleware.py` 신규 6 케이스 — X-Request-ID 분기(헤더 없으면 새
+  UUID, 있으면 그대로), `/metrics` 와 `/sw.js` 가 `requests_total` 카운터에
+  잡히지 않는지, 모든 응답에 시큐어 헤더 부착, `get_engine()` 실패 시 503 +
+  status=degraded, strict 모드에서 업로드 디렉토리 쓰기 실패 시 503 모두 회귀
+  안전망 추가. lifespan 의 degraded path 와 미들웨어 분기를 명시적으로 보호.
+
 ### Added
 - 카탈로그 BPM 히스토그램 막대 클릭 → 그 구간으로 자동 필터링. 같은 막대를
   다시 누르면 토글로 해제. 막대는 `<button>` 으로 그려서 키보드 탭 / Enter
