@@ -660,11 +660,16 @@ def version_info():
         catalog_size = _engine.catalog_size if _engine is not None else 0
     except Exception:  # noqa: BLE001
         catalog_size = 0
+    # 누적 분석 횟수 (성공 기준, 캐시 히트 포함). 사용자 측에서 social proof
+    # 로 사용하고, 운영자가 활동성 trend 를 빠르게 가늠하는 용도. /metrics 와
+    # 동일 카운터지만 Prometheus 안 띄운 운영 환경도 한 줄 JSON 으로 확인 가능.
+    analyses_total = int(_metrics_counters.get("soundmatch_analyze_success_total", 0))
     return {
         "name": "soundmatch",
         "version": app.version,
         "env": ENV,
         "catalog_size": catalog_size,
+        "analyses_total": analyses_total,
         "features": {
             "spectrogram": True,
             "by_catalog": True,

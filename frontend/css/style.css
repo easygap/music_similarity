@@ -403,6 +403,24 @@ main {
   color: var(--text-dim);
   letter-spacing: 0.02em;
 }
+.hero-social-proof {
+  margin: 0 0 18px;
+  color: var(--text-mute);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-social-proof::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+}
 
 /* ---------------- 업로드 카드 --------------- */
 .upload-card {

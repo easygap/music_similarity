@@ -91,6 +91,16 @@ def test_catalog_has_empty_state_reset_button():
     assert 'id="cat-empty-reset"' in text
 
 
+def test_hero_shows_social_proof_total_analyses():
+    """Hero 영역에 누적 분석 횟수 라인이 있어야 한다."""
+    html = _read("index.html")
+    assert 'id="hero-social-proof"' in html
+    js = _read("js/app.js")
+    assert "loadSocialProof" in js
+    assert 'data.analyses_total' in js or "analyses_total" in js
+    assert 't("hero.totalAnalyses"' in js
+
+
 def test_hero_stat_shows_catalog_freshness():
     """Hero stat 카드에 카탈로그 갱신 일자가 노출되어야 한다."""
     html = _read("index.html")

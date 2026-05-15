@@ -7,6 +7,12 @@
 ## [Unreleased]
 
 ### Added
+- `/api/version` 응답에 `analyses_total` 추가 — 누적 분석 횟수 (성공 기준,
+  캐시 히트 포함). `_metrics_counters` 와 같은 출처라서 비용 거의 0.
+  Prometheus 안 띄운 환경에서도 한 줄 JSON 으로 활동성 확인 가능.
+- 메인 페이지 Hero 영역에 작은 "지금까지 N회 분석된 사이트" 라인 추가
+  (social proof). 점이 깜빡이는 accent 도트 + monospace 숫자. 누적 분석이
+  0 이면 자동으로 숨김. 신규 i18n 키 `hero.totalAnalyses` (ko/en parity).
 - 메인 페이지 Hero stat 카드의 "분석 가능한 곡" 아래에 카탈로그 마지막 갱신
   일자(`최근 갱신 · 2026-05-15` / `Updated · 2026-05-15`) 를 작게 노출. 사용자
   입장에서 데이터 신선도 / 운영 상태가 한눈에 보임. 신규 i18n 키

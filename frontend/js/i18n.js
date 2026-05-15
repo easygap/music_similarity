@@ -18,6 +18,7 @@
         statFeaturesLabel: "추출 특성 수",
         statTimeLabel: "평균 분석 시간",
         catalogFresh: (date) => `최근 갱신 · ${date}`,
+        totalAnalyses: (n) => `지금까지 ${n}회 분석된 사이트`,
       },
       upload: {
         title: "지금 분석해보기",
@@ -245,6 +246,7 @@
         statFeaturesLabel: "Audio features",
         statTimeLabel: "Avg. analysis time",
         catalogFresh: (date) => `Updated · ${date}`,
+        totalAnalyses: (n) => `${n} tracks analysed so far`,
       },
       upload: {
         title: "Try it now",
