@@ -15,6 +15,11 @@ class HealthResponse(BaseModel):
     version: str = Field(..., examples=["1.3.0"])
     uptime_seconds: float = Field(0.0, description="프로세스 부팅 후 경과 시간(초)")
     analyze_latency_p50_seconds: float = Field(0.0, description="최근 분석 latency P50(초). 샘플 없으면 0.")
+    catalog_updated_at: str | None = Field(
+        None,
+        description="카탈로그 CSV 의 마지막 수정 시각(ISO 8601, UTC). 파일이 없거나 stat 실패면 null.",
+        examples=["2026-05-15T00:42:51+00:00"],
+    )
 
 
 class CatalogResponse(BaseModel):

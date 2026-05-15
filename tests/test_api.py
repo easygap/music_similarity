@@ -15,6 +15,26 @@ def test_health(fastapi_client):
     assert body["uptime_seconds"] >= 0
     # latency P50 도 헬스에 함께 노출 (샘플 없으면 0).
     assert "analyze_latency_p50_seconds" in body
+    # 카탈로그 마지막 수정 시각도 함께 — 운영자가 데이터셋 버전을 확인.
+    assert "catalog_updated_at" in body
+    # 합성 카탈로그가 실제로 stat 되므로 None 아닌 ISO 문자열.
+    assert isinstance(body["catalog_updated_at"], str)
+    assert "T" in body["catalog_updated_at"]
+
+
+def test_sitemap_catalog_lastmod_uses_dataset_mtime(fastapi_client, tmp_path):
+    """sitemap 의 catalog song deep-link <lastmod> 가 dataset 의 mtime 날짜와 일치해야 한다."""
+    import backend.main as backend_main
+
+    iso = backend_main._dataset_mtime_iso()
+    assert iso is not None
+    expected_date = iso[:10]
+
+    r = fastapi_client.get("/sitemap.xml")
+    body = r.text
+    assert r.status_code == 200
+    # 적어도 한 개의 catalog song deep-link 의 lastmod 가 dataset 날짜와 일치.
+    assert f"<lastmod>{expected_date}</lastmod>" in body
 
 
 def test_catalog(fastapi_client):
