@@ -90,6 +90,16 @@
     }
     .cat-title { font-size: 13.5px; font-weight: 600; color: var(--text); word-break: break-all; }
     .cat-artist { font-size: 12px; color: var(--text-mute); }
+    /* 검색어 매칭 부분 강조 — 기본 <mark> 노란색 대신 accent 계열 톤. */
+    .cat-highlight {
+      background: rgba(124, 92, 255, 0.28);
+      color: inherit;
+      padding: 0 1px;
+      border-radius: 3px;
+    }
+    :root[data-theme="light"] .cat-highlight {
+      background: rgba(124, 92, 255, 0.22);
+    }
     .cat-filter-row {
       display: flex;
       gap: 14px;
@@ -531,6 +541,30 @@
         .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
+    // 검색어와 매칭된 부분만 <mark> 로 감싸 강조. escape 는 직접 처리하므로
+    // 호출 측에서 추가 escape 가 필요 없다. 케이스 무시.
+    function highlightMatch(text, needle) {
+      var raw = String(text == null ? "" : text);
+      if (!needle) return escapeHtml(raw);
+      var lower = raw.toLowerCase();
+      var needleLower = needle.toLowerCase();
+      var nlen = needleLower.length;
+      if (nlen === 0) return escapeHtml(raw);
+      var out = "";
+      var i = 0;
+      while (i < raw.length) {
+        var idx = lower.indexOf(needleLower, i);
+        if (idx === -1) {
+          out += escapeHtml(raw.slice(i));
+          break;
+        }
+        out += escapeHtml(raw.slice(i, idx));
+        out += '<mark class="cat-highlight">' + escapeHtml(raw.slice(idx, idx + nlen)) + '</mark>';
+        i = idx + nlen;
+      }
+      return out;
+    }
+
     async function load() {
       meta.textContent = t("catalog.loading");
 
@@ -616,6 +650,8 @@
       var cardHint = t("catalog.cardHint");
       var favAdd = t("catalog.favAdd");
       var favRemove = t("catalog.favRemove");
+      // 즐겨찾기 전용 모드에선 자체 필터만 쓰니까 강조는 그대로 검색 q.
+      var needle = state.q || "";
       grid.innerHTML = items.map(function (it) {
         var key = it.title + ' - ' + it.artist;
         var isFav = Fav ? Fav.has(key) : false;
@@ -623,8 +659,8 @@
           + ' title="' + escapeHtml(cardHint) + '" tabindex="0" role="button">'
           + '<div class="cat-card-head">'
           +   '<div class="cat-card-body">'
-          +     '<span class="cat-title">' + escapeHtml(it.title) + '</span>'
-          +     '<span class="cat-artist">' + escapeHtml(it.artist) + '</span>'
+          +     '<span class="cat-title">' + highlightMatch(it.title, needle) + '</span>'
+          +     '<span class="cat-artist">' + highlightMatch(it.artist, needle) + '</span>'
           +   '</div>'
           +   '<button type="button" class="cat-fav-btn" data-fav="' + escapeHtml(key)
           +     '" data-title="' + escapeHtml(it.title) + '" data-artist="' + escapeHtml(it.artist)
