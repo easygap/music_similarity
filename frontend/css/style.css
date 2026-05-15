@@ -884,6 +884,12 @@ main {
   border-color: rgba(124, 92, 255, 0.5);
   box-shadow: 0 16px 40px rgba(7, 7, 15, 0.4);
 }
+/* j/k 키보드 네비에서 선택된 카드 — accent ring 으로 강조. */
+.hit[data-selected="true"] {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.4),
+              0 16px 40px rgba(7, 7, 15, 0.4);
+}
 .hit:nth-child(1) { background: linear-gradient(135deg, rgba(124, 92, 255, 0.18), rgba(34, 211, 238, 0.08)), var(--panel); }
 .hit:nth-child(2) { background: linear-gradient(135deg, rgba(244, 114, 182, 0.12), rgba(124, 92, 255, 0.08)), var(--panel); }
 .hit:nth-child(3) { background: linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(124, 92, 255, 0.05)), var(--panel); }

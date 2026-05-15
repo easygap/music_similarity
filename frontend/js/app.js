@@ -727,6 +727,9 @@
   function renderResults(data, preserveFile = false) {
     hideAll();
     resultsSection.classList.remove("hidden");
+    // 새 결과를 그리면 키보드 selected 인덱스를 초기화. 사용자가 j 를 처음
+    // 누를 때 0 번 카드로 이동한다.
+    _selectedHitIdx = -1;
 
     const timing = data.timing || {};
     const total = (timing.feature_extraction_seconds || 0) + (timing.similarity_seconds || 0);
@@ -1505,6 +1508,25 @@
   //   Esc   : 분석 결과 닫고 첫 화면으로
   //   Space : 결과 화면에서 재생/일시정지 (input 안에 있을 때는 동작 X)
   // ----------------------------------------------------------------------
+  // 결과 hit 카드 사이를 j/k (↓/↑) 로 이동 — power user UX. selected 카드는
+  // data-selected="true" 속성으로 CSS 가 시각적으로 강조.
+  let _selectedHitIdx = -1;
+
+  function selectHitByIdx(idx) {
+    const cards = document.querySelectorAll(".hit-list .hit");
+    if (!cards.length) return;
+    const clamped = Math.max(0, Math.min(cards.length - 1, idx));
+    cards.forEach((el, i) => {
+      if (i === clamped) {
+        el.dataset.selected = "true";
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } else {
+        delete el.dataset.selected;
+      }
+    });
+    _selectedHitIdx = clamped;
+  }
+
   document.addEventListener("keydown", (e) => {
     const target = e.target;
     const isTyping =
@@ -1513,17 +1535,36 @@
         target.tagName === "TEXTAREA" ||
         target.tagName === "SELECT" ||
         target.isContentEditable);
+    const resultsOpen = !resultsSection.classList.contains("hidden");
+
     if (e.key === "/" && !isTyping) {
       e.preventDefault();
       fileInput.focus();
       dropzone.classList.add("is-drag");
       setTimeout(() => dropzone.classList.remove("is-drag"), 280);
-    } else if (e.key === "Escape" && !resultsSection.classList.contains("hidden")) {
+    } else if (e.key === "Escape" && resultsOpen) {
       resetBtn.click();
-    } else if (e.key === " " && !isTyping && !resultsSection.classList.contains("hidden") && audioPreview.src) {
+    } else if (e.key === " " && !isTyping && resultsOpen && audioPreview.src) {
       e.preventDefault();
       if (audioPreview.paused) audioPreview.play();
       else audioPreview.pause();
+    } else if (!isTyping && resultsOpen && (e.key === "j" || e.key === "ArrowDown")) {
+      // 다음 hit 카드.
+      e.preventDefault();
+      selectHitByIdx(_selectedHitIdx + 1);
+    } else if (!isTyping && resultsOpen && (e.key === "k" || e.key === "ArrowUp")) {
+      // 이전 hit 카드.
+      e.preventDefault();
+      selectHitByIdx(_selectedHitIdx <= 0 ? 0 : _selectedHitIdx - 1);
+    } else if (!isTyping && resultsOpen && e.key === "Enter" && _selectedHitIdx >= 0) {
+      // 선택된 카드 펼침/접힘 토글.
+      const cards = document.querySelectorAll(".hit-list .hit");
+      const li = cards[_selectedHitIdx];
+      if (li) {
+        e.preventDefault();
+        const tb = li.querySelector(".hit-toggle");
+        if (tb) tb.click();
+      }
     }
   });
 

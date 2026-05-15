@@ -283,6 +283,22 @@ def test_results_csv_export_button_present_and_wired():
     assert '"﻿"' in js or "'﻿'" in js
 
 
+def test_results_jk_keyboard_navigation():
+    """결과 페이지에서 j/k (↓/↑) 로 hit 카드 이동 + Enter 토글 핸들러 존재 확인."""
+    text = _read("js/app.js")
+    assert "function selectHitByIdx(" in text
+    # j / ArrowDown / k / ArrowUp 분기.
+    assert 'e.key === "j"' in text
+    assert 'e.key === "k"' in text
+    assert "ArrowDown" in text
+    assert "ArrowUp" in text
+    # 선택된 카드의 dataset.
+    assert 'el.dataset.selected = "true"' in text
+    # CSS 측 selected 표시.
+    css = _read("css/style.css")
+    assert '.hit[data-selected="true"]' in css
+
+
 def test_run_analysis_uses_abort_controller():
     """runAnalysis 가 AbortController 를 만들어 fetch signal 로 전달하고,
     이전 진행 중이던 요청은 abort 하도록 되어 있어야 한다.
