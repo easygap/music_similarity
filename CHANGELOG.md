@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 페이지 "즐겨찾기만 보기" 토글 옆에 현재 즐겨찾기 카운트 chip
+  표시. 비어 있으면 토글 자체가 흐리게 비활성(`cursor: not-allowed`) 으로
+  바뀌어 "지금 누를 의미 없다" 신호. 다른 페이지에서 즐겨찾기를 토글하면
+  `favorites:change` CustomEvent 로 즉시 동기화.
 - `/api/version` 응답에 `analyses_total` 추가 — 누적 분석 횟수 (성공 기준,
   캐시 히트 포함). `_metrics_counters` 와 같은 출처라서 비용 거의 0.
   Prometheus 안 띄운 환경에서도 한 줄 JSON 으로 활동성 확인 가능.

@@ -109,6 +109,24 @@
       color: var(--text-mute);
     }
     .cat-filter-row label { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .cat-fav-count {
+      display: inline-block;
+      min-width: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: rgba(124, 92, 255, 0.25);
+      color: var(--text);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 16px;
+    }
+    #cat-favorites-only-label.is-empty {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    #cat-favorites-only-label.is-empty input { cursor: not-allowed; }
     .cat-filter-range input[type="number"],
     .cat-filter-range select {
       background: rgba(0, 0, 0, 0.4);
@@ -344,9 +362,10 @@
     </div>
 
     <div class="cat-filter-row">
-      <label>
+      <label id="cat-favorites-only-label">
         <input type="checkbox" id="cat-favorites-only">
         <span data-i18n="catalog.favoritesOnly">즐겨찾기만 보기</span>
+        <span class="cat-fav-count" id="cat-fav-count" hidden></span>
       </label>
       <label class="cat-filter-range">
         BPM
@@ -864,6 +883,36 @@
         load();
       });
     }
+
+    // 즐겨찾기 카운트 노출 — 라벨 옆에 작은 chip 으로 N. 비어 있으면 토글 자체를
+    // disabled 처리 (시각적으로 흐리게 + 클릭 불가) 해서 "지금 누를 의미 없다" 시그널.
+    function syncFavoritesCount() {
+      var countEl = document.getElementById("cat-fav-count");
+      var labelEl = document.getElementById("cat-favorites-only-label");
+      if (!countEl || !labelEl) return;
+      var n = (Fav && typeof Fav.size === "function") ? Fav.size() : 0;
+      if (n > 0) {
+        countEl.textContent = String(n);
+        countEl.hidden = false;
+        labelEl.classList.remove("is-empty");
+        if (favOnly) favOnly.disabled = false;
+      } else {
+        countEl.hidden = true;
+        labelEl.classList.add("is-empty");
+        // 즐겨찾기가 비어 있으면 토글이 의미 없으니 비활성. favOnly state 도 강제 해제.
+        if (favOnly) {
+          favOnly.disabled = true;
+          if (favOnly.checked) {
+            favOnly.checked = false;
+            state.favOnly = false;
+            writeStateToUrl();
+            load();
+          }
+        }
+      }
+    }
+    syncFavoritesCount();
+    window.addEventListener("favorites:change", syncFavoritesCount);
 
     function bindFilterInput(el, stateKey) {
       if (!el) return;

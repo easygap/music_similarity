@@ -135,6 +135,19 @@ def test_catalog_search_highlights_matched_substring():
     assert "highlightMatch(it.artist, needle)" in text
 
 
+def test_catalog_favorites_toggle_shows_count():
+    """카탈로그 즐겨찾기만 보기 토글에 현재 카운트 chip 이 노출되어야 한다."""
+    text = _read("catalog.html")
+    assert 'id="cat-fav-count"' in text
+    assert 'id="cat-favorites-only-label"' in text
+    assert "function syncFavoritesCount()" in text
+    # 비어 있을 때 토글 비활성 처리.
+    assert "favOnly.disabled = true" in text
+    assert "is-empty" in text
+    # favorites:change 이벤트 구독 (다른 페이지에서 변경 시 즉시 동기화).
+    assert 'window.addEventListener("favorites:change", syncFavoritesCount)' in text
+
+
 def test_catalog_bpm_histogram_is_clickable():
     """BPM 히스토그램 막대가 button + 클릭 핸들러로 인터랙티브 해야 한다."""
     text = _read("catalog.html")
