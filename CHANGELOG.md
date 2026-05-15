@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-05-15
+
+이번 사이클의 테마: **production-grade hardening**. 5개의 audit finding 을 모두
+처리하고 추가로 다수의 UX·접근성 polish 를 적용. 외부 노출 직전 단계로 끌어올림.
+
 ### Tests
 - `tests/test_middleware.py` 신규 6 케이스 — X-Request-ID 분기(헤더 없으면 새
   UUID, 있으면 그대로), `/metrics` 와 `/sw.js` 가 `requests_total` 카운터에
