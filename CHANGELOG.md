@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- 결과 영역에 "모두 펼치기 / 모두 접기" 토글 버튼. 사용자가 선택한 모드는
+  localStorage 키 `soundmatch.hit-expand-mode` 에 저장되어 다음 분석에도 유지.
+  default 는 기존 동작 (1위만 펼치고 2위부터 접힘) 그대로 — 처음 진입 사용자
+  경험에 변화 없음. 신규 i18n 키 `results.expandAll` / `results.collapseAll`
+  (ko/en parity).
 - 결과 영역에 "CSV 저장" 버튼 추가. JSON 외에 엑셀 친화 CSV 로도 결과를 받을
   수 있다. RFC 4180 escape (쌍따옴표 두 번, 본문은 quote 감싸기) + UTF-8 BOM
   으로 한글이 엑셀에서 깨지지 않게. 파일명에 ISO date stamp 포함

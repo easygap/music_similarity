@@ -209,6 +209,12 @@
             </select>
           </label>
           <button type="button" class="ghost hidden" id="seed-back-btn" data-i18n="results.seedBack">← 이전 분석으로</button>
+          <button type="button" class="ghost" id="expand-toggle-btn"
+                  title="결과 카드를 모두 펼치거나 한 번에 접습니다"
+                  aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="expand-toggle-label" data-i18n="results.expandAll">모두 펼치기</span>
+          </button>
           <!-- Web Share API 가 지원되는 환경(주로 모바일)에서만 노출. 그 외엔 hidden. -->
           <button type="button" class="ghost hidden" id="share-btn" aria-label="결과 공유">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0-12l-4 4m4-4l4 4M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>

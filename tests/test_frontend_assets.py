@@ -184,6 +184,21 @@ def test_render_mini_metrics_uses_i18n_labels():
     assert "label: \"밝기\"" not in text
 
 
+def test_results_expand_toggle_button_present_and_wired():
+    """결과 헤더에 펼침/접기 토글 버튼이 있고, localStorage 에 선호가 저장돼야 한다."""
+    html = _read("index.html")
+    assert 'id="expand-toggle-btn"' in html
+    assert 'data-i18n="results.expandAll"' in html
+    js = _read("js/app.js")
+    assert "soundmatch.hit-expand-mode" in js
+    assert "function readExpandMode()" in js
+    assert "function writeExpandMode(" in js
+    assert "applyExpandModeToVisibleCards" in js
+    # i18n 라벨 동기화.
+    assert 't("results.collapseAll")' in js
+    assert 't("results.expandAll")' in js
+
+
 def test_results_csv_export_button_present_and_wired():
     """결과 영역에 CSV 다운로드 버튼이 있고, app.js 가 핸들러를 달고 있어야 한다."""
     html = _read("index.html")
