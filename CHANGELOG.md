@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 검색 input 안에 clear (×) 버튼. 검색어가 있을 때만 노출되며,
+  클릭하면 검색 상태 + URL 영구화 + 결과 grid 가 한 번에 초기화된다.
+  Esc 키를 눌러도 같은 동작. WebKit 의 기본 search 클리어 아이콘은 숨기고
+  자체 디자인으로 통일. 신규 i18n 키 `catalog.searchClear` (ko/en parity).
 - 카탈로그 페이지 "즐겨찾기만 보기" 토글 옆에 현재 즐겨찾기 카운트 chip
   표시. 비어 있으면 토글 자체가 흐리게 비활성(`cursor: not-allowed`) 으로
   바뀌어 "지금 누를 의미 없다" 신호. 다른 페이지에서 즐겨찾기를 토글하면
