@@ -160,6 +160,19 @@ def test_catalog_favorites_toggle_shows_count():
     assert 'window.addEventListener("favorites:change", syncFavoritesCount)' in text
 
 
+def test_catalog_pager_has_first_last_jump_buttons():
+    """카탈로그 페이저에 first/last 점프 버튼 + sync 헬퍼가 있어야 한다."""
+    text = _read("catalog.html")
+    assert 'id="cat-first"' in text
+    assert 'id="cat-last"' in text
+    assert "function syncPagerControls()" in text
+    # last 점프는 ceil(total/size) 로 계산.
+    assert "Math.ceil(state.total / state.size)" in text
+    # 페이저 4개 버튼 모두 disabled 동기화.
+    assert "first.disabled" in text
+    assert "last.disabled" in text
+
+
 def test_catalog_bpm_histogram_is_clickable():
     """BPM 히스토그램 막대가 button + 클릭 핸들러로 인터랙티브 해야 한다."""
     text = _read("catalog.html")

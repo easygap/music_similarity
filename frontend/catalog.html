@@ -352,6 +352,12 @@
       font-size: 13.5px;
     }
     .cat-pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .cat-pager .cat-page-jump {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 14px;
+      padding: 8px 12px;
+      min-width: 36px;
+    }
     .cat-pager .cat-page-label {
       font-family: "JetBrains Mono", monospace;
       color: var(--text-mute);
@@ -449,9 +455,13 @@
     <div class="cat-grid" id="cat-grid"></div>
 
     <div class="cat-pager">
+      <button type="button" id="cat-first" class="cat-page-jump"
+              aria-label="처음 페이지" data-i18n-attr="aria-label:catalog.first" title="첫 페이지">⇤</button>
       <button type="button" id="cat-prev" data-i18n="catalog.prev">← 이전</button>
       <span class="cat-page-label" id="cat-page-label">1</span>
       <button type="button" id="cat-next" data-i18n="catalog.next">다음 →</button>
+      <button type="button" id="cat-last" class="cat-page-jump"
+              aria-label="마지막 페이지" data-i18n-attr="aria-label:catalog.last" title="마지막 페이지">⇥</button>
     </div>
   </main>
 
@@ -482,6 +492,8 @@
     var meta = document.getElementById("cat-meta");
     var prev = document.getElementById("cat-prev");
     var next = document.getElementById("cat-next");
+    var first = document.getElementById("cat-first");
+    var last = document.getElementById("cat-last");
     var pageLabel = document.getElementById("cat-page-label");
     var favOnly = document.getElementById("cat-favorites-only");
     var minBpmEl = document.getElementById("cat-min-bpm");
@@ -629,6 +641,23 @@
       return out;
     }
 
+    // 페이저 4개 버튼 (first / prev / next / last) 의 disabled / pageLabel 갱신을
+    // 한 군데에서 관리. load() 가 어떤 분기에서 끝나도 동일하게 호출한다.
+    function syncPagerControls() {
+      pageLabel.textContent = "p. " + state.page;
+      prev.disabled = state.page <= 1;
+      next.disabled = !state.hasMore;
+      if (first) first.disabled = state.page <= 1;
+      if (last) {
+        if (!state.total || !state.size) {
+          last.disabled = true;
+        } else {
+          var lastPage = Math.max(1, Math.ceil(state.total / state.size));
+          last.disabled = state.page >= lastPage;
+        }
+      }
+    }
+
     async function load() {
       meta.textContent = t("catalog.loading");
 
@@ -653,9 +682,7 @@
           var re = Math.min(rs + slice.length - 1, favs.length);
           meta.textContent = t("catalog.metaRange", favs.length, rs, re);
         }
-        pageLabel.textContent = "p. " + state.page;
-        prev.disabled = state.page <= 1;
-        next.disabled = !state.hasMore;
+        syncPagerControls();
         return;
       }
 
@@ -684,9 +711,7 @@
         } else {
           meta.textContent = t("catalog.metaRange", data.total, rangeStart, rangeEnd);
         }
-        pageLabel.textContent = "p. " + state.page;
-        prev.disabled = state.page <= 1;
-        next.disabled = !state.hasMore;
+        syncPagerControls();
       } catch (e) {
         meta.textContent = t("catalog.loadFail");
         grid.innerHTML = '<p class="cat-empty">' + escapeHtml(t("catalog.retryHint")) + '</p>';
@@ -950,6 +975,23 @@
     next.addEventListener("click", function () {
       if (state.hasMore) { state.page++; writeStateToUrl(); load(); }
     });
+    if (first) {
+      first.addEventListener("click", function () {
+        if (state.page > 1) { state.page = 1; writeStateToUrl(); load(); }
+      });
+    }
+    if (last) {
+      last.addEventListener("click", function () {
+        // 마지막 페이지 번호 = ceil(total / size). state.total 은 load() 가 항상 채워준다.
+        if (!state.total || !state.size) return;
+        var lastPage = Math.max(1, Math.ceil(state.total / state.size));
+        if (state.page !== lastPage) {
+          state.page = lastPage;
+          writeStateToUrl();
+          load();
+        }
+      });
+    }
     if (favOnly) {
       favOnly.addEventListener("change", function () {
         state.favOnly = favOnly.checked;
