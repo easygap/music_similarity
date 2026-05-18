@@ -883,7 +883,41 @@
       setAudioPreview(_lastFile);
     }
 
+    renderResultMeta(data);
+
     resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // 결과 페이지 분석 메타 footer — 분석 시각 / 카탈로그 크기 / 엔진 버전 /
+  // 캐시 여부를 한 줄에 노출. 사용자가 결과 신뢰성을 가늠하거나 디버깅할 때 단서.
+  function renderResultMeta(data) {
+    const el = document.getElementById("result-meta");
+    if (!el) return;
+    const parts = [];
+    if (data.analyzed_at) {
+      // ISO 의 처음 16자 만 (분 단위까지). monospace 라 정렬이 깔끔.
+      const stamp = String(data.analyzed_at).slice(0, 16).replace("T", " ");
+      parts.push(`<span>${t("results.metaAnalyzedAt")} ${escapeHtml(stamp)}</span>`);
+    }
+    if (typeof data.catalog_size === "number") {
+      const n = data.catalog_size.toLocaleString(
+        window.i18n && window.i18n.lang() === "en" ? "en-US" : "ko-KR",
+      );
+      parts.push(`<span>${t("results.metaCatalogSize", n)}</span>`);
+    }
+    if (data.engine_version) {
+      parts.push(`<span>v${escapeHtml(data.engine_version)}</span>`);
+    }
+    if (data.cached) {
+      parts.push(`<span class="meta-cached">${t("results.metaCached")}</span>`);
+    }
+    if (!parts.length) {
+      el.classList.add("hidden");
+      el.innerHTML = "";
+      return;
+    }
+    el.innerHTML = parts.join('<span class="sep" aria-hidden="true">·</span>');
+    el.classList.remove("hidden");
   }
 
   // 결과 카드 정렬. 항상 rank 1~N 라벨은 그대로 유지하되 화면 노출 순서만 바꾼다.

@@ -321,6 +321,20 @@ def test_shortcuts_modal_has_focus_trap():
     assert "shortcutsModal.addEventListener(\"keydown\"" in js
 
 
+def test_results_meta_footer_shows_analysis_info():
+    """결과 영역 끝에 분석 메타 footer (시각/카탈로그/엔진/캐시) 가 그려져야 한다."""
+    html = _read("index.html")
+    assert 'id="result-meta"' in html
+    js = _read("js/app.js")
+    assert "function renderResultMeta(" in js
+    # 핵심 키들이 함께 그려지는지.
+    for needle in ("analyzed_at", "catalog_size", "engine_version", "cached"):
+        assert needle in js
+    # i18n 키 호출.
+    for key in ("metaAnalyzedAt", "metaCatalogSize", "metaCached"):
+        assert f't("results.{key}"' in js or f't("results.{key}",' in js
+
+
 def test_results_jk_keyboard_navigation():
     """결과 페이지에서 j/k (↓/↑) 로 hit 카드 이동 + Enter 토글 핸들러 존재 확인."""
     text = _read("js/app.js")
