@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- `?` 키로 토글되는 키보드 단축키 도움말 모달 신설. `/`, `Space`, `j`/`k`,
+  `Enter`, `Esc`, `?` 모든 단축키를 한 화면에서 확인 가능. backdrop 클릭 /
+  `Esc` 로 닫기. 모달이 열려 있는 동안은 다른 단축키 안 잡힘 (예측 가능한
+  동작). 신규 i18n 섹션 `shortcuts.*` (ko/en parity). controls.shortcuts
+  라벨에도 `? 도움말` 힌트 추가.
 - 결과 페이지에 키보드 네비게이션 추가 — `j` / `ArrowDown` 으로 다음 hit
   카드, `k` / `ArrowUp` 으로 이전 카드 선택. 선택된 카드는 accent ring 으로
   시각적으로 강조 + smooth scrollIntoView. `Enter` 키로 선택된 카드의

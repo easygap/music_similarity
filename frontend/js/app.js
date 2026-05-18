@@ -1527,6 +1527,26 @@
     _selectedHitIdx = clamped;
   }
 
+  // 단축키 도움말 모달 — '?' 키로 토글 + Esc 로 닫기.
+  const shortcutsModal = document.getElementById("shortcuts-modal");
+  const shortcutsCloseBtn = document.getElementById("shortcuts-modal-close");
+
+  function openShortcutsModal() {
+    if (!shortcutsModal) return;
+    shortcutsModal.hidden = false;
+    if (shortcutsCloseBtn) shortcutsCloseBtn.focus();
+  }
+  function closeShortcutsModal() {
+    if (!shortcutsModal) return;
+    shortcutsModal.hidden = true;
+  }
+  if (shortcutsCloseBtn) shortcutsCloseBtn.addEventListener("click", closeShortcutsModal);
+  if (shortcutsModal) {
+    shortcutsModal.addEventListener("click", (e) => {
+      if (e.target === shortcutsModal) closeShortcutsModal();
+    });
+  }
+
   document.addEventListener("keydown", (e) => {
     const target = e.target;
     const isTyping =
@@ -1536,6 +1556,23 @@
         target.tagName === "SELECT" ||
         target.isContentEditable);
     const resultsOpen = !resultsSection.classList.contains("hidden");
+    const shortcutsOpen = shortcutsModal && !shortcutsModal.hidden;
+
+    // 단축키 도움말이 열려 있으면 Esc 가 최우선 — 그 외 단축키는 잡지 않는다.
+    if (shortcutsOpen) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeShortcutsModal();
+      }
+      return;
+    }
+
+    // '?' 키 (보통 Shift + /) — 어디서든 도움말 열림. 단 입력창 안에서는 X.
+    if (e.key === "?" && !isTyping) {
+      e.preventDefault();
+      openShortcutsModal();
+      return;
+    }
 
     if (e.key === "/" && !isTyping) {
       e.preventDefault();

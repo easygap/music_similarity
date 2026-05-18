@@ -165,7 +165,19 @@
       controls: {
         themeToggle: "테마 전환",
         langToggle: "Language: English",
-        shortcuts: "단축키: / 업로드 · Esc 결과 닫기 · Space 재생 · j/k 결과 이동 · Enter 펼침",
+        shortcuts: "단축키: / 업로드 · Esc 결과 닫기 · Space 재생 · j/k 결과 이동 · ? 도움말",
+      },
+      shortcuts: {
+        title: "키보드 단축키",
+        close: "닫기",
+        focusUpload: "업로드 영역으로 포커스 이동",
+        playPause: "업로드 음원 재생 / 일시정지",
+        next: "다음 결과 카드",
+        prev: "이전 결과 카드",
+        toggle: "선택된 카드 펼침 / 접힘",
+        closeResult: "결과 닫기 / 모달 닫기",
+        openHelp: "이 도움말 토글",
+        hint: "입력창 안에서는 단축키가 동작하지 않습니다.",
       },
       install: {
         title: "앱으로 설치",
@@ -394,7 +406,19 @@
       controls: {
         themeToggle: "Toggle theme",
         langToggle: "언어: 한국어",
-        shortcuts: "Shortcuts: / upload · Esc close result · Space play · j/k navigate · Enter toggle",
+        shortcuts: "Shortcuts: / upload · Esc close result · Space play · j/k navigate · ? help",
+      },
+      shortcuts: {
+        title: "Keyboard shortcuts",
+        close: "Close",
+        focusUpload: "Focus the upload area",
+        playPause: "Play / pause uploaded track",
+        next: "Next result card",
+        prev: "Previous result card",
+        toggle: "Toggle selected card expansion",
+        closeResult: "Close result / modal",
+        openHelp: "Toggle this help dialog",
+        hint: "Shortcuts are disabled while typing in inputs.",
       },
       install: {
         title: "Install as app",

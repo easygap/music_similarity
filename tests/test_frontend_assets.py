@@ -283,6 +283,18 @@ def test_results_csv_export_button_present_and_wired():
     assert '"﻿"' in js or "'﻿'" in js
 
 
+def test_shortcuts_help_modal_and_keybind():
+    """'?' 키로 단축키 도움말 모달이 토글되어야 한다."""
+    html = _read("index.html")
+    assert 'id="shortcuts-modal"' in html
+    assert 'data-i18n="shortcuts.title"' in html
+    js = _read("js/app.js")
+    assert "function openShortcutsModal()" in js
+    assert "function closeShortcutsModal()" in js
+    # '?' 키 분기 + isTyping 가드.
+    assert 'e.key === "?"' in js
+
+
 def test_results_jk_keyboard_navigation():
     """결과 페이지에서 j/k (↓/↑) 로 hit 카드 이동 + Enter 토글 핸들러 존재 확인."""
     text = _read("js/app.js")
