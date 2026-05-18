@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 페이저에 ⇤ / ⇥ (처음 / 마지막 페이지 점프) 버튼 추가. 큰 카탈로그
+  (~1000곡) 에서 한 번에 마지막 페이지로 이동 가능. `Math.ceil(total/size)`
+  로 마지막 페이지 계산. 4개 페이저 버튼의 disabled 동기화는
+  `syncPagerControls()` 헬퍼 한 군데로 통합. 신규 i18n `catalog.first` /
+  `catalog.last` (ko/en parity).
 - `python -m backend.cli status` 서브커먼드 신설. 운영자가 떠 있는 서버의
   `/api/health` 응답을 사람-가독 표 형태로 확인 가능. `--strict` 로 strict
   모드 호출, `--json` 으로 JSON 그대로 흘리기, `--timeout` 으로 네트워크
