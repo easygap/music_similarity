@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Added
+- 결과 영역 끝에 분석 메타 footer 라인. `분석 시각 · 카탈로그 N곡 · v<엔진버전> ·
+  캐시된 결과` 형태로 monospace 톤으로 노출. 사용자가 결과 신뢰성을 가늠하거나
+  디버깅할 때 단서. 캐시 응답이면 `cached` 라벨이 accent 색으로 강조. 신규
+  i18n 키 `results.metaAnalyzedAt` / `metaCatalogSize` / `metaCached`
+  (ko/en parity).
+
 ## [1.4.0] — 2026-05-15
 
 이번 사이클의 테마: **운영 가시성 + 일상 UX polish**. 운영자 측 (CLI status,
