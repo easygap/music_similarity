@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-05-15
+
+이번 사이클의 테마: **운영 가시성 + 일상 UX polish**. 운영자 측 (CLI status,
+dataset mtime, sitemap lastmod, social proof) 과 사용자 측 (j/k 키보드 네비,
+'?' 도움말, 검색 highlight / × 버튼, 카탈로그 페이저 점프, CSV 다운로드,
+shuffle, 결과 카드 펼침 모드 저장 등) 을 같이 다듬음.
+
 ### Added
 - 카탈로그 페이저에 ⇤ / ⇥ (처음 / 마지막 페이지 점프) 버튼 추가. 큰 카탈로그
   (~1000곡) 에서 한 번에 마지막 페이지로 이동 가능. `Math.ceil(total/size)`
