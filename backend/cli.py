@@ -240,6 +240,73 @@ def _hit_to_dict(hit) -> dict:
     }
 
 
+def cmd_status(args: argparse.Namespace) -> int:
+    """떠 있는 서버의 /api/health 응답을 사람 친화적으로 표시한다.
+
+    배포 후 sanity check / cron monitoring 용 작은 도구. ``--json`` 으로
+    그대로 JSON 만 떨궈서 jq / 다른 툴에 파이프하기 쉽게도 만들었다.
+    503 (degraded) 응답이면 exit code 3 으로 종료해 cron / CI 에서
+    fail 처리 가능.
+    """
+    import json as _json
+    from urllib.error import HTTPError, URLError
+    from urllib.request import Request, urlopen
+
+    url = args.url.rstrip("/") + "/api/health"
+    if args.strict:
+        url += "?strict=true"
+
+    req = Request(url, headers={"User-Agent": f"soundmatch-cli/{ENGINE_VERSION}"})
+    try:
+        with urlopen(req, timeout=args.timeout) as resp:
+            body = resp.read().decode("utf-8", errors="replace")
+            status_code = resp.status
+    except HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace") if e.fp else ""
+        status_code = e.code
+    except URLError as e:
+        print(f"error: 서버 접속 실패 ({args.url}): {e.reason}", file=sys.stderr)
+        return 4
+    except OSError as e:
+        # timeout 등.
+        print(f"error: 네트워크 오류 — {e}", file=sys.stderr)
+        return 4
+
+    try:
+        data = _json.loads(body)
+    except _json.JSONDecodeError:
+        print(f"error: 서버 응답이 JSON 아님 (status={status_code})", file=sys.stderr)
+        print(body[:500], file=sys.stderr)
+        return 5
+
+    if args.json:
+        # CI / monitoring 친화 — exit code 만으로 통과/실패 판단 가능.
+        print(_json.dumps(data, ensure_ascii=False, indent=2))
+        return 0 if status_code == 200 else 3
+
+    # 사람 친화 표.
+    ok = data.get("status") == "ok"
+    head = f"[{data.get('status', '?').upper()}] {args.url}"
+    print(head)
+    print("─" * len(head))
+    rows = [
+        ("env", data.get("env", "?")),
+        ("version", data.get("version", "?")),
+        ("catalog_size", data.get("catalog_size", 0)),
+        ("uptime_seconds", data.get("uptime_seconds", 0)),
+        ("analyze_p50_seconds", data.get("analyze_latency_p50_seconds", 0)),
+        ("catalog_updated_at", data.get("catalog_updated_at") or "—"),
+    ]
+    label_w = max(len(k) for k, _ in rows)
+    for k, v in rows:
+        print(f"  {k:<{label_w}} : {v}")
+    if not ok:
+        # 운영자한테 큰 신호. 색상 없이 표시 (Windows 콘솔 호환).
+        print()
+        print("  ⚠ status 가 ok 가 아닙니다. /metrics 와 로그를 확인하세요.")
+    return 0 if ok else 3
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     """uvicorn 으로 backend.main:app 을 띄우는 단축어.
 
@@ -517,6 +584,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     compare.add_argument("--json", action="store_true", help="결과를 JSON 으로 출력")
     compare.set_defaults(func=cmd_compare)
+
+    status = sub.add_parser(
+        "status",
+        help="떠 있는 서버의 /api/health 응답을 사람 친화적으로 표시 (운영 점검).",
+    )
+    status.add_argument("--url", default="http://127.0.0.1:8000", help="대상 base URL (기본 127.0.0.1:8000)")
+    status.add_argument("--strict", action="store_true", help="?strict=true 로 호출 (librosa / 디스크 점검까지)")
+    status.add_argument("--json", action="store_true", help="JSON 응답을 그대로 출력")
+    status.add_argument("--timeout", type=float, default=5.0, help="네트워크 타임아웃 (초, 기본 5)")
+    status.set_defaults(func=cmd_status)
 
     serve = sub.add_parser("serve", help="uvicorn 으로 백엔드를 띄운다 (개발 편의용 단축어).")
     serve.add_argument("--host", default="127.0.0.1", help="바인딩할 호스트 (기본 127.0.0.1)")
