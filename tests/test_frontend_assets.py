@@ -295,6 +295,19 @@ def test_shortcuts_help_modal_and_keybind():
     assert 'e.key === "?"' in js
 
 
+def test_shortcuts_modal_has_focus_trap():
+    """shortcuts 도움말 모달도 카탈로그 모달과 같은 focus trap + 이전 포커스 복원."""
+    js = _read("js/app.js")
+    assert "SHORTCUTS_FOCUSABLE_SEL" in js
+    assert "function shortcutsFocusable()" in js
+    # 모달 열림 시 이전 포커스 저장.
+    assert "_shortcutsPrevFocus = document.activeElement" in js
+    # 닫힘 시 복원.
+    assert "_shortcutsPrevFocus.focus()" in js
+    # Tab key 트랩 분기 — 모달 keydown 리스너.
+    assert "shortcutsModal.addEventListener(\"keydown\"" in js
+
+
 def test_results_jk_keyboard_navigation():
     """결과 페이지에서 j/k (↓/↑) 로 hit 카드 이동 + Enter 토글 핸들러 존재 확인."""
     text = _read("js/app.js")

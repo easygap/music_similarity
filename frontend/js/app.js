@@ -1527,23 +1527,60 @@
     _selectedHitIdx = clamped;
   }
 
-  // 단축키 도움말 모달 — '?' 키로 토글 + Esc 로 닫기.
+  // 단축키 도움말 모달 — '?' 키로 토글 + Esc 로 닫기. a11y: focus trap + 이전 포커스 복원.
   const shortcutsModal = document.getElementById("shortcuts-modal");
   const shortcutsCloseBtn = document.getElementById("shortcuts-modal-close");
+  const SHORTCUTS_FOCUSABLE_SEL =
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  let _shortcutsPrevFocus = null;
+
+  function shortcutsFocusable() {
+    if (!shortcutsModal) return [];
+    const nodes = shortcutsModal.querySelectorAll(SHORTCUTS_FOCUSABLE_SEL);
+    return Array.from(nodes).filter((el) => !el.disabled);
+  }
 
   function openShortcutsModal() {
     if (!shortcutsModal) return;
+    _shortcutsPrevFocus = document.activeElement;
     shortcutsModal.hidden = false;
-    if (shortcutsCloseBtn) shortcutsCloseBtn.focus();
+    // 첫 조작 가능 요소로 이동 (보통 닫기 버튼).
+    setTimeout(() => {
+      const nodes = shortcutsFocusable();
+      if (nodes.length) nodes[0].focus();
+    }, 0);
   }
   function closeShortcutsModal() {
     if (!shortcutsModal) return;
     shortcutsModal.hidden = true;
+    // 이전 포커스로 복원 — 키보드 사용자가 흐름을 잃지 않도록.
+    if (_shortcutsPrevFocus && typeof _shortcutsPrevFocus.focus === "function") {
+      try { _shortcutsPrevFocus.focus(); } catch (_) {}
+    }
+    _shortcutsPrevFocus = null;
   }
   if (shortcutsCloseBtn) shortcutsCloseBtn.addEventListener("click", closeShortcutsModal);
   if (shortcutsModal) {
     shortcutsModal.addEventListener("click", (e) => {
       if (e.target === shortcutsModal) closeShortcutsModal();
+    });
+    // Tab 키 트랩 — 모달 내부 요소들 사이만 순환.
+    shortcutsModal.addEventListener("keydown", (e) => {
+      if (e.key !== "Tab") return;
+      const nodes = shortcutsFocusable();
+      if (!nodes.length) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !shortcutsModal.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     });
   }
 
