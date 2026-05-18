@@ -59,6 +59,13 @@ python -m backend.cli compare a.wav b.wav
 # JSON 으로 받고 싶으면 --json
 ```
 
+운영 중인 서버가 살아 있는지 cron / shell 한 줄로 확인하려면:
+
+```bash
+python -m backend.cli status --url http://localhost:8000
+# CI / 모니터링 친화 — JSON 만 흘리고 싶으면 --json. 503 / 접속 실패면 0 이 아닌 exit code.
+```
+
 카탈로그 CSV 가 엔진에 잘 로딩될지 미리 점검하고, 중복된 키를 정리하려면:
 
 ```bash
@@ -201,7 +208,7 @@ UI 에서 " - " 로 잘라서 아티스트를 분리 표시한다.
 backend/      FastAPI 앱 (라우트 + 미들웨어 + ML 파이프라인)
 frontend/    SPA + PWA 자산
 data/        카탈로그 CSV
-tests/       pytest 모음 (현재 189 케이스)
+tests/       pytest 모음 (현재 210 케이스)
 scripts/     개발/카탈로그 재빌드 스크립트
 ```
 

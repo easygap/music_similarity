@@ -225,3 +225,95 @@ def test_cli_dedupe_dataset_requires_overwrite_for_same_path(tmp_path, feature_c
     err = capsys.readouterr().err
     assert code != 0
     assert "--overwrite" in err
+
+
+# --- status 서브커먼드 -----------------------------------------------------
+
+def test_cli_status_unreachable_server_returns_4(capsys):
+    """존재하지 않는 서버 주소 → exit code 4 + stderr 안내."""
+    code = main([
+        "status",
+        "--url", "http://127.0.0.1:1",  # 거의 확실히 닫힌 포트
+        "--timeout", "1",
+    ])
+    err = capsys.readouterr().err
+    assert code == 4
+    assert "error:" in err
+
+
+def test_cli_status_pretty_output(monkeypatch, capsys):
+    """가짜 /api/health 응답을 주입하면 사람-가독 출력에 키들이 노출되어야 한다."""
+    from contextlib import contextmanager
+
+    payload = (
+        '{"status": "ok", "catalog_size": 781, "env": "production", '
+        '"version": "1.3.0", "uptime_seconds": 12.3, '
+        '"analyze_latency_p50_seconds": 1.2, '
+        '"catalog_updated_at": "2026-05-15T00:42:51+00:00"}'
+    )
+
+    class FakeResp:
+        status = 200
+
+        def read(self):
+            return payload.encode("utf-8")
+
+    @contextmanager
+    def fake_urlopen(req, timeout=5.0):
+        yield FakeResp()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    code = main(["status", "--url", "http://example.test"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "OK" in out
+    assert "catalog_size" in out and "781" in out
+    assert "1.3.0" in out
+    # ISO 시각의 처음 부분이 들어가야 한다 (운영자가 보면 알 수 있는 형태).
+    assert "2026-05-15" in out
+
+
+def test_cli_status_degraded_returns_3(monkeypatch, capsys):
+    """503 + status=degraded 응답이면 exit code 3."""
+    from contextlib import contextmanager
+    from urllib.error import HTTPError
+
+    @contextmanager
+    def fake_urlopen(req, timeout=5.0):
+        raise HTTPError(
+            req.full_url, 503, "Service Unavailable", {},
+            _io.BytesIO(b'{"status": "degraded", "catalog_size": 0, "env": "production", "version": "1.3.0", "uptime_seconds": 1.0}'),
+        )
+
+    import io as _io
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    code = main(["status", "--url", "http://example.test"])
+    out = capsys.readouterr().out
+    assert code == 3
+    assert "DEGRADED" in out
+    assert "ok 가 아닙니다" in out
+
+
+def test_cli_status_json_passthrough(monkeypatch, capsys):
+    """--json 옵션이면 JSON 그대로 흘리고 200 일 때 exit 0."""
+    from contextlib import contextmanager
+
+    class FakeResp:
+        status = 200
+
+        def read(self):
+            return b'{"status": "ok", "catalog_size": 3}'
+
+    @contextmanager
+    def fake_urlopen(req, timeout=5.0):
+        yield FakeResp()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    code = main(["status", "--url", "http://example.test", "--json"])
+    out = capsys.readouterr().out
+    assert code == 0
+    # 출력은 parse 가능한 JSON.
+    parsed = json.loads(out)
+    assert parsed["status"] == "ok"
+    assert parsed["catalog_size"] == 3

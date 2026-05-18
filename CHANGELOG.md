@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Added
+- `python -m backend.cli status` 서브커먼드 신설. 운영자가 떠 있는 서버의
+  `/api/health` 응답을 사람-가독 표 형태로 확인 가능. `--strict` 로 strict
+  모드 호출, `--json` 으로 JSON 그대로 흘리기, `--timeout` 으로 네트워크
+  타임아웃 조정. exit code 도 운영자/CI 친화 — 정상 ok=0, degraded=3,
+  네트워크 실패=4, JSON 파싱 실패=5. cron / 모니터링에 그대로 꽂아 쓸 수 있다.
+  README "실행" 섹션에 사용 예시 추가.
+
 ### Accessibility
 - 신규 단축키 도움말 모달에도 카탈로그 모달과 동일한 focus trap 적용 —
   Tab / Shift+Tab 으로 모달 내부 요소만 순환, 닫힐 때 이전 포커스 복원.
