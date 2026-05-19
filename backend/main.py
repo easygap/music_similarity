@@ -500,6 +500,29 @@ def _all_finite(values: Iterable[float]) -> bool:
     return bool(np.isfinite(arr).all())
 
 
+def _parse_release_date_from_changelog() -> str | None:
+    """CHANGELOG.md 의 첫 `## [X.Y.Z] — YYYY-MM-DD` 라인에서 날짜만 뽑는다.
+
+    운영자가 "지금 떠 있는 빌드가 언제 cut 된 버전인지" 확인하는 용도. 한 번만
+    파싱해서 캐시. CHANGELOG 가 없거나 형식이 안 맞으면 None — 호출 측이
+    fallback 처리.
+    """
+    import re
+
+    changelog = ROOT / "CHANGELOG.md"
+    try:
+        text = changelog.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    # `## [Unreleased]` 는 건너뛰고 그 다음 `## [<semver>] — YYYY-MM-DD` 를 잡는다.
+    m = re.search(r"^## \[\d+\.\d+\.\d+\][^\n]*?(\d{4}-\d{2}-\d{2})", text, re.MULTILINE)
+    return m.group(1) if m else None
+
+
+# 모듈 로드 시 한 번만 계산. 핫리로드 안 됨 — 새 release 가 cut 되면 워커 재시작.
+_RELEASE_DATE: str | None = _parse_release_date_from_changelog()
+
+
 def _dataset_mtime_iso() -> str | None:
     """카탈로그 CSV 의 마지막 수정 시각을 ISO 8601 (UTC) 로 돌려준다.
 
@@ -667,6 +690,7 @@ def version_info():
     return {
         "name": "soundmatch",
         "version": app.version,
+        "release_date": _RELEASE_DATE,
         "env": ENV,
         "catalog_size": catalog_size,
         "analyses_total": analyses_total,

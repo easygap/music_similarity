@@ -410,6 +410,29 @@ def test_version_endpoint(fastapi_client):
     assert "analyses_total" in body
     assert isinstance(body["analyses_total"], int)
     assert body["analyses_total"] >= 0
+    # CHANGELOG 의 첫 [X.Y.Z] 라인에서 release_date 를 파싱해 노출.
+    # 실제 CHANGELOG 가 있으면 YYYY-MM-DD, 없거나 파싱 실패면 None.
+    assert "release_date" in body
+    rd = body["release_date"]
+    if rd is not None:
+        # ISO date 형식.
+        import re
+
+        assert re.match(r"^\d{4}-\d{2}-\d{2}$", rd), rd
+
+
+def test_parse_release_date_skips_unreleased_section():
+    """`## [Unreleased]` 는 건너뛰고 첫 X.Y.Z 헤더의 날짜만 잡아야 한다."""
+    import backend.main as mod
+
+    # 실제 CHANGELOG 파싱 — 결과가 1.x 사이클의 어떤 날짜여야 한다.
+    parsed = mod._parse_release_date_from_changelog()
+    assert parsed is not None
+    import re
+
+    assert re.match(r"^\d{4}-\d{2}-\d{2}$", parsed)
+    # Unreleased 의 빈 헤더에 들어 있는 텍스트 같은 건 절대 안 잡아야 한다.
+    assert "Unreleased" not in parsed
 
 
 def test_version_analyses_total_increments_after_analyze(fastapi_client, tiny_wav):
