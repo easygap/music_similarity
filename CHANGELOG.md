@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Added
+- `/api/version` 응답에 `release_date` 필드 추가. CHANGELOG.md 의 첫
+  `## [X.Y.Z] — YYYY-MM-DD` 헤더에서 날짜만 파싱해서 노출. 운영자가 떠 있는
+  빌드가 언제 cut 된 버전인지 한 줄 JSON 으로 확인 가능. 모듈 로드 시 한 번만
+  파싱하므로 응답 cost 0.
 - 메인 페이지 "내 즐겨찾기" 섹션에 정렬 select 추가 — 최근 추가순(기본) /
   곡명 / 아티스트. 사용자 선호는 localStorage 키 `soundmatch.fav-sort` 에
   저장되어 다음 방문에도 유지된다. 정렬은 `localeCompare(undefined, {
