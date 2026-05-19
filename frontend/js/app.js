@@ -136,24 +136,38 @@
 
   // Hero 영역에 누적 분석 횟수를 작게 노출 — social proof. /api/version 응답의
   // analyses_total 활용. 횟수가 0 이면 (아직 한 번도 분석 안 됨) 그냥 숨겨둔다.
+  // 같은 응답에서 footer 의 빌드 정보 (v + release_date) 도 함께 채운다.
   async function loadSocialProof() {
     const el = $("#hero-social-proof");
-    if (!el) return;
+    const buildEl = $("#footer-build");
     try {
       const res = await fetch("/api/version");
       if (!res.ok) throw new Error("offline");
       const data = await res.json();
-      const total = Number(data.analyses_total) || 0;
-      if (total <= 0) {
-        el.hidden = true;
-        return;
+
+      // 누적 분석 횟수 (social proof).
+      if (el) {
+        const total = Number(data.analyses_total) || 0;
+        if (total <= 0) {
+          el.hidden = true;
+        } else {
+          const isEn = window.i18n && window.i18n.lang() === "en";
+          const formatted = isEn ? total.toLocaleString("en-US") : total.toLocaleString("ko-KR");
+          el.textContent = t("hero.totalAnalyses", formatted);
+          el.hidden = false;
+        }
       }
-      const isEn = window.i18n && window.i18n.lang() === "en";
-      const formatted = isEn ? total.toLocaleString("en-US") : total.toLocaleString("ko-KR");
-      el.textContent = t("hero.totalAnalyses", formatted);
-      el.hidden = false;
+
+      // footer 빌드 정보 — 'v1.4.0 · 2026-05-15' 형태. release_date 가 없으면
+      // 버전만 표시. 응답이 죽어 있으면 라인 자체를 숨김 (이미 hidden 기본).
+      if (buildEl && data.version) {
+        const v = `v${String(data.version)}`;
+        buildEl.textContent = data.release_date ? `${v} · ${data.release_date}` : v;
+        buildEl.hidden = false;
+      }
     } catch {
-      el.hidden = true;
+      if (el) el.hidden = true;
+      // buildEl 은 hidden 그대로 유지.
     }
   }
   loadSocialProof();
