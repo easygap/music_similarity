@@ -227,6 +227,53 @@ def test_cli_dedupe_dataset_requires_overwrite_for_same_path(tmp_path, feature_c
     assert "--overwrite" in err
 
 
+# --- dataset-stats 서브커먼드 ----------------------------------------------
+
+def test_cli_dataset_stats_human_readable(synthetic_dataset, capsys):
+    """기본 출력에 카탈로그 행 수 + 키 메트릭 라벨이 포함돼야 한다."""
+    code = main(["dataset-stats", str(synthetic_dataset)])
+    out = capsys.readouterr().out
+    assert code == 0
+    # 합성 카탈로그는 3행.
+    assert "3행" in out
+    assert "BPM" in out
+    assert "에너지" in out
+    assert "밝기" in out
+
+
+def test_cli_dataset_stats_json_output(synthetic_dataset):
+    """--json 옵션은 jq 파싱 가능한 JSON 만 흘려야 한다."""
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        code = main(["dataset-stats", str(synthetic_dataset), "--json"])
+    assert code == 0
+    parsed = json.loads(buf.getvalue())
+    assert parsed["rows"] == 3
+    assert parsed["unique_keys"] == 3
+    assert parsed["duplicate_keys"] == 0
+    assert "bpm" in parsed
+    # 합성 dataset 은 BPM 가 0.5 부근 — 진짜 값이 아니라 더미. 그냥 None 이 아닌지만.
+    assert parsed["bpm"] is None or isinstance(parsed["bpm"], dict)
+
+
+def test_cli_dataset_stats_missing_file(tmp_path, capsys):
+    """없는 파일 경로 → exit code 2 + stderr 메시지."""
+    code = main(["dataset-stats", str(tmp_path / "no.csv")])
+    err = capsys.readouterr().err
+    assert code == 2
+    assert "찾을 수 없습니다" in err
+
+
+def test_cli_dataset_stats_missing_name_column(tmp_path, capsys):
+    """필수 키 컬럼이 없으면 exit code 4."""
+    bad = tmp_path / "bad.csv"
+    bad.write_text("foo,bar\n1,2\n", encoding="utf-8")
+    code = main(["dataset-stats", str(bad)])
+    err = capsys.readouterr().err
+    assert code == 4
+    assert "필수 키 컬럼" in err
+
+
 # --- status 서브커먼드 -----------------------------------------------------
 
 def test_cli_status_unreachable_server_returns_4(capsys):

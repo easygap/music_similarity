@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Added
+- `python -m backend.cli dataset-stats <csv>` 서브커먼드 신설. 운영자가
+  카탈로그 갱신 후 BPM / 에너지 / 밝기 / 길이 분포 (min/max/avg/p50/n) 와
+  중복 키 개수를 콘솔에 한 화면으로 확인. `--json` 옵션은 jq 파이프
+  친화. 백엔드 띄울 필요 없이 CSV 만 있으면 동작.
 - 메인 페이지 footer 에 빌드 정보 라인 (`v1.4.0 · 2026-05-15`) 추가. 사용자가
   지금 보고 있는 사이트가 어떤 버전 / 어느 날짜에 cut 된 빌드인지 한눈에
   확인 가능. `/api/version.release_date` (PR #49) 활용 — `loadSocialProof`
