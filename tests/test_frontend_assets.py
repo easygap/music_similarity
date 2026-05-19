@@ -173,6 +173,20 @@ def test_catalog_pager_has_first_last_jump_buttons():
     assert "last.disabled" in text
 
 
+def test_catalog_has_page_size_select():
+    """카탈로그 페이지에 페이지당 곡 수 select (24/48/96) + URL 영구화 와이어링."""
+    text = _read("catalog.html")
+    assert 'id="cat-size"' in text
+    # 24/48/96 옵션 모두 존재.
+    for v in ('value="24"', 'value="48"', 'value="96"'):
+        assert v in text
+    # change 핸들러 + URL persistence (기본 24 와 다를 때만 URL 노출).
+    assert "sizeEl.addEventListener" in text
+    assert "state.size !== 24" in text
+    # i18n 라벨.
+    assert 'data-i18n="catalog.sizeLabel"' in text
+
+
 def test_catalog_bpm_histogram_is_clickable():
     """BPM 히스토그램 막대가 button + 클릭 핸들러로 인터랙티브 해야 한다."""
     text = _read("catalog.html")
