@@ -236,6 +236,40 @@
   const favSection = document.getElementById("favorites-section");
   const favList = document.getElementById("favorites-list");
   const favClearBtn = document.getElementById("favorites-clear");
+  const favSortSelect = document.getElementById("favorites-sort");
+
+  // 즐겨찾기 정렬 선호. 사용자가 200곡까지 모을 수 있어서 정렬 옵션이 중요.
+  const FAV_SORT_KEY = "soundmatch.fav-sort";
+
+  function readFavSort() {
+    try {
+      const v = localStorage.getItem(FAV_SORT_KEY);
+      return v === "title" || v === "artist" ? v : "recent";
+    } catch {
+      return "recent";
+    }
+  }
+
+  function writeFavSort(mode) {
+    try {
+      localStorage.setItem(FAV_SORT_KEY, mode);
+    } catch {
+      // localStorage 비활성화여도 화면 동작은 일회성으로 그대로 유지.
+    }
+  }
+
+  function sortFavorites(items, mode) {
+    // 원본 배열 안 건드리고 정렬된 사본을 돌려준다.
+    if (!Array.isArray(items)) return [];
+    const list = items.slice();
+    if (mode === "title") {
+      list.sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base" }));
+    } else if (mode === "artist") {
+      list.sort((a, b) => (a.artist || "").localeCompare(b.artist || "", undefined, { sensitivity: "base" }));
+    }
+    // "recent" 모드는 favorites.js 의 add() 가 unshift 라 이미 최신순.
+    return list;
+  }
 
   function renderFavorites() {
     if (!favSection || !favList || !window.SoundMatchFavorites) return;
@@ -246,7 +280,10 @@
       return;
     }
     favSection.classList.remove("hidden");
-    favList.innerHTML = items
+    // 정렬 select 가 있으면 사용자 선호 반영, 아니면 기본 "recent".
+    if (favSortSelect) favSortSelect.value = readFavSort();
+    const sorted = sortFavorites(items, readFavSort());
+    favList.innerHTML = sorted
       .map((it) => {
         const safeName = escapeHtml(it.name);
         return `
@@ -276,6 +313,14 @@
     favClearBtn.addEventListener("click", () => {
       if (!confirm(t("favorites.confirm"))) return;
       window.SoundMatchFavorites.clearAll();
+    });
+  }
+
+  if (favSortSelect) {
+    favSortSelect.value = readFavSort();
+    favSortSelect.addEventListener("change", () => {
+      writeFavSort(favSortSelect.value);
+      renderFavorites();
     });
   }
 

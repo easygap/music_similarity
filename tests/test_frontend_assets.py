@@ -321,6 +321,21 @@ def test_shortcuts_modal_has_focus_trap():
     assert "shortcutsModal.addEventListener(\"keydown\"" in js
 
 
+def test_favorites_section_has_sort_select_with_localstorage_pref():
+    """즐겨찾기 섹션에 정렬 select + localStorage 선호 저장이 와이어링돼야 한다."""
+    html = _read("index.html")
+    assert 'id="favorites-sort"' in html
+    assert 'data-i18n="favorites.sortRecent"' in html
+    assert 'data-i18n="favorites.sortTitle"' in html
+    assert 'data-i18n="favorites.sortArtist"' in html
+    js = _read("js/app.js")
+    assert "soundmatch.fav-sort" in js
+    assert "function readFavSort()" in js
+    assert "function sortFavorites(" in js
+    # localeCompare 로 ko/en 양쪽 자연 정렬.
+    assert "localeCompare(" in js
+
+
 def test_results_meta_footer_shows_analysis_info():
     """결과 영역 끝에 분석 메타 footer (시각/카탈로그/엔진/캐시) 가 그려져야 한다."""
     html = _read("index.html")

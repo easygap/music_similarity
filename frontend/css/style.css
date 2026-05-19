@@ -1278,6 +1278,23 @@ main {
   flex-wrap: wrap;
 }
 .favorites-actions .link-ghost { white-space: nowrap; }
+.favorites-sort {
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 4px 24px 4px 10px;
+  font-size: 12.5px;
+  font-family: inherit;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='white' stroke-width='1.4' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+:root[data-theme="light"] .favorites-sort {
+  background-color: white;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%230f172a' stroke-width='1.4' fill='none' stroke-linecap='round'/></svg>");
+}
 .catalog-preview-sub { color: var(--text-mute); margin: 0 0 16px; max-width: 640px; font-size: 14.5px; }
 .catalog-list {
   display: grid;
