@@ -346,6 +346,14 @@
       <div class="catalog-preview-head">
         <h2 class="info-title" data-i18n="favorites.title">내 즐겨찾기</h2>
         <div class="favorites-actions">
+          <label class="favorites-sort-wrap">
+            <span class="sr-only" data-i18n="favorites.sortLabel">정렬</span>
+            <select id="favorites-sort" class="favorites-sort">
+              <option value="recent" data-i18n="favorites.sortRecent">최근 추가순</option>
+              <option value="title" data-i18n="favorites.sortTitle">곡명</option>
+              <option value="artist" data-i18n="favorites.sortArtist">아티스트</option>
+            </select>
+          </label>
           <button type="button" class="link-ghost" id="favorites-export" data-i18n="favorites.export">내보내기</button>
           <button type="button" class="link-ghost" id="favorites-import-btn" data-i18n="favorites.import">가져오기</button>
           <button type="button" class="link-ghost" id="favorites-clear" data-i18n="favorites.clear">모두 지우기</button>

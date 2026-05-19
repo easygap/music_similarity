@@ -7,6 +7,12 @@
 ## [Unreleased]
 
 ### Added
+- 메인 페이지 "내 즐겨찾기" 섹션에 정렬 select 추가 — 최근 추가순(기본) /
+  곡명 / 아티스트. 사용자 선호는 localStorage 키 `soundmatch.fav-sort` 에
+  저장되어 다음 방문에도 유지된다. 정렬은 `localeCompare(undefined, {
+  sensitivity: "base" })` 로 한글/영문 자연 정렬. 신규 i18n 키
+  `favorites.sortLabel` / `sortRecent` / `sortTitle` / `sortArtist`
+  (ko/en parity).
 - 결과 영역 끝에 분석 메타 footer 라인. `분석 시각 · 카탈로그 N곡 · v<엔진버전> ·
   캐시된 결과` 형태로 monospace 톤으로 노출. 사용자가 결과 신뢰성을 가늠하거나
   디버깅할 때 단서. 캐시 응답이면 `cached` 라벨이 accent 색으로 강조. 신규

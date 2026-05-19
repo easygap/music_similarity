@@ -123,6 +123,10 @@
             : "이미 모두 등록된 곡이에요. 변경된 항목이 없습니다.",
         importFailed: "JSON 파일을 읽지 못했어요. 같은 형식의 파일인지 확인해주세요.",
         storageFull: "로컬 저장 공간이 부족해 즐겨찾기를 저장하지 못했어요. '모두 지우기' 로 정리해주세요.",
+        sortLabel: "정렬",
+        sortRecent: "최근 추가순",
+        sortTitle: "곡명",
+        sortArtist: "아티스트",
       },
       summary: {
         tempo: "Tempo",
@@ -369,6 +373,10 @@
             : "All tracks were already saved. Nothing changed.",
         importFailed: "Could not read the JSON file. Please check the format.",
         storageFull: "Browser storage is full. Favorites weren't saved — please clear them first.",
+        sortLabel: "Sort",
+        sortRecent: "Recently added",
+        sortTitle: "Title",
+        sortArtist: "Artist",
       },
       summary: {
         tempo: "Tempo",
