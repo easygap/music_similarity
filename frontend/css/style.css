@@ -1345,6 +1345,12 @@ main {
 /* ---------------- 푸터 ---------------------- */
 .site-foot { text-align: center; padding: 40px 20px 60px; color: var(--text-mute); font-size: 13px; max-width: 720px; margin: 0 auto; }
 .site-foot .muted { color: var(--text-faint); font-size: 12px; margin-top: 8px; }
+.footer-build {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px !important;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+}
 .site-foot a { color: var(--text-dim); }
 
 /* ---------------- 반응형 -------------------- */
