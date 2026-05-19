@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 페이지 필터 행에 "페이지당" select 추가 (24 / 48 / 96). 사용자가
+  한 페이지에 더 많은 곡을 보고 싶을 때 직접 조정 가능. URL 영구화는 이미
+  되어 있고, 기본 24 와 다를 때만 `?size=` 가 URL 에 노출되어 짧게 유지.
+  `resetFilters()` 도 size 를 기본값으로 되돌리도록 갱신. 신규 i18n
+  `catalog.sizeLabel` (ko/en parity).
 - `/api/version` 응답에 `release_date` 필드 추가. CHANGELOG.md 의 첫
   `## [X.Y.Z] — YYYY-MM-DD` 헤더에서 날짜만 파싱해서 노출. 운영자가 떠 있는
   빌드가 언제 cut 된 버전인지 한 줄 JSON 으로 확인 가능. 모듈 로드 시 한 번만

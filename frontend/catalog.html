@@ -441,6 +441,14 @@
           <option value="shuffle" data-i18n="catalog.sortShuffle">🎲 무작위</option>
         </select>
       </label>
+      <label class="cat-filter-range">
+        <span data-i18n="catalog.sizeLabel">페이지당</span>
+        <select id="cat-size">
+          <option value="24">24</option>
+          <option value="48">48</option>
+          <option value="96">96</option>
+        </select>
+      </label>
     </div>
 
     <!-- BPM 분포 미니 차트 (페이지 처음 진입 시 한 번만 로드). -->
@@ -501,6 +509,7 @@
     var minEEl = document.getElementById("cat-min-energy");
     var maxEEl = document.getElementById("cat-max-energy");
     var sortEl = document.getElementById("cat-sort");
+    var sizeEl = document.getElementById("cat-size");
 
     var state = {
       q: "", page: 1, size: 24, total: 0, hasMore: false, favOnly: false,
@@ -573,6 +582,8 @@
           if (state.maxEnergy !== "") p.set("max_energy", state.maxEnergy);
           if (state.favOnly) p.set("fav_only", "1");
           if (state.song) p.set("song", state.song);
+          // 기본 24 와 다를 때만 size 를 URL 에 노출 — 짧고 깨끗하게.
+          if (state.size && state.size !== 24) p.set("size", String(state.size));
           var qs = p.toString();
           var next = window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
           // history 스택을 망치지 않게 replaceState.
@@ -590,6 +601,14 @@
       if (minEEl) minEEl.value = state.minEnergy;
       if (maxEEl) maxEEl.value = state.maxEnergy;
       if (sortEl) sortEl.value = state.sort || "default";
+      if (sizeEl) {
+        // select 에 명시적으로 노출된 값(24/48/96) 안에 있을 때만 그 옵션을 선택.
+        // 그 외(예: URL 에 size=10 같은 비정상 값)는 기본 24 표시.
+        var allowedSizes = ["24", "48", "96"];
+        sizeEl.value = allowedSizes.indexOf(String(state.size)) !== -1
+          ? String(state.size)
+          : "24";
+      }
     }
 
     // 빈 결과 상태에서 호출 — 모든 필터를 기본값으로 되돌리고 다시 로드.
@@ -602,6 +621,7 @@
       state.sort = "default";
       state.favOnly = false;
       state.page = 1;
+      state.size = 24;  // 페이지당 곡 수도 기본값으로 되돌린다.
       state.song = ""; // 혹시 모달이 열려 있으면 같이 닫는다.
       modal.classList.remove("is-open");
       document.body.style.overflow = "";
@@ -1053,6 +1073,17 @@
     if (sortEl) {
       sortEl.addEventListener("change", function () {
         state.sort = sortEl.value;
+        state.page = 1;
+        writeStateToUrl();
+        load();
+      });
+    }
+    if (sizeEl) {
+      sizeEl.addEventListener("change", function () {
+        var n = parseInt(sizeEl.value, 10);
+        if (!Number.isFinite(n) || n < 6 || n > 100) return;
+        state.size = n;
+        // 페이지당 곡 수가 바뀌면 현재 page 가 의미를 잃으므로 1로 리셋.
         state.page = 1;
         writeStateToUrl();
         load();
