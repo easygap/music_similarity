@@ -446,6 +446,89 @@ def cmd_dedupe_dataset(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dataset_stats(args: argparse.Namespace) -> int:
+    """카탈로그 CSV 의 BPM / 에너지 / 밝기 / 길이 분포를 콘솔에 요약 출력한다.
+
+    운영자가 카탈로그 갱신 후 sanity check 용. ``--json`` 이면 그대로 jq 에
+    파이프하기 쉬운 JSON 만 흘린다. 백엔드 띄울 필요 없이 CSV 만 있으면 된다.
+    """
+    import json as _json
+
+    import numpy as np
+    import pandas as pd
+
+    csv_path = Path(args.path)
+    if not csv_path.exists():
+        print(f"error: 파일을 찾을 수 없습니다: {csv_path}", file=sys.stderr)
+        return 2
+
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception as e:  # noqa: BLE001
+        print(f"error: CSV 로딩 실패: {e}", file=sys.stderr)
+        return 3
+
+    name_col = "musicname & artist"
+    if name_col not in df.columns:
+        print(f"error: 필수 키 컬럼 누락: '{name_col}'", file=sys.stderr)
+        return 4
+
+    def _series_summary(series: pd.Series) -> dict[str, float] | None:
+        """비어 있지 않은 수치 컬럼의 min/max/avg/p50."""
+        s = pd.to_numeric(series, errors="coerce").dropna()
+        if s.empty:
+            return None
+        return {
+            "min": float(s.min()),
+            "max": float(s.max()),
+            "avg": round(float(s.mean()), 2),
+            "p50": round(float(np.percentile(s, 50)), 2),
+            "count": int(s.size),
+        }
+
+    total_rows = int(len(df))
+    unique_keys = int(df[name_col].nunique(dropna=True)) if total_rows else 0
+    duplicates = total_rows - unique_keys
+
+    # 사용자 화면에 노출되는 핵심 메트릭만 모음. 더 정밀한 컬럼별 통계는
+    # validate-dataset 가 다룸 — 여기는 빠르게 한눈에.
+    stats = {
+        "path": str(csv_path),
+        "rows": total_rows,
+        "unique_keys": unique_keys,
+        "duplicate_keys": duplicates,
+        "bpm": _series_summary(df["bpm"]) if "bpm" in df.columns else None,
+        "energy_rms": _series_summary(df["rms_mean"]) if "rms_mean" in df.columns else None,
+        "brightness_hz": _series_summary(df["spectral_centroid_mean"])
+            if "spectral_centroid_mean" in df.columns else None,
+        "length_seconds": _series_summary(df["length"]) if "length" in df.columns else None,
+    }
+
+    if args.json:
+        print(_json.dumps(stats, ensure_ascii=False, indent=2))
+        return 0
+
+    # 사람 친화 표.
+    head = f"# {csv_path.name} — {total_rows:,}행 (유니크 {unique_keys:,}, 중복 {duplicates:,})"
+    print(head)
+    print("─" * len(head))
+
+    def _row(label: str, s: dict[str, float] | None, unit: str) -> None:
+        if not s:
+            print(f"  {label:<10}: (없음)")
+            return
+        print(
+            f"  {label:<10}: min {s['min']:>8.2f}{unit} · max {s['max']:>8.2f}{unit}"
+            f" · avg {s['avg']:>8.2f}{unit} · p50 {s['p50']:>8.2f}{unit} · n={s['count']:,}"
+        )
+
+    _row("BPM", stats["bpm"], "")
+    _row("에너지", stats["energy_rms"], "")
+    _row("밝기", stats["brightness_hz"], "Hz")
+    _row("길이(s)", stats["length_seconds"], "")
+    return 0
+
+
 def cmd_batch(args: argparse.Namespace) -> int:
     """폴더 안의 음원들을 한꺼번에 분석해 CSV 로 떨군다."""
     import csv
@@ -567,6 +650,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="입력과 같은 파일을 덮어써도 되는지 명시적으로 허용",
     )
     dedupe.set_defaults(func=cmd_dedupe_dataset)
+
+    stats = sub.add_parser(
+        "dataset-stats",
+        help="카탈로그 CSV 의 BPM/에너지/밝기/길이 분포를 콘솔에 요약 출력 (운영 sanity check).",
+    )
+    stats.add_argument("path", help="dataset.csv 경로")
+    stats.add_argument("--json", action="store_true", help="JSON 만 출력 (jq 파이프 친화)")
+    stats.set_defaults(func=cmd_dataset_stats)
 
     compare = sub.add_parser("compare", help="두 음원 파일을 같은 카탈로그로 분석해 나란히 비교한다.")
     compare.add_argument("path_a", help="A 음원 파일 경로")

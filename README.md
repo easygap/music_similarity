@@ -73,6 +73,13 @@ python -m backend.cli validate-dataset data/dataset.csv
 python -m backend.cli dedupe-dataset data/dataset.csv --out data/clean.csv
 ```
 
+데이터셋을 한 번 들여다보고 싶다면:
+
+```bash
+python -m backend.cli dataset-stats data/dataset.csv
+# JSON 으로 받고 싶으면 --json
+```
+
 서버를 띄우지 않고도 같은 엔진으로 동작한다 (배치 작업 / 디버깅 용).
 
 librosa / sklearn 깔지 않고 디자인만 돌려볼 때:
