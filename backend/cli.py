@@ -529,6 +529,82 @@ def cmd_dataset_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dataset_diff(args: argparse.Namespace) -> int:
+    """두 카탈로그 CSV 를 비교해서 added / removed 곡 목록을 출력한다.
+
+    카탈로그 갱신 후 운영자가 '뭐가 더 들어갔고 뭐가 빠졌는지' 빠르게 확인하는
+    용도. 같은 키가 양쪽 다 있으면 변경된 게 아닌 걸로 간주 (특성 값 변경
+    감지는 다루지 않음 — 그건 별도 데이터 검증 도구의 몫).
+    """
+    import json as _json
+
+    import pandas as pd
+
+    old_path = Path(args.old)
+    new_path = Path(args.new)
+    for p in (old_path, new_path):
+        if not p.exists():
+            print(f"error: 파일을 찾을 수 없습니다: {p}", file=sys.stderr)
+            return 2
+
+    try:
+        old_df = pd.read_csv(old_path)
+        new_df = pd.read_csv(new_path)
+    except Exception as e:  # noqa: BLE001
+        print(f"error: CSV 로딩 실패: {e}", file=sys.stderr)
+        return 3
+
+    name_col = "musicname & artist"
+    for label, df in (("old", old_df), ("new", new_df)):
+        if name_col not in df.columns:
+            print(f"error: '{label}' 에 필수 키 컬럼 누락: '{name_col}'", file=sys.stderr)
+            return 4
+
+    old_keys = set(old_df[name_col].dropna().astype(str))
+    new_keys = set(new_df[name_col].dropna().astype(str))
+    added = sorted(new_keys - old_keys)
+    removed = sorted(old_keys - new_keys)
+    kept = len(old_keys & new_keys)
+
+    result = {
+        "old_path": str(old_path),
+        "new_path": str(new_path),
+        "old_total": len(old_keys),
+        "new_total": len(new_keys),
+        "kept": kept,
+        "added": added,
+        "removed": removed,
+    }
+
+    if args.json:
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
+
+    head = (
+        f"# {old_path.name} → {new_path.name}  "
+        f"({len(old_keys):,} → {len(new_keys):,}곡, "
+        f"+{len(added)} / -{len(removed)} / 유지 {kept:,})"
+    )
+    print(head)
+    print("─" * len(head))
+    # --limit 으로 너무 긴 리스트는 잘라 보여줌. 운영자 console 가독성 위함.
+    limit = max(0, int(getattr(args, "limit", 50)))
+
+    def _print_list(label: str, items: list[str]) -> None:
+        print(f"  {label} ({len(items):,})")
+        if not items:
+            return
+        shown = items if limit == 0 else items[:limit]
+        for n in shown:
+            print(f"    + {n}" if label.startswith("추가") else f"    - {n}")
+        if limit and len(items) > limit:
+            print(f"    ... and {len(items) - limit:,} more (전체는 --limit 0 또는 --json)")
+
+    _print_list("추가된 곡", added)
+    _print_list("제거된 곡", removed)
+    return 0
+
+
 def cmd_batch(args: argparse.Namespace) -> int:
     """폴더 안의 음원들을 한꺼번에 분석해 CSV 로 떨군다."""
     import csv
@@ -658,6 +734,19 @@ def build_parser() -> argparse.ArgumentParser:
     stats.add_argument("path", help="dataset.csv 경로")
     stats.add_argument("--json", action="store_true", help="JSON 만 출력 (jq 파이프 친화)")
     stats.set_defaults(func=cmd_dataset_stats)
+
+    diff = sub.add_parser(
+        "dataset-diff",
+        help="두 카탈로그 CSV 간 added / removed 곡 목록을 비교.",
+    )
+    diff.add_argument("old", help="기존(이전) dataset.csv 경로")
+    diff.add_argument("new", help="새(현재) dataset.csv 경로")
+    diff.add_argument(
+        "--limit", type=int, default=50,
+        help="콘솔에 보여줄 각 목록의 최대 개수 (기본 50, 0 이면 무제한)",
+    )
+    diff.add_argument("--json", action="store_true", help="JSON 만 출력 (jq 파이프 친화)")
+    diff.set_defaults(func=cmd_dataset_diff)
 
     compare = sub.add_parser("compare", help="두 음원 파일을 같은 카탈로그로 분석해 나란히 비교한다.")
     compare.add_argument("path_a", help="A 음원 파일 경로")

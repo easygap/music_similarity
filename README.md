@@ -80,6 +80,13 @@ python -m backend.cli dataset-stats data/dataset.csv
 # JSON 으로 받고 싶으면 --json
 ```
 
+카탈로그를 갱신한 뒤 뭐가 들고 나갔는지 확인하고 싶다면:
+
+```bash
+python -m backend.cli dataset-diff data/dataset.old.csv data/dataset.csv
+# 긴 목록은 --limit 0 로 무제한, 또는 --json
+```
+
 서버를 띄우지 않고도 같은 엔진으로 동작한다 (배치 작업 / 디버깅 용).
 
 librosa / sklearn 깔지 않고 디자인만 돌려볼 때:
