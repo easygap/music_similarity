@@ -274,6 +274,81 @@ def test_cli_dataset_stats_missing_name_column(tmp_path, capsys):
     assert "필수 키 컬럼" in err
 
 
+# --- dataset-diff 서브커먼드 ----------------------------------------------
+
+def _make_dataset(tmp_path, name, feature_columns, song_names):
+    """간단한 dataset CSV 생성 헬퍼."""
+    import csv as _csv
+
+    p = tmp_path / name
+    with p.open("w", newline="", encoding="utf-8") as fh:
+        w = _csv.writer(fh)
+        w.writerow(["musicname & artist", *feature_columns])
+        for s in song_names:
+            w.writerow([s, *[0.5] * len(feature_columns)])
+    return p
+
+
+def test_cli_dataset_diff_human_readable(tmp_path, feature_columns, capsys):
+    """added / removed / kept 카운트가 사람-가독 출력에 모두 보여야 한다."""
+    old = _make_dataset(tmp_path, "old.csv", feature_columns, ["A - X", "B - X", "C - X"])
+    new = _make_dataset(tmp_path, "new.csv", feature_columns, ["A - X", "C - X", "D - X", "E - X"])
+    code = main(["dataset-diff", str(old), str(new)])
+    out = capsys.readouterr().out
+    assert code == 0
+    # 추가된 곡(D-X, E-X) 와 제거된 곡(B-X) 가 표시.
+    assert "+2" in out and "-1" in out
+    assert "D - X" in out and "E - X" in out
+    assert "B - X" in out
+
+
+def test_cli_dataset_diff_json_output(tmp_path, feature_columns):
+    """--json 출력은 added/removed 배열을 포함해야 한다."""
+    old = _make_dataset(tmp_path, "old.csv", feature_columns, ["A - X", "B - X"])
+    new = _make_dataset(tmp_path, "new.csv", feature_columns, ["A - X"])
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        code = main(["dataset-diff", str(old), str(new), "--json"])
+    assert code == 0
+    parsed = json.loads(buf.getvalue())
+    assert parsed["kept"] == 1
+    assert parsed["added"] == []
+    assert parsed["removed"] == ["B - X"]
+
+
+def test_cli_dataset_diff_no_changes(tmp_path, feature_columns, capsys):
+    """양쪽이 완전히 같으면 +0 / -0 / 유지 = old 전체."""
+    songs = ["A - X", "B - X", "C - X"]
+    old = _make_dataset(tmp_path, "old.csv", feature_columns, songs)
+    new = _make_dataset(tmp_path, "new.csv", feature_columns, songs)
+    code = main(["dataset-diff", str(old), str(new)])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "+0" in out and "-0" in out
+
+
+def test_cli_dataset_diff_missing_file(tmp_path, feature_columns, capsys):
+    """한쪽 파일이 없으면 exit code 2 + stderr 안내."""
+    new = _make_dataset(tmp_path, "new.csv", feature_columns, ["A - X"])
+    code = main(["dataset-diff", str(tmp_path / "missing.csv"), str(new)])
+    err = capsys.readouterr().err
+    assert code == 2
+    assert "찾을 수 없습니다" in err
+
+
+def test_cli_dataset_diff_limit_truncates_long_lists(tmp_path, feature_columns, capsys):
+    """--limit N 이면 N 개만 표시하고 'and X more' 안내."""
+    old = _make_dataset(tmp_path, "old.csv", feature_columns, [])
+    # 새 dataset 에 60곡 추가.
+    new = _make_dataset(tmp_path, "new.csv", feature_columns, [f"Song{i} - X" for i in range(60)])
+    code = main(["dataset-diff", str(old), str(new), "--limit", "10"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "+60" in out
+    # 처음 10곡만 표시 + "and 50 more" 안내.
+    assert "and 50 more" in out
+
+
 # --- status 서브커먼드 -----------------------------------------------------
 
 def test_cli_status_unreachable_server_returns_4(capsys):

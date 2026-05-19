@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- `python -m backend.cli dataset-diff <old> <new>` 서브커먼드 신설. 두 카탈로그
+  CSV 간 추가된 곡 / 제거된 곡 / 유지된 곡 카운트를 콘솔에 표 형태로 출력.
+  `--limit` 옵션(기본 50, 0 이면 무제한) 으로 긴 목록을 잘라 보여주고,
+  `--json` 옵션으로 jq 파이프 친화 출력. 카탈로그 갱신 후 어떤 곡이 들고
+  나갔는지 운영자가 즉시 확인 가능.
 - `python -m backend.cli dataset-stats <csv>` 서브커먼드 신설. 운영자가
   카탈로그 갱신 후 BPM / 에너지 / 밝기 / 길이 분포 (min/max/avg/p50/n) 와
   중복 키 개수를 콘솔에 한 화면으로 확인. `--json` 옵션은 jq 파이프
