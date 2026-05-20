@@ -147,6 +147,18 @@ def test_catalog_search_highlights_matched_substring():
     assert "highlightMatch(it.artist, needle)" in text
 
 
+def test_catalog_search_has_recent_searches_datalist():
+    """검색 input 에 최근 검색어 datalist + localStorage 저장 와이어링이 있어야 한다."""
+    text = _read("catalog.html")
+    assert 'list="cat-recent-searches"' in text
+    assert 'id="cat-recent-searches"' in text
+    assert "soundmatch.catalog.recent-searches" in text
+    assert "function pushRecentSearch(" in text
+    assert "function renderRecentSearches()" in text
+    # 의미 있는 검색 결과(0건 X) 일 때만 기록.
+    assert "state.q && data.total > 0" in text
+
+
 def test_catalog_search_has_clear_button():
     """카탈로그 검색 input 에 clear (×) 버튼 + Escape 키 핸들러가 있어야 한다."""
     text = _read("catalog.html")
