@@ -893,6 +893,12 @@
 
       li.querySelector('[data-link="yt"]').href = hit.youtube_search_url;
       li.querySelector('[data-link="sp"]').href = hit.spotify_search_url;
+      // 카탈로그 페이지의 song deep-link 로 이동 — 모달 자동 오픈.
+      const catalogLink = li.querySelector('[data-link="catalog"]');
+      if (catalogLink) {
+        const songKey = `${hit.title} - ${hit.artist}`;
+        catalogLink.href = `/catalog?song=${encodeURIComponent(songKey)}`;
+      }
 
       // "이 곡으로 다시 찾기" — by-catalog 로 연쇄 탐색.
       const seedBtn = li.querySelector('[data-action="seed"]');

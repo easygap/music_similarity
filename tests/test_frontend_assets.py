@@ -362,6 +362,19 @@ def test_favorites_section_has_sort_select_with_localstorage_pref():
     assert "localeCompare(" in js
 
 
+def test_hit_card_has_catalog_deeplink_button():
+    """각 hit 카드에 '카탈로그에서 보기' 버튼 + /catalog?song= 와이어링."""
+    html = _read("index.html")
+    assert 'link-btn-catalog' in html
+    assert 'data-link="catalog"' in html
+    assert 'data-i18n="results.openInCatalog"' in html
+    js = _read("js/app.js")
+    assert "[data-link=\"catalog\"]" in js
+    # /catalog?song= 형식의 deep-link.
+    assert "/catalog?song=" in js
+    assert "encodeURIComponent(songKey)" in js
+
+
 def test_results_meta_footer_shows_analysis_info():
     """결과 영역 끝에 분석 메타 footer (시각/카탈로그/엔진/캐시) 가 그려져야 한다."""
     html = _read("index.html")

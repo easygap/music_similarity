@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- 결과 hit 카드의 액션 영역에 "카탈로그에서 보기" 딥링크 버튼 추가.
+  `/catalog?song=<encoded>` 로 이동해 그 곡 기준 유사 곡 모달이 자동
+  오픈. 사용자가 매칭 결과에서 흥미로운 곡을 발견하면 곧바로 카탈로그
+  맥락으로 넘어가 더 깊이 탐색 가능. 신규 i18n 키
+  `results.openInCatalog` (ko/en parity).
 - `python -m backend.cli dataset-diff <old> <new>` 서브커먼드 신설. 두 카탈로그
   CSV 간 추가된 곡 / 제거된 곡 / 유지된 곡 카운트를 콘솔에 표 형태로 출력.
   `--limit` 옵션(기본 50, 0 이면 무제한) 으로 긴 목록을 잘라 보여주고,
