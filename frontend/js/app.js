@@ -953,6 +953,24 @@
     resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  // 분석 시각 ISO (UTC) 를 사용자 로컬 타임존으로 포맷한다. 한국 사용자는
+  // "2026-05-15 13:42" 처럼 KST 로 보임 (백엔드 ISO 는 UTC). 파싱 실패 시
+  // 원본 ISO 의 분 단위만 잘라 fallback.
+  function formatLocalTimestamp(iso) {
+    if (!iso) return "";
+    const d = new Date(String(iso));
+    if (!Number.isFinite(d.getTime())) {
+      // 알 수 없는 형식 — 안전 fallback.
+      return String(iso).slice(0, 16).replace("T", " ");
+    }
+    const locale = (window.i18n && window.i18n.lang() === "en") ? "en-US" : "ko-KR";
+    return d.toLocaleString(locale, {
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+      hour12: false,
+    });
+  }
+
   // 결과 페이지 분석 메타 footer — 분석 시각 / 카탈로그 크기 / 엔진 버전 /
   // 캐시 여부를 한 줄에 노출. 사용자가 결과 신뢰성을 가늠하거나 디버깅할 때 단서.
   function renderResultMeta(data) {
@@ -960,8 +978,8 @@
     if (!el) return;
     const parts = [];
     if (data.analyzed_at) {
-      // ISO 의 처음 16자 만 (분 단위까지). monospace 라 정렬이 깔끔.
-      const stamp = String(data.analyzed_at).slice(0, 16).replace("T", " ");
+      // 사용자 로컬 타임존으로 변환. monospace 폰트라 정렬은 그대로 깔끔.
+      const stamp = formatLocalTimestamp(data.analyzed_at);
       parts.push(`<span>${t("results.metaAnalyzedAt")} ${escapeHtml(stamp)}</span>`);
     }
     if (typeof data.catalog_size === "number") {

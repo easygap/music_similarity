@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Changed
+- 결과 메타 footer 의 분석 시각이 UTC ISO 그대로 표시되던 것을 사용자 로컬
+  타임존(한국 사용자 KST) 으로 변환해 표시. `formatLocalTimestamp()` 헬퍼
+  추가 — `Date(iso).toLocaleString(lang)` 활용, 파싱 실패 시 원본 ISO
+  fallback. 언어 토글 시 자동으로 ko-KR / en-US 로케일 반영 (기존
+  `i18n:change` 리스너가 결과 영역 재렌더).
+
 ### Added
 - 결과 hit 카드의 액션 영역에 "카탈로그에서 보기" 딥링크 버튼 추가.
   `/catalog?song=<encoded>` 로 이동해 그 곡 기준 유사 곡 모달이 자동

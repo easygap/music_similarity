@@ -375,6 +375,19 @@ def test_hit_card_has_catalog_deeplink_button():
     assert "encodeURIComponent(songKey)" in js
 
 
+def test_result_meta_uses_local_timezone_formatter():
+    """결과 메타의 analyzed_at 이 ISO 를 사용자 로컬 타임존으로 포맷해야 한다."""
+    text = _read("js/app.js")
+    assert "function formatLocalTimestamp(" in text
+    # Date 생성 + toLocaleString.
+    assert "new Date(String(iso))" in text
+    assert "d.toLocaleString(" in text
+    # Locale 분기 (ko-KR / en-US).
+    assert '"en-US"' in text and '"ko-KR"' in text
+    # renderResultMeta 가 헬퍼를 호출.
+    assert "formatLocalTimestamp(data.analyzed_at)" in text
+
+
 def test_results_meta_footer_shows_analysis_info():
     """결과 영역 끝에 분석 메타 footer (시각/카탈로그/엔진/캐시) 가 그려져야 한다."""
     html = _read("index.html")
