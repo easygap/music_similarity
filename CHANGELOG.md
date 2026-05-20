@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Added
+- 카탈로그 검색 input 에 최근 검색어 자동완성 (datalist) 추가. 같은 단어를
+  자주 칠 때 한 글자만 쳐도 드롭다운에서 골라잡을 수 있다. 저장은
+  `localStorage` 키 `soundmatch.catalog.recent-searches` 에 최대 5건, 같은
+  검색어가 반복되면 맨 위로 끌어올린다. 의미 있는 결과(>0건) 가 나온 검색만
+  기록 — 0건 노이즈 차단. 한 글자 검색도 기록 안 함.
+
 ### Changed
 - 결과 메타 footer 의 분석 시각이 UTC ISO 그대로 표시되던 것을 사용자 로컬
   타임존(한국 사용자 KST) 으로 변환해 표시. `formatLocalTimestamp()` 헬퍼

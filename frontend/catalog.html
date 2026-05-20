@@ -399,7 +399,10 @@
           data-i18n-attr="placeholder:catalog.searchPlaceholder"
           autocomplete="off"
           spellcheck="false"
+          list="cat-recent-searches"
         />
+        <!-- 최근 검색어 datalist — JS 가 localStorage 의 history 로 채운다. -->
+        <datalist id="cat-recent-searches"></datalist>
         <button
           type="button"
           class="cat-search-clear"
@@ -637,6 +640,50 @@
         .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
+    // 최근 검색어 (localStorage 기반). datalist 로 노출돼서 같은 단어 또
+    // 칠 때 자동완성으로 골라잡기 편하다. 같은 검색어가 들어오면 맨 위로
+    // 끌어올리고, 최대 5건만 유지.
+    var RECENT_SEARCH_KEY = "soundmatch.catalog.recent-searches";
+    var RECENT_SEARCH_MAX = 5;
+
+    function readRecentSearches() {
+      try {
+        var raw = localStorage.getItem(RECENT_SEARCH_KEY);
+        if (!raw) return [];
+        var parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.filter(function (s) { return typeof s === "string"; }) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function writeRecentSearches(items) {
+      try {
+        localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(items.slice(0, RECENT_SEARCH_MAX)));
+      } catch (e) {
+        // 쿼터 초과 / 시크릿 모드 등은 무시.
+      }
+    }
+
+    function pushRecentSearch(q) {
+      var s = (q || "").trim();
+      if (!s || s.length < 2) return; // 한 글자는 의미 적음.
+      var items = readRecentSearches().filter(function (x) { return x !== s; });
+      items.unshift(s);
+      writeRecentSearches(items);
+      renderRecentSearches();
+    }
+
+    function renderRecentSearches() {
+      var dl = document.getElementById("cat-recent-searches");
+      if (!dl) return;
+      var items = readRecentSearches();
+      dl.innerHTML = items
+        .map(function (s) { return '<option value="' + escapeHtml(s) + '"></option>'; })
+        .join("");
+    }
+    renderRecentSearches();
+
     // 검색어와 매칭된 부분만 <mark> 로 감싸 강조. escape 는 직접 처리하므로
     // 호출 측에서 추가 escape 가 필요 없다. 케이스 무시.
     function highlightMatch(text, needle) {
@@ -732,6 +779,10 @@
           meta.textContent = t("catalog.metaRange", data.total, rangeStart, rangeEnd);
         }
         syncPagerControls();
+        // 검색어가 의미 있는 결과를 냈을 때만 history 에 기록 (0건 검색은 노이즈).
+        if (state.q && data.total > 0) {
+          pushRecentSearch(state.q);
+        }
       } catch (e) {
         meta.textContent = t("catalog.loadFail");
         grid.innerHTML = '<p class="cat-empty">' + escapeHtml(t("catalog.retryHint")) + '</p>';
