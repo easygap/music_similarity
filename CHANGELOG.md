@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Added
+- index / catalog / compare 페이지에 `<noscript>` 폴백 추가. JavaScript 가
+  꺼져 있는 환경 (corporate proxy / 일부 a11y 도구 / strict Tor / 사용자
+  설정) 에서 SPA 가 빈 페이지로 깨지지 않고, 명확한 한글/영문 안내 +
+  GitHub 저장소 링크가 노출된다. CSP `style-src 'unsafe-inline'` 가
+  허용되어 있어 인라인 스타일로 작성 — 운영 디버깅 시 외부 CSS 의존성
+  없이 noscript 만 보면 즉시 진단 가능. 회귀 테스트 1건 추가.
+
 ### Changed
 - README 갱신 — v1.5 / v1.6 에서 추가된 기능 / 엔드포인트 / 환경변수 /
   CLI 서브커먼드를 본문에 반영. 테스트 케이스 수도 211 → 252 로 갱신.
