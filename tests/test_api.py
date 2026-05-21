@@ -335,6 +335,23 @@ def test_catalog_search_invalid_sort(fastapi_client):
     assert r.status_code == 422
 
 
+def test_catalog_search_items_carry_metrics(fastapi_client):
+    """검색 응답의 각 item 에 metrics(bpm/energy_rms/brightness) 가 포함돼야 한다."""
+    r = fastapi_client.get("/api/catalog/search?size=10")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["items"], "items 가 비어 있으면 안 됨"
+    for it in body["items"]:
+        assert "metrics" in it
+        m = it["metrics"]
+        # 합성 데이터셋이라 0 인 값은 None 으로 내려올 수 있음 — 구조만 검증.
+        assert "bpm" in m
+        assert "energy_rms" in m
+        assert "brightness" in m
+        for v in (m["bpm"], m["energy_rms"], m["brightness"]):
+            assert v is None or isinstance(v, int | float)
+
+
 def test_catalog_search_shuffle_returns_all_items(fastapi_client):
     """sort=shuffle 도 정상 200 + 카탈로그 항목 그대로 반환 (순서만 무작위)."""
     r = fastapi_client.get("/api/catalog/search?sort=shuffle&size=10")

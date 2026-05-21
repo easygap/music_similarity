@@ -125,6 +125,17 @@
     }
     .cat-title { font-size: 13.5px; font-weight: 600; color: var(--text); word-break: break-all; }
     .cat-artist { font-size: 12px; color: var(--text-mute); }
+    .cat-metrics {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10.5px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      letter-spacing: 0.02em;
+      display: flex;
+      gap: 4px 10px;
+      flex-wrap: wrap;
+    }
+    .cat-metrics .sep { opacity: 0.4; }
     /* 검색어 매칭 부분 강조 — 기본 <mark> 노란색 대신 accent 계열 톤. */
     .cat-highlight {
       background: rgba(124, 92, 255, 0.28);
@@ -789,6 +800,26 @@
       }
     }
 
+    // 카탈로그 카드 아래에 BPM / 에너지 / 밝기 mini-row 를 만든다.
+    // 메트릭 객체가 없거나 모든 값이 null 이면 빈 문자열 (line 자체 안 그림).
+    function buildMetricsLine(m) {
+      if (!m || typeof m !== "object") return "";
+      var parts = [];
+      if (typeof m.bpm === "number" && m.bpm > 0) {
+        parts.push('<span>BPM ' + Math.round(m.bpm) + '</span>');
+      }
+      if (typeof m.energy_rms === "number" && m.energy_rms > 0) {
+        parts.push('<span>E ' + m.energy_rms.toFixed(2) + '</span>');
+      }
+      if (typeof m.brightness === "number" && m.brightness > 0) {
+        parts.push('<span>' + Math.round(m.brightness) + 'Hz</span>');
+      }
+      if (!parts.length) return "";
+      return '<span class="cat-metrics">'
+        + parts.join('<span class="sep" aria-hidden="true">·</span>')
+        + '</span>';
+    }
+
     function render(items) {
       if (!items || !items.length) {
         var msg = state.favOnly
@@ -821,6 +852,7 @@
           +   '<div class="cat-card-body">'
           +     '<span class="cat-title">' + highlightMatch(it.title, needle) + '</span>'
           +     '<span class="cat-artist">' + highlightMatch(it.artist, needle) + '</span>'
+          +     buildMetricsLine(it.metrics)
           +   '</div>'
           +   '<button type="button" class="cat-fav-btn" data-fav="' + escapeHtml(key)
           +     '" data-title="' + escapeHtml(it.title) + '" data-artist="' + escapeHtml(it.artist)

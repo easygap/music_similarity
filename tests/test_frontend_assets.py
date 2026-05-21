@@ -147,6 +147,15 @@ def test_catalog_search_highlights_matched_substring():
     assert "highlightMatch(it.artist, needle)" in text
 
 
+def test_catalog_card_has_metrics_mini_row():
+    """카탈로그 카드에 BPM/에너지/밝기 mini-row 가 렌더링되어야 한다."""
+    text = _read("catalog.html")
+    assert "function buildMetricsLine(" in text
+    assert 'class="cat-metrics"' in text
+    # 카드 render 에서 metrics 객체를 헬퍼로 넘기는지.
+    assert "buildMetricsLine(it.metrics)" in text
+
+
 def test_catalog_search_has_recent_searches_datalist():
     """검색 input 에 최근 검색어 datalist + localStorage 저장 와이어링이 있어야 한다."""
     text = _read("catalog.html")

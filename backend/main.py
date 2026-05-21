@@ -995,7 +995,23 @@ def catalog_search(
     total = len(names)
     start = (page - 1) * size
     end = start + size
-    items = [_split_catalog_name(n) for n in names[start:end]]
+    # 페이지에 들어가는 N곡만 메트릭(bpm/energy/brightness) 까지 함께 채워서 응답한다.
+    # frontend 의 카탈로그 카드가 작은 라인으로 BPM/에너지를 보여주는 데 필요.
+    # 페이로드는 24~96곡 × 3 float 이라 부담 없음.
+    items: list[dict[str, object]] = []
+    for n in names[start:end]:
+        base = _split_catalog_name(n)
+        row = eng.catalog_row_raw(n) or {}
+        bpm = float(row.get("bpm", 0.0) or 0.0)
+        rms = float(row.get("rms_mean", 0.0) or 0.0)
+        sc = float(row.get("spectral_centroid_mean", 0.0) or 0.0)
+        # 0 인 값은 표시 의미 없으므로 None 으로 내려서 frontend 가 안전하게 분기.
+        base["metrics"] = {
+            "bpm": round(bpm, 1) if bpm > 0 else None,
+            "energy_rms": round(rms, 3) if rms > 0 else None,
+            "brightness": round(sc, 0) if sc > 0 else None,
+        }
+        items.append(base)
     # shuffle 모드는 매 호출이 새 순서여야 하므로 캐시 금지. 일반 정렬은 짧게.
     cache_header = "no-store" if sort == "shuffle" else "public, max-age=120"
     return JSONResponse(
