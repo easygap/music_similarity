@@ -106,6 +106,11 @@
     const cur = document.documentElement.getAttribute("data-theme") || "dark";
     applyTheme(cur === "dark" ? "light" : "dark");
   });
+  // theme-init.js 가 OS prefers-color-scheme 변경에 따라 테마를 갈아끼우면 같은 이벤트로 알린다.
+  // 파형 캔버스 등 CSS 변수에 묶인 요소를 다시 그려야 하기 때문 (applyTheme 의 부수효과와 동일).
+  window.addEventListener("theme:change", () => {
+    if (_waveform) _waveform.draw(_audioProgress);
+  });
   langToggleBtn.addEventListener("click", () => {
     if (window.i18n) window.i18n.toggle();
   });

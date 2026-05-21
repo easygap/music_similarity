@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Changed
+- 테마 시스템이 사용자가 명시적으로 토글한 적 없으면 OS `prefers-color-scheme`
+  변경을 실시간으로 따라간다. 초기 페인트는 기존처럼 theme-init.js 가 처리하고,
+  추가로 `matchMedia(...).addEventListener("change")` 로 라이브 listener 를 부착.
+  사용자가 한 번이라도 토글하면 `localStorage` 값이 우선되어 listener 효과
+  없음 (명시 선택을 OS 가 덮어쓰지 않음). 테마 변경 시 `theme:change`
+  CustomEvent 를 dispatch 해서 파형 canvas 처럼 CSS 변수에 묶인 요소가
+  다시 그려지도록 app.js 에서 후처리.
 - Rate limit 429 응답이 헤더뿐 아니라 JSON body 에도 `retry_after_seconds`
   / `limit` / `reset_at` 를 함께 내려준다. 기존에도 `Retry-After` +
   `X-RateLimit-*` 헤더는 있었지만 body 에는 한글 detail 문자열만 있어
