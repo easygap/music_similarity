@@ -738,6 +738,10 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
         "catalog_size": size,
         "env": ENV,
         "version": app.version,
+        # /api/version 과 동일한 빌드 메타 — 운영자가 health 만 봐도 어떤 빌드가
+        # 떠 있는지 알 수 있도록. /api/version 까지 추가 호출 없이도 alert 룰 작성 가능.
+        "release_date": _RELEASE_DATE,
+        "git_commit": _GIT_COMMIT,
         "uptime_seconds": uptime,
         "analyze_latency_p50_seconds": round(_latency_percentile(0.50), 3),
         "catalog_updated_at": _dataset_mtime_iso(),

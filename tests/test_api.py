@@ -20,6 +20,15 @@ def test_health(fastapi_client):
     # 합성 카탈로그가 실제로 stat 되므로 None 아닌 ISO 문자열.
     assert isinstance(body["catalog_updated_at"], str)
     assert "T" in body["catalog_updated_at"]
+    # 빌드 메타 — /api/version 과 같은 값. health 만 봐도 빌드 식별 가능.
+    assert "release_date" in body
+    assert "git_commit" in body
+    # release_date 는 YYYY-MM-DD 또는 None, git_commit 은 7자 hex 또는 None.
+    if body["release_date"] is not None:
+        assert len(body["release_date"]) == 10
+        assert body["release_date"][4] == "-" and body["release_date"][7] == "-"
+    if body["git_commit"] is not None:
+        assert len(body["git_commit"]) == 7
 
 
 def test_sitemap_catalog_lastmod_uses_dataset_mtime(fastapi_client, tmp_path):

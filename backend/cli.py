@@ -292,6 +292,9 @@ def cmd_status(args: argparse.Namespace) -> int:
     rows = [
         ("env", data.get("env", "?")),
         ("version", data.get("version", "?")),
+        # /api/health 가 최근에 노출하기 시작한 빌드 메타 — 있을 때만 표시 (구버전 서버 호환).
+        ("release_date", data.get("release_date") or "—"),
+        ("git_commit", data.get("git_commit") or "—"),
         ("catalog_size", data.get("catalog_size", 0)),
         ("uptime_seconds", data.get("uptime_seconds", 0)),
         ("analyze_p50_seconds", data.get("analyze_latency_p50_seconds", 0)),

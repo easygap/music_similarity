@@ -12,7 +12,18 @@ class HealthResponse(BaseModel):
     status: str = Field(..., examples=["ok"])
     catalog_size: int = Field(..., examples=[1006])
     env: str = Field("development", examples=["production"])
-    version: str = Field(..., examples=["1.3.0"])
+    version: str = Field(..., examples=["1.5.0"])
+    # 빌드 식별용 메타 — /api/version 과 같은 값. 운영자가 health 만 봐도 빌드 확인 가능.
+    release_date: str | None = Field(
+        None,
+        description="CHANGELOG 에서 파싱한 최신 release 일자 (YYYY-MM-DD). 없으면 null.",
+        examples=["2026-05-21"],
+    )
+    git_commit: str | None = Field(
+        None,
+        description="짧은 7자 git SHA. 환경변수 MUSIC_GIT_COMMIT → .git/HEAD fallback.",
+        examples=["7cf785a"],
+    )
     uptime_seconds: float = Field(0.0, description="프로세스 부팅 후 경과 시간(초)")
     analyze_latency_p50_seconds: float = Field(0.0, description="최근 분석 latency P50(초). 샘플 없으면 0.")
     catalog_updated_at: str | None = Field(
