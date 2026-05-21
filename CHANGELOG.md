@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 모달 헤더에 "🔗 링크" 공유 버튼 추가. 사용자가 모달을 연 곡의
+  deep link URL (`/catalog?song=<encoded>`) 을 클립보드로 복사. 토스트
+  배너로 "링크가 복사되었습니다" 피드백 + 버튼 자체에 1.5초간 accent
+  하이라이트로 시각 확인. `navigator.clipboard` 가 안 되는 환경(구형
+  Safari · file:// · 권한 거부) 은 `document.execCommand("copy")` legacy
+  경로로 fallback. 신규 i18n 4 키 (`catalog.copyLink` / `copyLinkAria` /
+  `linkCopied` / `linkCopyFail`, ko/en parity). 토스트 컨테이너는 page-wide
+  `aria-live="polite"` 로 스크린리더 친화.
 - `python -m backend.cli export-catalog` 서브커먼드 신설. 백엔드의 `/api/catalog/export.csv`
   와 같은 필터/정렬/컬럼/CSV injection 방어를 CLI 로도 노출. CI · cron ·
   Makefile 단계에서 서버 띄우지 않고도 동일한 결과물을 생성할 수 있다.

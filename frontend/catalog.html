@@ -275,6 +275,47 @@
       line-height: 1;
     }
     .modal-close:hover { color: var(--text); }
+    /* 모달 헤더 우측 액션 그룹 — copy + close 가 나란히 */
+    .modal-head-actions { display: flex; align-items: center; gap: 6px; }
+    .modal-copy-link {
+      background: transparent;
+      color: var(--text-mute);
+      border: 1px solid var(--border-strong);
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: color 120ms ease, border-color 120ms ease;
+    }
+    .modal-copy-link:hover { color: var(--accent); border-color: var(--accent); }
+    .modal-copy-link.is-copied {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(34, 211, 238, 0.08);
+    }
+    /* 우상단 떠 있는 작은 토스트 */
+    .cat-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: rgba(20, 30, 48, 0.92);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      font-size: 13px;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 180ms ease, transform 180ms ease;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+    }
+    .cat-toast.is-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    :root[data-theme="light"] .cat-toast {
+      background: rgba(255, 255, 255, 0.95);
+      color: var(--text);
+    }
     .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
     .modal-tag {
       background: rgba(124, 92, 255, 0.18);
@@ -524,8 +565,15 @@
           <h2 class="modal-title" id="modal-title">—</h2>
           <p class="modal-sub" id="modal-sub">—</p>
         </div>
-        <button type="button" class="modal-close" id="modal-close"
-                aria-label="닫기" data-i18n-attr="aria-label:catalog.modalClose">×</button>
+        <div class="modal-head-actions">
+          <!-- 현재 URL 의 ?song= deep link 를 클립보드에 복사. 같은 곡 화면으로 바로 보낼 수 있다. -->
+          <button type="button" class="modal-copy-link" id="modal-copy-link"
+                  data-i18n="catalog.copyLink"
+                  data-i18n-attr="aria-label:catalog.copyLinkAria"
+                  aria-label="공유 링크 복사">🔗 링크</button>
+          <button type="button" class="modal-close" id="modal-close"
+                  aria-label="닫기" data-i18n-attr="aria-label:catalog.modalClose">×</button>
+        </div>
       </header>
       <div class="modal-tags" id="modal-tags"></div>
       <div id="modal-body">
@@ -533,6 +581,9 @@
       </div>
     </div>
   </div>
+
+  <!-- 라이브 토스트 — "복사됨" 같은 짧은 알림. polite 이라 보이스오버에 끼어들지 않음. -->
+  <div class="cat-toast" id="cat-toast" role="status" aria-live="polite" hidden></div>
 
   <script src="/i18n.js"></script>
   <script src="/favorites.js"></script>
@@ -945,6 +996,64 @@
     modal.addEventListener("click", function (e) {
       if (e.target === modal) closeModal();
     });
+
+    // 짧은 토스트 — 같은 토스트가 빠르게 연달아 호출되면 timer 만 리셋.
+    var _toastTimer = null;
+
+    function showToast(msg) {
+      var el = document.getElementById("cat-toast");
+      if (!el) return;
+      el.textContent = msg;
+      el.hidden = false;
+      // 다음 프레임에 visible 클래스 — display:none → block 전환의 transition 안 먹히는 문제 회피.
+      requestAnimationFrame(function () { el.classList.add("is-visible"); });
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(function () {
+        el.classList.remove("is-visible");
+        // 페이드아웃 끝난 뒤 hidden 처리 (screen reader 가 다시 읽지 않게).
+        setTimeout(function () { el.hidden = true; }, 220);
+      }, 1800);
+    }
+
+    // 공유 링크 복사 — 현재 URL (state.song 이 ?song= 로 박혀 있는 상태) 을 clipboard 로.
+    // 모달이 열려 있을 때만 의미 있으므로, 모달이 닫혀 있으면 그냥 무시.
+    var copyLinkBtn = document.getElementById("modal-copy-link");
+    if (copyLinkBtn) {
+      copyLinkBtn.addEventListener("click", function () {
+        if (!modal.classList.contains("is-open")) return;
+        var url = window.location.href;
+        // navigator.clipboard 가 안 되는 환경 (file://, 권한 거부) 을 위한 fallback.
+        var done = function () {
+          showToast(t("catalog.linkCopied"));
+          copyLinkBtn.classList.add("is-copied");
+          setTimeout(function () { copyLinkBtn.classList.remove("is-copied"); }, 1500);
+        };
+        var fail = function () { showToast(t("catalog.linkCopyFail")); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(done).catch(function () {
+            // 일부 브라우저 (구형 Safari) 는 promise 안 뱉고 throw — 그대로 fallback 으로.
+            try { _legacyCopy(url); done(); } catch (e) { fail(); }
+          });
+        } else {
+          try { _legacyCopy(url); done(); } catch (e) { fail(); }
+        }
+      });
+    }
+
+    // execCommand("copy") legacy 경로. 보안 정책상 user gesture 안에서만 호출되어야 한다.
+    function _legacyCopy(text) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "-1000px";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      if (!ok) throw new Error("legacy copy failed");
+    }
 
     // 모달이 열린 상태에서 키 처리. Esc 로 닫고, Tab 이면 포커스를 모달 안에서만 순환.
     var FOCUSABLE_SEL =

@@ -245,6 +245,10 @@
         resetFilters: "필터 초기화",
         exportCsv: "CSV 내보내기",
         exportCsvHint: "현재 필터에 걸린 곡 전체를 CSV 파일로 내려받습니다.",
+        copyLink: "🔗 링크",
+        copyLinkAria: "이 곡의 공유 링크 복사",
+        linkCopied: "링크가 복사되었습니다.",
+        linkCopyFail: "링크 복사에 실패했어요. 브라우저 권한을 확인해주세요.",
       },
       compare: {
         back: "← 메인으로",
@@ -509,6 +513,10 @@
         resetFilters: "Reset filters",
         exportCsv: "Export CSV",
         exportCsvHint: "Download every track matching the current filters as a CSV file.",
+        copyLink: "🔗 Link",
+        copyLinkAria: "Copy a shareable link to this track",
+        linkCopied: "Link copied to clipboard.",
+        linkCopyFail: "Couldn't copy the link. Check your browser permissions.",
       },
       compare: {
         back: "← Back home",
