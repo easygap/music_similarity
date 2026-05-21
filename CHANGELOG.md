@@ -6,6 +6,16 @@
 
 ## [Unreleased]
 
+### Changed
+- `/api/health` 의 degraded 응답에 `reason` / `reason_detail` 필드 추가. 503
+  이 떨어졌을 때 운영자가 "왜 떨어졌는지" 응답 본문만 보고도 분류 가능.
+  reason enum: `engine_load_failed` (카탈로그 CSV 로드 실패) /
+  `ml_imports_unavailable` (strict 모드에서 librosa·sklearn import 실패) /
+  `upload_dir_not_writable` (strict 모드에서 업로드 디렉토리 쓰기 실패).
+  `reason_detail` 은 exception 클래스명만 노출 — 내부 traceback / 경로는
+  운영 로그 쪽에서만 확인 가능하게 의도적으로 축약. 정상(ok) 응답에서는
+  두 필드 모두 null 이라 알람 룰 작성이 단순.
+
 ### Added
 - 카탈로그 모달의 매칭 곡 5건에도 BPM/에너지/밝기 mini-row 표시. 카탈로그
   카드와 같은 `buildMetricsLine` 헬퍼를 재사용 — `match_summary` 응답 필드
