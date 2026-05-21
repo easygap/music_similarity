@@ -249,6 +249,7 @@
         copyLinkAria: "이 곡의 공유 링크 복사",
         linkCopied: "링크가 복사되었습니다.",
         linkCopyFail: "링크 복사에 실패했어요. 브라우저 권한을 확인해주세요.",
+        gridShortcuts: "화살표 키로 카드 이동, Home/End 로 처음/마지막 카드, Enter 로 상세 보기",
       },
       compare: {
         back: "← 메인으로",
@@ -517,6 +518,7 @@
         copyLinkAria: "Copy a shareable link to this track",
         linkCopied: "Link copied to clipboard.",
         linkCopyFail: "Couldn't copy the link. Check your browser permissions.",
+        gridShortcuts: "Use arrow keys to move between cards, Home/End to jump, Enter to open.",
       },
       compare: {
         back: "← Back home",

@@ -544,7 +544,13 @@
       <div class="cat-hist-bars" id="cat-hist-bars"></div>
     </div>
 
-    <div class="cat-grid" id="cat-grid"></div>
+    <!-- aria-keyshortcuts: 스크린리더가 카드에 포커스가 가면 "←→ 이동, Enter 열기" 같은 힌트를
+         읽어준다. 시각 UI 는 깔끔하게 유지하면서 키보드/보조기기 사용자에게는 단축키를 알린다. -->
+    <div class="cat-grid" id="cat-grid"
+         role="list"
+         aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home End Enter"
+         data-i18n-attr="aria-description:catalog.gridShortcuts"
+         aria-description="화살표 키로 카드 이동, Enter 로 상세 보기"></div>
 
     <div class="cat-pager">
       <button type="button" id="cat-first" class="cat-page-jump"
@@ -614,6 +620,21 @@
     var debounceTimer = null;
     var urlWriteTimer = null;
     var Fav = window.SoundMatchFavorites;
+    // 페이지 이동 (next / prev / first / last) 직후 다음 render() 가 끝나면 첫 카드에
+    // 포커스를 두기 위한 1회용 플래그. 검색어 입력 같은 인터랙티브 흐름에서는 해당 X.
+    var _pendingFocusFirstCard = false;
+
+    // 카드 간 화살표 이동 — DOM 순서 기준으로 ±N 칸 이동. row-aware 까지는 안 가지만
+    // 1000곡 규모에서 직관적으로 동작한다 (←/→ = 가로 한 칸, ↑/↓ = 다음 행은 보통
+    // 다음 카드라 자연스러움).
+    function moveFocusByOffset(currentEl, offset) {
+      var cards = Array.prototype.slice.call(document.querySelectorAll(".cat-card"));
+      var idx = cards.indexOf(currentEl);
+      if (idx < 0) return;
+      var nextIdx = idx + offset;
+      if (nextIdx < 0 || nextIdx >= cards.length) return;
+      cards[nextIdx].focus();
+    }
     // i18n 이 아직 안 붙은 경우의 안전 폴백. 키를 그대로 돌려줘서 UI 가 깨지지 않음.
     function t(key) {
       try {
@@ -953,9 +974,37 @@
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             openSimilarModal(el.getAttribute("data-key"));
+            return;
+          }
+          // 화살표 키 네비게이션 — 키보드 사용자가 1000곡 카탈로그를 빠르게 훑을 수 있게.
+          // ←/↑ = 이전 카드, →/↓ = 다음 카드. 첫/마지막에서는 그 자리에 머무름 (wrap 안 함).
+          if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+            e.preventDefault();
+            moveFocusByOffset(el, 1);
+          } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+            e.preventDefault();
+            moveFocusByOffset(el, -1);
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            var first = grid.querySelector(".cat-card");
+            if (first) first.focus();
+          } else if (e.key === "End") {
+            e.preventDefault();
+            var cards = grid.querySelectorAll(".cat-card");
+            if (cards.length) cards[cards.length - 1].focus();
           }
         });
       });
+
+      // 페이지가 새로 로드된 직후 — 사용자가 키보드로 페이저를 누른 직후처럼 — 첫 카드로
+      // 포커스 이동을 자연스럽게 유도하기 위해, 직전 액션이 페이저 next/prev 였으면
+      // 첫 카드에 포커스를 둔다. 일반 fetch (검색어 입력 등) 에서는 포커스를 그대로 두어
+      // 입력 흐름을 방해하지 않는다.
+      if (_pendingFocusFirstCard) {
+        _pendingFocusFirstCard = false;
+        var firstCard = grid.querySelector(".cat-card");
+        if (firstCard) firstCard.focus();
+      }
 
       grid.querySelectorAll(".cat-fav-btn").forEach(function (btn) {
         btn.addEventListener("click", function (e) {
@@ -1220,14 +1269,29 @@
       }
     });
     prev.addEventListener("click", function () {
-      if (state.page > 1) { state.page--; writeStateToUrl(); load(); }
+      if (state.page > 1) {
+        state.page--;
+        _pendingFocusFirstCard = true;
+        writeStateToUrl();
+        load();
+      }
     });
     next.addEventListener("click", function () {
-      if (state.hasMore) { state.page++; writeStateToUrl(); load(); }
+      if (state.hasMore) {
+        state.page++;
+        _pendingFocusFirstCard = true;
+        writeStateToUrl();
+        load();
+      }
     });
     if (first) {
       first.addEventListener("click", function () {
-        if (state.page > 1) { state.page = 1; writeStateToUrl(); load(); }
+        if (state.page > 1) {
+          state.page = 1;
+          _pendingFocusFirstCard = true;
+          writeStateToUrl();
+          load();
+        }
       });
     }
     if (last) {
@@ -1237,6 +1301,7 @@
         var lastPage = Math.max(1, Math.ceil(state.total / state.size));
         if (state.page !== lastPage) {
           state.page = lastPage;
+          _pendingFocusFirstCard = true;
           writeStateToUrl();
           load();
         }
