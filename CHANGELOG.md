@@ -7,6 +7,15 @@
 ## [Unreleased]
 
 ### Added
+- `/api/version` 응답에 `git_commit` 필드 추가 (짧은 7자 SHA). 같은
+  version 으로 여러 빌드가 떠 있을 때 운영자가 정확히 어느 빌드인지
+  식별 가능. 우선순위는 환경변수 `MUSIC_GIT_COMMIT` → `.git/HEAD`
+  파일 fallback → 둘 다 실패하면 null. Dockerfile 에 `ARG GIT_COMMIT`
+  를 추가해 `docker build --build-arg GIT_COMMIT=$(git rev-parse --short HEAD)`
+  로 빌드 시 주입 가능하고, 빌드 시스템 (Render / fly.io / Actions)
+  이 자동으로 채울 수도 있다. 프론트엔드 footer 빌드 정보 라인이
+  `v1.5.0 · 2026-05-21 · abc1234` 형태로 git_commit 까지 노출하도록
+  업데이트.
 - 카탈로그 카드에 화살표 키 네비게이션 추가. 카드에 포커스가 있는
   상태에서 ←/→ (또는 ↑/↓) 로 이전/다음 카드로 이동, Home/End 로
   첫/마지막 카드로 점프, Enter 로 상세 모달 오픈. 페이저 next/prev/

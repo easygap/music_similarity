@@ -92,15 +92,17 @@ def test_catalog_has_empty_state_reset_button():
 
 
 def test_footer_shows_build_info_from_version_api():
-    """footer 에 v{버전} · {release_date} 형태의 빌드 정보 라인이 있어야 한다."""
+    """footer 에 v{버전} · {release_date} (· {git_commit}) 형태의 빌드 정보 라인이 있어야 한다."""
     html = _read("index.html")
     assert 'id="footer-build"' in html
     js = _read("js/app.js")
-    # /api/version 응답의 version + release_date 를 활용.
+    # /api/version 응답의 version + release_date (+ git_commit) 를 활용.
     assert "data.release_date" in js
-    # `v` 접두 + 점 구분자 패턴.
+    assert "data.git_commit" in js, "git_commit 까지 footer 에 노출해야 합니다."
+    # `v` 접두는 그대로 유지.
     assert "`v${" in js or "'v' +" in js or '"v" +' in js
-    assert "`${v} · ${data.release_date}`" in js
+    # 분리자가 · 인지 확인 — 셋 다 (version / date / sha) join 패턴.
+    assert ' · ' in js
 
 
 def test_hero_shows_social_proof_total_analyses():

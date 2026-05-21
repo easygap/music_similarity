@@ -503,6 +503,33 @@ def test_version_changelog_caches_safely(fastapi_client):
     assert "max-age" in cc
 
 
+# ---- /api/version 의 git_commit 필드 ----------------------------------------
+
+def test_version_exposes_git_commit_when_env_set(monkeypatch, fastapi_client):
+    """환경변수 MUSIC_GIT_COMMIT 가 설정되어 있으면 응답에 그 값이 7자로 노출된다."""
+    monkeypatch.setenv("MUSIC_GIT_COMMIT", "abc1234567890")
+    # 모듈 레벨 캐시가 ENV 를 모르므로 _detect_git_commit 를 다시 호출해 _GIT_COMMIT 갱신.
+    import backend.main as mod
+
+    mod._GIT_COMMIT = mod._detect_git_commit()
+    r = fastapi_client.get("/api/version")
+    assert r.status_code == 200
+    body = r.json()
+    assert "git_commit" in body
+    assert body["git_commit"] == "abc1234"  # 7자 truncate.
+
+
+def test_version_git_commit_is_none_or_short_sha_in_default_env(fastapi_client):
+    """일반 호출에서 git_commit 은 None 이거나 정확히 7자 hex 여야 한다."""
+    r = fastapi_client.get("/api/version")
+    body = r.json()
+    sha = body.get("git_commit")
+    if sha is None:
+        return  # CI 환경에서 .git 없으면 None 일 수 있음 — 그것도 허용.
+    assert len(sha) == 7
+    assert all(c in "0123456789abcdef" for c in sha.lower()), sha
+
+
 def test_client_error_beacon(fastapi_client):
     """/api/client-error 가 비콘을 받아 204 로 응답해야 한다."""
     r = fastapi_client.post(
