@@ -298,6 +298,125 @@ button { font-family: inherit; cursor: pointer; }
 }
 .install-dismiss:hover { color: var(--text); }
 
+/* "새 기능" 배너 — install-banner 와 비슷한 톤이되 accent 색상으로 분리해서
+   두 배너가 동시에 떠도 시각적으로 구분되도록 한다. */
+.whatsnew-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 14px clamp(20px, 5vw, 60px) 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(124, 92, 255, 0.08));
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  color: var(--text);
+  font-size: 13.5px;
+  flex-wrap: wrap;
+}
+.whatsnew-banner.hidden { display: none; }
+.whatsnew-banner-text { min-width: 0; }
+.whatsnew-banner-text strong { font-weight: 600; margin-right: 4px; }
+.whatsnew-banner-version {
+  display: inline-block;
+  margin: 0 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(34, 211, 238, 0.2);
+  color: var(--accent-1);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+}
+.whatsnew-banner-actions { display: flex; align-items: center; gap: 8px; }
+
+/* 모달 — 배너 클릭 시 열림. shortcuts-modal 과 같은 패턴이지만 별도 클래스로 분리. */
+.whatsnew-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 8, 16, 0.78);
+  z-index: 100;
+  padding: 24px;
+  backdrop-filter: blur(6px);
+}
+.whatsnew-modal.hidden { display: none; }
+.whatsnew-modal-card {
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  width: min(680px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 0;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+.whatsnew-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+.whatsnew-modal-head h2 { font-size: 17px; margin: 0; }
+.whatsnew-modal-body {
+  padding: 18px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.whatsnew-loading { color: var(--text-mute); font-size: 13.5px; }
+.whatsnew-release {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.whatsnew-release-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.whatsnew-release-ver {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+  color: var(--accent-1);
+}
+.whatsnew-release-date { color: var(--text-mute); font-size: 12.5px; }
+.whatsnew-section { margin-top: 8px; }
+.whatsnew-section-name {
+  display: inline-block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.whatsnew-section ul { margin: 0; padding-left: 18px; }
+.whatsnew-section li { font-size: 13px; line-height: 1.55; margin-bottom: 6px; color: var(--text); }
+.whatsnew-empty { color: var(--text-mute); font-size: 13.5px; text-align: center; padding: 14px 0; }
+
+/* 라이트 모드 보정 */
+:root[data-theme="light"] .whatsnew-banner {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.16), rgba(124, 92, 255, 0.06));
+  border-color: rgba(34, 211, 238, 0.5);
+}
+:root[data-theme="light"] .whatsnew-modal { background: rgba(15, 25, 40, 0.55); }
+
+@media (max-width: 600px) {
+  .whatsnew-banner { gap: 10px; }
+  .whatsnew-banner-actions { width: 100%; justify-content: flex-end; }
+  .whatsnew-modal { padding: 12px; }
+  .whatsnew-modal-card { max-height: 88vh; }
+}
+
 /* ---------------- 공통 레이아웃 ------------- */
 main {
   max-width: 1200px;

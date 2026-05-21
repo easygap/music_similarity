@@ -165,6 +165,11 @@
         buildEl.textContent = data.release_date ? `${v} · ${data.release_date}` : v;
         buildEl.hidden = false;
       }
+
+      // "새 기능" 배너 — release_date 가 localStorage 의 마지막 확인 값과 다를 때만 노출.
+      // 처음 방문자(localStorage 비어 있음) 에게는 보여주지 않는다 — onboarding 의 다른
+      // 신호 (PWA install, 카탈로그 안내) 와 겹치면 노이즈가 되기 때문.
+      maybeShowWhatsNew(data);
     } catch {
       if (el) el.hidden = true;
       // buildEl 은 hidden 그대로 유지.
@@ -172,6 +177,126 @@
   }
   loadSocialProof();
   window.addEventListener("i18n:change", loadSocialProof);
+
+  // ------------------------------------------------------------------
+  // What's New 배너 + 모달.
+  // ------------------------------------------------------------------
+  const WHATSNEW_KEY = "soundmatch.lastSeenRelease";
+
+  function maybeShowWhatsNew(versionData) {
+    const banner = document.getElementById("whatsnew-banner");
+    const versionChip = document.getElementById("whatsnew-version");
+    if (!banner || !versionData) return;
+    const date = versionData.release_date;
+    const version = versionData.version;
+    if (!date || !version) return;
+    let lastSeen = "";
+    try { lastSeen = localStorage.getItem(WHATSNEW_KEY) || ""; } catch (e) { /* private mode */ }
+
+    if (!lastSeen) {
+      // 처음 방문자 — 배너 띄우지 않고 현재 release 만 silent 하게 기록.
+      try { localStorage.setItem(WHATSNEW_KEY, date); } catch (e) { /* private mode */ }
+      return;
+    }
+    if (lastSeen === date) {
+      // 이미 확인한 릴리즈 — 표시 안 함.
+      banner.classList.add("hidden");
+      return;
+    }
+    // 새 릴리즈가 있다 → 배너 노출 + 버전 chip 갱신.
+    if (versionChip) versionChip.textContent = `v${version}`;
+    banner.classList.remove("hidden");
+  }
+
+  function dismissWhatsNew() {
+    const banner = document.getElementById("whatsnew-banner");
+    if (banner) banner.classList.add("hidden");
+    // 가장 마지막에 받은 /api/version 응답의 release_date 를 저장. 없으면 today.
+    const v = document.getElementById("whatsnew-version");
+    // version chip 텍스트가 "v1.4.0" 형태인데 우리가 저장할 건 date 라서, 다시 fetch 하지 않고
+    // 모듈 스코프에 마지막 release_date 를 캐시해둔 게 없으므로 그냥 versionData 를 다시 받기보다
+    // localStorage 에 "오늘 본 상태" 라는 표시로 현재 시각 ISO 를 저장한다. 다음 cut 까지 다시
+    // 안 떠야 하니까 fetch 한 시점에 받은 데이터로 다시 저장 (closure 활용 어렵다 — 그래서
+    // 다시 한 번 /api/version 을 한 번만 호출해 release_date 캐싱).
+    fetch("/api/version").then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (d && d.release_date) {
+        try { localStorage.setItem(WHATSNEW_KEY, d.release_date); } catch (e) {}
+      }
+    }).catch(function () { /* ignore */ });
+  }
+
+  async function openWhatsNewModal() {
+    const modal = document.getElementById("whatsnew-modal");
+    const body = document.getElementById("whatsnew-modal-body");
+    if (!modal || !body) return;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    body.innerHTML = `<p class="whatsnew-loading">${escapeHtml(t("whatsNew.loading"))}</p>`;
+    try {
+      const res = await fetch("/api/version/changelog?limit=3");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      body.innerHTML = renderWhatsNewBody(data.releases || []);
+    } catch (e) {
+      body.innerHTML = `<p class="whatsnew-empty">${escapeHtml(t("whatsNew.loadFail"))}</p>`;
+    }
+  }
+  function closeWhatsNewModal() {
+    const modal = document.getElementById("whatsnew-modal");
+    if (modal) modal.classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+  // escapeHtml 는 app.js 하단에 이미 동일 구현이 있어 hoisting 으로 호출 가능 — 중복 정의 안 함.
+  function renderWhatsNewBody(releases) {
+    if (!releases || !releases.length) {
+      return `<p class="whatsnew-empty">${escapeHtml(t("whatsNew.empty"))}</p>`;
+    }
+    return releases.map(function (rel) {
+      const sectionsHtml = Object.keys(rel.sections || {}).map(function (name) {
+        const items = (rel.sections[name] || []).map(function (item) {
+          return `<li>${escapeHtml(item)}</li>`;
+        }).join("");
+        return `
+          <div class="whatsnew-section">
+            <span class="whatsnew-section-name">${escapeHtml(name)}</span>
+            <ul>${items}</ul>
+          </div>
+        `;
+      }).join("");
+      return `
+        <div class="whatsnew-release">
+          <div class="whatsnew-release-head">
+            <span class="whatsnew-release-ver">v${escapeHtml(rel.version)}</span>
+            <span class="whatsnew-release-date">${escapeHtml(rel.date)}</span>
+          </div>
+          ${sectionsHtml}
+        </div>
+      `;
+    }).join("");
+  }
+
+  // 이벤트 핸들러 연결.
+  const wnOpenBtn = document.getElementById("whatsnew-open");
+  const wnDismissBtn = document.getElementById("whatsnew-dismiss");
+  const wnCloseBtn = document.getElementById("whatsnew-modal-close");
+  const wnModal = document.getElementById("whatsnew-modal");
+  if (wnOpenBtn) wnOpenBtn.addEventListener("click", function () {
+    openWhatsNewModal();
+    // 배너는 누르면 자동으로 "확인" 처리 — 다음 릴리즈까지 다시 안 뜬다.
+    dismissWhatsNew();
+  });
+  if (wnDismissBtn) wnDismissBtn.addEventListener("click", dismissWhatsNew);
+  if (wnCloseBtn) wnCloseBtn.addEventListener("click", closeWhatsNewModal);
+  if (wnModal) wnModal.addEventListener("click", function (e) {
+    // backdrop 클릭 시 닫기 (모달 카드 내부 클릭은 버블링 안 막혔지만, target 이 backdrop 일 때만).
+    if (e.target === wnModal) closeWhatsNewModal();
+  });
+  // Esc 로도 닫기 — 모달이 열려 있을 때만.
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && wnModal && !wnModal.classList.contains("hidden")) {
+      closeWhatsNewModal();
+    }
+  });
 
   // hero stat 의 "평균 분석 시간" 을 실시간 latency P50 으로 갱신 + 카탈로그
   // 갱신 일자(catalog_updated_at) 도 같은 응답에서 가져와 stat 카드에 작게 표시.

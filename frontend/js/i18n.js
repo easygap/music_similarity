@@ -192,6 +192,16 @@
         body: "— 홈 화면에 추가하면 오프라인에서도 결과 페이지를 다시 열어볼 수 있어요.",
         accept: "설치하기",
       },
+      whatsNew: {
+        bannerTitle: "새 버전이 배포됐어요",
+        bannerBody: "— 무엇이 바뀌었는지 한눈에 확인해보세요.",
+        viewButton: "새 기능 보기",
+        dismiss: "닫기",
+        modalTitle: "새로 바뀐 것들",
+        loading: "불러오는 중…",
+        loadFail: "릴리즈 노트를 불러올 수 없어요. 잠시 후 다시 시도해주세요.",
+        empty: "표시할 릴리즈가 아직 없어요.",
+      },
       catalog: {
         back: "← 메인으로",
         title: "카탈로그 둘러보기",
@@ -445,6 +455,16 @@
         title: "Install as app",
         body: "— Add to home screen to keep results available offline.",
         accept: "Install",
+      },
+      whatsNew: {
+        bannerTitle: "A new version is out",
+        bannerBody: "— see what changed in this release.",
+        viewButton: "What's new",
+        dismiss: "Dismiss",
+        modalTitle: "Latest changes",
+        loading: "Loading…",
+        loadFail: "Couldn't load release notes. Please try again later.",
+        empty: "No releases to show yet.",
       },
       catalog: {
         back: "← Back home",

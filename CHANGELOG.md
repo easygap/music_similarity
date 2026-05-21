@@ -7,6 +7,19 @@
 ## [Unreleased]
 
 ### Added
+- "새 기능" 알림 배너 + 모달 추가. 사이트 진입 시 `/api/version.release_date`
+  가 사용자의 마지막 확인 값 (localStorage `soundmatch.lastSeenRelease`)
+  과 다르면 상단에 작은 배너가 뜨고, 클릭하면 최근 3개 릴리즈의 노트를
+  모달로 표시. 처음 방문자에게는 띄우지 않고 silent 하게 현재 릴리즈만
+  기록 (onboarding 시점의 다른 시그널과 겹치지 않도록). 배포된 새 빌드를
+  사용자가 자연스럽게 인지하게 만들어 retention 에 기여하는 패턴.
+  - 신규 백엔드 엔드포인트 `GET /api/version/changelog?limit=N` —
+    CHANGELOG.md 의 published 릴리즈 (Unreleased 제외) 를 구조화해 응답.
+    각 항목: `version`, `date`, `sections: {Added/Changed/Fixed: [...]}`.
+    모듈 로드 시 한 번 파싱 + 600초 public 캐시.
+  - 신규 i18n 섹션 `whatsNew.*` (ko/en parity, 8 키).
+  - 배경 색을 PWA install 배너 (보라) 와 다른 청록 계열로 차별화 →
+    두 배너가 동시에 떠도 시각 구분 가능. 라이트 모드 보정 포함.
 - 카탈로그 페이지 필터 행에 **CSV 내보내기** 버튼 추가 + 백엔드
   `/api/catalog/export.csv` 엔드포인트 신설. 현재 적용된 q / BPM / 에너지 /
   정렬 조건을 그대로 받아 페이지네이션 없이 전체 결과를 CSV 한 장으로

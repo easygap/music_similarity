@@ -519,8 +519,81 @@ def _parse_release_date_from_changelog() -> str | None:
     return m.group(1) if m else None
 
 
+def _parse_recent_releases_from_changelog(limit: int = 3) -> list[dict]:
+    """CHANGELOG.md 에서 최근 ``limit`` 개의 published 릴리즈 엔트리를 구조화해 돌려준다.
+
+    프론트엔드의 "새 기능 보기" 모달이 이걸 그대로 렌더한다.
+    Unreleased 섹션은 건너뛰고, ``## [X.Y.Z] — YYYY-MM-DD`` 헤더만 잡아서:
+
+        [
+          {
+            "version": "1.4.0",
+            "date": "2026-05-15",
+            "sections": {"Added": [...], "Changed": [...], "Fixed": [...]},
+          },
+          ...
+        ]
+
+    bullet item 은 원본 markdown 의 ``- `` 머리만 떼고 줄바꿈을 공백으로 합쳐 평문
+    한 줄로 정규화한다. 사용자에게 보이는 영역이라 raw markdown 을 그대로
+    뱉지 않는다.
+    """
+    import re
+
+    changelog = ROOT / "CHANGELOG.md"
+    try:
+        text = changelog.read_text(encoding="utf-8")
+    except OSError:
+        return []
+
+    # 1. 릴리즈 헤더 위치를 모두 찾는다 (Unreleased 제외).
+    header_re = re.compile(r"^## \[(\d+\.\d+\.\d+)\][^\n]*?(\d{4}-\d{2}-\d{2})", re.MULTILINE)
+    headers = list(header_re.finditer(text))
+    if not headers:
+        return []
+
+    # 2. 각 헤더 위치 사이의 body 를 잘라낸다. 마지막은 파일 끝까지.
+    releases: list[dict] = []
+    for i, m in enumerate(headers[:limit]):
+        version = m.group(1)
+        date = m.group(2)
+        body_start = m.end()
+        body_end = headers[i + 1].start() if i + 1 < len(headers) else len(text)
+        body = text[body_start:body_end]
+
+        # 3. body 안의 `### Added` / `### Changed` / `### Fixed` 섹션을 잘라 항목화.
+        sections: dict[str, list[str]] = {}
+        section_re = re.compile(r"^### (\w[^\n]*?)\n", re.MULTILINE)
+        section_headers = list(section_re.finditer(body))
+        for j, sm in enumerate(section_headers):
+            name = sm.group(1).strip()
+            s_start = sm.end()
+            s_end = section_headers[j + 1].start() if j + 1 < len(section_headers) else len(body)
+            chunk = body[s_start:s_end]
+            # `- foo bar\n  baz` (들여쓰기로 이어지는 줄) → 한 줄 평문.
+            items: list[str] = []
+            current: list[str] = []
+            for raw in chunk.splitlines():
+                if raw.startswith("- "):
+                    if current:
+                        items.append(" ".join(current).strip())
+                    current = [raw[2:].strip()]
+                elif raw.strip() and current:
+                    # 들여쓰기 continuation. 앞쪽 공백 정리해서 이어 붙임.
+                    current.append(raw.strip())
+                # 빈 줄은 무시.
+            if current:
+                items.append(" ".join(current).strip())
+            # 같은 섹션이 두 번 나오는 경우 (예: Added/Changed/Added) 도 그대로 이어 붙인다.
+            sections.setdefault(name, []).extend(items)
+
+        releases.append({"version": version, "date": date, "sections": sections})
+    return releases
+
+
 # 모듈 로드 시 한 번만 계산. 핫리로드 안 됨 — 새 release 가 cut 되면 워커 재시작.
 _RELEASE_DATE: str | None = _parse_release_date_from_changelog()
+_RECENT_RELEASES: list[dict] = _parse_recent_releases_from_changelog(limit=3)
 
 
 def _dataset_mtime_iso() -> str | None:
@@ -717,6 +790,25 @@ def version_info():
         "max_upload_bytes": MAX_UPLOAD_BYTES,
         "rate_limit_per_min": RATE_LIMIT_PER_MIN,
     }
+
+
+@app.get(
+    "/api/version/changelog",
+    summary="최근 릴리즈 노트 (사용자 'What's new' 모달용)",
+    tags=["system"],
+)
+def version_changelog(limit: int = Query(3, ge=1, le=10)):  # noqa: B008
+    """CHANGELOG.md 의 최근 published 릴리즈 ``limit`` 개를 구조화해 돌려준다.
+
+    프론트엔드의 "새 기능 보기" 모달이 이 응답을 그대로 렌더한다.
+    Unreleased 섹션은 의도적으로 제외 — 사용자에게는 cut 된 버전만 노출.
+    """
+    payload = _RECENT_RELEASES[:limit]
+    return JSONResponse(
+        {"releases": payload},
+        # 같은 빌드 안에서는 안 변하므로 적당히 길게 캐시. release cut 시 워커 재시작으로 갱신.
+        headers={"Cache-Control": "public, max-age=600"},
+    )
 
 
 @app.get(
