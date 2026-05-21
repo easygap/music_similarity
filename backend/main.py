@@ -666,10 +666,39 @@ def _detect_git_commit() -> str | None:
     return sha[:7]
 
 
+def _collect_dependency_versions() -> dict[str, str | None]:
+    """핵심 의존 라이브러리 버전을 한 번에 수집.
+
+    importlib.metadata 가 표준 — installed 패키지의 메타데이터를 직접 가져온다.
+    런타임 import 가 실패하더라도 (예: librosa 미설치 + dev 모드) 우아하게 None.
+    여기에 넣을 라이브러리 선정 기준은 "운영 디버깅에서 자주 묻는 것":
+      - numpy / pandas: ML 파이프라인 핵심
+      - scikit-learn: 우리 모델/유사도 계산 핵심
+      - librosa: 오디오 특성 추출
+      - fastapi / pydantic: 웹 프레임워크 / 응답 직렬화
+      - python: 인터프리터 자체.
+    """
+    from importlib import metadata as _metadata
+
+    out: dict[str, str | None] = {}
+    for pkg in ("numpy", "pandas", "scikit-learn", "librosa", "fastapi", "pydantic"):
+        try:
+            out[pkg] = _metadata.version(pkg)
+        except _metadata.PackageNotFoundError:
+            out[pkg] = None
+
+    # python 은 metadata 가 아니라 sys.version_info 로 noun 형태로 표시.
+    import sys as _sys
+
+    out["python"] = f"{_sys.version_info.major}.{_sys.version_info.minor}.{_sys.version_info.micro}"
+    return out
+
+
 # 모듈 로드 시 한 번만 계산. 핫리로드 안 됨 — 새 release 가 cut 되면 워커 재시작.
 _RELEASE_DATE: str | None = _parse_release_date_from_changelog()
 _RECENT_RELEASES: list[dict] = _parse_recent_releases_from_changelog(limit=3)
 _GIT_COMMIT: str | None = _detect_git_commit()
+_DEPENDENCY_VERSIONS: dict[str, str | None] = _collect_dependency_versions()
 
 
 def _dataset_mtime_iso() -> str | None:
@@ -872,6 +901,9 @@ def version_info():
         },
         "max_upload_bytes": MAX_UPLOAD_BYTES,
         "rate_limit_per_min": RATE_LIMIT_PER_MIN,
+        # 핵심 의존 라이브러리 버전. 운영자가 "어떤 numpy / sklearn 으로 떠 있는지"
+        # 빠르게 확인 가능. CVE 점검 / 호환성 디버깅 / 클라이언트 SDK 가 server feature 추측 등.
+        "dependencies": _DEPENDENCY_VERSIONS,
     }
 
 

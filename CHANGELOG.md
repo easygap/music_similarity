@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Added
+- `/api/version` 응답에 `dependencies` 딕셔너리 추가. 운영자가 떠 있는
+  서버의 numpy / pandas / scikit-learn / librosa / fastapi / pydantic /
+  python 버전을 한 번의 호출로 확인 가능. CVE 점검 · 호환성 디버깅 ·
+  클라이언트 SDK 가 server feature 추측하는 시나리오에 유용.
+  `importlib.metadata` 로 installed 패키지 메타데이터 읽고, 패키지가
+  없으면 graceful 하게 null. 모듈 로드 시 한 번만 수집 (캐시).
+
 ### Changed
 - 테마 시스템이 사용자가 명시적으로 토글한 적 없으면 OS `prefers-color-scheme`
   변경을 실시간으로 따라간다. 초기 페인트는 기존처럼 theme-init.js 가 처리하고,

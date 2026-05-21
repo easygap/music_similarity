@@ -539,6 +539,20 @@ def test_version_git_commit_is_none_or_short_sha_in_default_env(fastapi_client):
     assert all(c in "0123456789abcdef" for c in sha.lower()), sha
 
 
+def test_version_exposes_dependency_versions(fastapi_client):
+    """numpy / sklearn / librosa 등 핵심 라이브러리 버전이 dict 로 노출되어야 한다."""
+    r = fastapi_client.get("/api/version")
+    body = r.json()
+    deps = body.get("dependencies")
+    assert isinstance(deps, dict), "dependencies 가 dict 가 아닙니다."
+    # 운영 디버깅에서 자주 묻는 라이브러리들이 빠짐없이 들어있어야 한다.
+    for required in ("numpy", "pandas", "scikit-learn", "librosa", "fastapi", "pydantic", "python"):
+        assert required in deps, f"{required} 버전이 누락되었습니다."
+    # python 버전은 항상 "X.Y.Z" 형태 (None 불가).
+    py = deps["python"]
+    assert py and py.count(".") == 2, f"잘못된 python 버전 표기: {py!r}"
+
+
 def test_client_error_beacon(fastapi_client):
     """/api/client-error 가 비콘을 받아 204 로 응답해야 한다."""
     r = fastapi_client.post(
