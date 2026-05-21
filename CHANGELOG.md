@@ -7,6 +7,12 @@
 ## [Unreleased]
 
 ### Added
+- `python -m backend.cli version` 서브커먼드 신설. `/api/version` 과 동일한
+  정보 (version / release_date / git_commit) 를 서버 없이 즉시 출력. CI 가
+  배포 후 "deploy 된 빌드가 기대한 SHA 와 일치하는지" 검증하는 용도에 적합.
+  기본은 한 줄 사람-가독 (`v1.5.0 · 2026-05-21 · 7cf785a`), `--json` 으로 jq
+  파이프 친화 형태도 지원. backend.main 의 `_GIT_COMMIT` / `_RELEASE_DATE`
+  / `app.version` 을 single source of truth 로 끌어다 쓴다.
 - `/api/version` 응답에 `git_commit` 필드 추가 (짧은 7자 SHA). 같은
   version 으로 여러 빌드가 떠 있을 때 운영자가 정확히 어느 빌드인지
   식별 가능. 우선순위는 환경변수 `MUSIC_GIT_COMMIT` → `.git/HEAD`

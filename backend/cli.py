@@ -605,6 +605,39 @@ def cmd_dataset_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_version(args: argparse.Namespace) -> int:
+    """현재 빌드의 version / git_commit / release_date 를 출력한다.
+
+    `/api/version` 과 동일한 정보를 서버 없이 즉시 확인하기 위함. CI 가
+    배포 후 ``python -m backend.cli version`` 으로 deploy 가 기대한 SHA 와
+    일치하는지 검증하는 데 쓰기 좋다. ``--json`` 으로 jq 파이프 친화 출력.
+    """
+    import json as _json
+
+    # 백엔드 모듈에서 직접 끌어다 쓴다 — 같은 소스 of truth.
+    from backend.main import _GIT_COMMIT, _RELEASE_DATE, app
+
+    info = {
+        "name": "soundmatch",
+        "version": app.version,
+        "release_date": _RELEASE_DATE,
+        "git_commit": _GIT_COMMIT,
+    }
+
+    if args.json:
+        print(_json.dumps(info, ensure_ascii=False, indent=2))
+        return 0
+
+    # 사람 친화 한 줄. 비어 있는 필드는 자연스럽게 생략.
+    parts = [f"v{info['version']}"]
+    if info["release_date"]:
+        parts.append(info["release_date"])
+    if info["git_commit"]:
+        parts.append(info["git_commit"])
+    print(" · ".join(parts))
+    return 0
+
+
 def cmd_export_catalog(args: argparse.Namespace) -> int:
     """카탈로그 CSV 를 q/BPM/에너지/정렬 필터로 가공해 새 CSV 로 떨군다.
 
@@ -838,6 +871,13 @@ def build_parser() -> argparse.ArgumentParser:
     stats.add_argument("path", help="dataset.csv 경로")
     stats.add_argument("--json", action="store_true", help="JSON 만 출력 (jq 파이프 친화)")
     stats.set_defaults(func=cmd_dataset_stats)
+
+    ver = sub.add_parser(
+        "version",
+        help="현재 빌드의 version / git_commit / release_date 를 출력 (서버 없이).",
+    )
+    ver.add_argument("--json", action="store_true", help="JSON 만 출력 (jq 파이프 친화)")
+    ver.set_defaults(func=cmd_version)
 
     export_cat = sub.add_parser(
         "export-catalog",
