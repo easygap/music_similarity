@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 카드 아래에 BPM / 에너지 / 밝기 mini-row 표시. 사용자가 카드를
+  클릭하지 않고도 한눈에 곡의 핵심 메트릭을 확인 가능. `/api/catalog/search`
+  응답의 각 item 에 `metrics: {bpm, energy_rms, brightness}` 필드 추가
+  (24~96곡 × 3 float, 페이로드 부담 없음). 0 값은 None 으로 내려와 frontend
+  가 안전하게 skip — line 자체 안 그리거나 일부 항목만 표시.
 - 카탈로그 검색 input 에 최근 검색어 자동완성 (datalist) 추가. 같은 단어를
   자주 칠 때 한 글자만 쳐도 드롭다운에서 골라잡을 수 있다. 저장은
   `localStorage` 키 `soundmatch.catalog.recent-searches` 에 최대 5건, 같은
