@@ -147,6 +147,16 @@ def test_catalog_search_highlights_matched_substring():
     assert "highlightMatch(it.artist, needle)" in text
 
 
+def test_catalog_modal_hits_show_match_metrics():
+    """카탈로그 모달의 매칭 곡 리스트에도 BPM/에너지 mini-row 가 표시되어야 한다."""
+    text = _read("catalog.html")
+    # 카탈로그 카드와 같은 buildMetricsLine 헬퍼를 모달에서도 재사용.
+    assert "r.match_summary" in text
+    assert "buildMetricsLine(r.match_summary" in text
+    # 모달 안에서 display: flex / margin-top 강제로 줄바꿈.
+    assert ".modal-hits .cat-metrics" in text
+
+
 def test_catalog_card_has_metrics_mini_row():
     """카탈로그 카드에 BPM/에너지/밝기 mini-row 가 렌더링되어야 한다."""
     text = _read("catalog.html")

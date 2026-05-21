@@ -317,6 +317,8 @@
     }
     .modal-name { font-weight: 600; font-size: 14px; }
     .modal-artist { color: var(--text-mute); font-size: 12.5px; }
+    /* 카탈로그 카드의 .cat-metrics 헬퍼를 모달 안에서도 재사용 — 줄바꿈만 강제. */
+    .modal-hits .cat-metrics { display: flex; margin-top: 2px; }
     .modal-percent {
       font-family: "JetBrains Mono", monospace;
       font-size: 13px;
@@ -992,10 +994,19 @@
         modalBody.innerHTML = '<ol class="modal-hits">' + data.results.map(function (r) {
           var fullName = r.title + " - " + r.artist;
           var isFav = Fav ? Fav.has(fullName) : false;
+          // 매칭 곡의 핵심 메트릭을 작은 라인으로 함께 — 카탈로그 카드와
+          // 동일한 패턴. match_summary 가 없으면 라인 자체 안 그림.
+          var matchMetrics = buildMetricsLine(r.match_summary ? {
+            bpm: r.match_summary.tempo_bpm,
+            energy_rms: r.match_summary.energy_rms,
+            brightness: r.match_summary.brightness,
+          } : null);
           return '<li>'
             + '<span class="modal-rank">' + r.rank + '</span>'
             + '<span><span class="modal-name">' + escapeHtml(r.title) + '</span>'
-            + ' · <span class="modal-artist">' + escapeHtml(r.artist) + '</span></span>'
+            + ' · <span class="modal-artist">' + escapeHtml(r.artist) + '</span>'
+            + matchMetrics
+            + '</span>'
             + '<span class="modal-actions">'
             + '<button type="button" class="modal-fav" data-fav-name="' + escapeHtml(fullName)
             + '" data-fav-title="' + escapeHtml(r.title) + '" data-fav-artist="' + escapeHtml(r.artist)
