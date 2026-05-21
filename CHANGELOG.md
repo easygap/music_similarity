@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- 카탈로그 모달의 매칭 곡 5건에도 BPM/에너지/밝기 mini-row 표시. 카탈로그
+  카드와 같은 `buildMetricsLine` 헬퍼를 재사용 — `match_summary` 응답 필드
+  (`tempo_bpm` / `energy_rms` / `brightness`) 를 변환해 그대로 넘김. 모달 안
+  에서는 줄바꿈을 위해 `.modal-hits .cat-metrics { display: flex; ... }`
+  CSS 추가.
 - 카탈로그 카드 아래에 BPM / 에너지 / 밝기 mini-row 표시. 사용자가 카드를
   클릭하지 않고도 한눈에 곡의 핵심 메트릭을 확인 가능. `/api/catalog/search`
   응답의 각 item 에 `metrics: {bpm, energy_rms, brightness}` 필드 추가
