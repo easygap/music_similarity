@@ -713,6 +713,55 @@ main {
 }
 .lock-icon { width: 14px; height: 14px; flex-shrink: 0; color: var(--accent-success); }
 
+/* "샘플로 분석해보기" 버튼 — 업로드 카드 하단의 secondary CTA.
+   primary CTA 와 시각적으로 구분되지만 충분히 눈에 띄도록 dashed border 와 가벼운 hover. */
+.upload-sample-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 0;
+}
+.upload-sample-divider {
+  flex: 0 0 auto;
+  color: var(--text-mute);
+  font-size: 12px;
+  position: relative;
+}
+.upload-sample-divider::before,
+.upload-sample-divider::after {
+  content: "";
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--border);
+  vertical-align: middle;
+  margin: 0 8px;
+}
+.upload-sample-btn {
+  flex: 1 1 auto;
+  background: transparent;
+  color: var(--text);
+  border: 1px dashed var(--border-strong);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+.upload-sample-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(34, 211, 238, 0.06);
+}
+.upload-sample-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+@media (max-width: 600px) {
+  .upload-sample-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .upload-sample-divider { text-align: center; }
+}
+
 /* ---------------- 로딩 표시 ----------------- */
 .loading-card {
   margin: 24px 0;

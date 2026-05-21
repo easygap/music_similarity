@@ -7,6 +7,15 @@
 ## [Unreleased]
 
 ### Added
+- 메인 페이지 업로드 카드 하단에 "🎧 샘플로 분석해보기" 버튼 추가. 클릭
+  하면 `/api/catalog/random?n=1` 으로 카탈로그에서 무작위 한 곡을 뽑아
+  `/api/analyze/by-catalog` 로 즉시 분석 결과를 보여준다. 첫 방문자가
+  음원 준비 단계 없이 결과 페이지 / 차트 / 매칭 설명을 바로 체험할 수
+  있어 conversion 개선. 누를 때마다 다른 곡이 뽑혀 discovery 성도 동반.
+  기존 `seedFromHit()` 헬퍼를 재사용해 결과 렌더 코드는 한 군데로 유지.
+  로딩 중에는 버튼 disabled + "샘플 준비 중…" 라벨로 상태 시각화. 신규
+  i18n `upload.sampleButton` / `sampleHint` / `sampleLoading` (ko/en
+  parity). 모바일에서는 divider 텍스트가 자기 줄로 떨어지도록 반응형 처리.
 - `/api/health` 응답에도 `release_date` / `git_commit` 필드 추가. 운영자가
   `/api/version` 까지 추가 호출하지 않고도 health 한 번 만에 "어떤 빌드가
   떠 있는지" 확인 가능. alert 룰 (`status=degraded AND git_commit=X`)
