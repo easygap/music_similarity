@@ -113,6 +113,10 @@ def test_health_returns_degraded_503_when_engine_fails(monkeypatch, tmp_path):
     body = r.json()
     assert body["status"] == "degraded"
     assert body["catalog_size"] == 0
+    # 운영자 디버깅을 위해 어디서 실패했는지 식별자가 명시되어야 한다.
+    assert body["reason"] == "engine_load_failed"
+    # reason_detail 은 exception 클래스명 — 빈 문자열이 아니라 실제 type 이 와야 한다.
+    assert body["reason_detail"], "reason_detail 이 비어 있으면 안 됩니다."
 
 
 def test_health_strict_returns_503_when_upload_dir_unwritable(fresh_module, tmp_path, monkeypatch):
@@ -133,3 +137,23 @@ def test_health_strict_returns_503_when_upload_dir_unwritable(fresh_module, tmp_
     assert r.status_code == 503
     body = r.json()
     assert body["status"] == "degraded"
+    # 업로드 디렉토리 분기에 떨어졌으면 reason 이 upload_dir_not_writable.
+    assert body["reason"] == "upload_dir_not_writable"
+    # OSError 계열 (Windows: FileNotFoundError, POSIX: 동일) 의 클래스명이 들어와야 한다.
+    assert body["reason_detail"] in {"FileNotFoundError", "PermissionError", "OSError"}
+
+
+def test_health_ok_does_not_leak_reason_fields(fresh_module):
+    """정상(ok) 응답에서는 reason / reason_detail 이 null 이어야 한다.
+
+    degraded 전용 필드가 ok 응답에 빈 문자열 또는 임의 값으로 새어 나가면
+    운영 대시보드 알람이 잘못 울릴 수 있다.
+    """
+    with TestClient(fresh_module.app) as c:
+        r = c.get("/api/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    # ok 응답에는 reason 키 자체가 없거나 None 이어야 한다.
+    assert body.get("reason") is None
+    assert body.get("reason_detail") is None

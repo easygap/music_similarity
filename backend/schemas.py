@@ -20,6 +20,18 @@ class HealthResponse(BaseModel):
         description="카탈로그 CSV 의 마지막 수정 시각(ISO 8601, UTC). 파일이 없거나 stat 실패면 null.",
         examples=["2026-05-15T00:42:51+00:00"],
     )
+    # degraded 응답 전용 필드 — 정상(ok) 응답에서는 항상 null/없음.
+    # 식별자 enum: engine_load_failed | ml_imports_unavailable | upload_dir_not_writable
+    reason: str | None = Field(
+        None,
+        description="degraded 응답 시 어느 점검이 실패했는지 식별자. ok 응답에서는 항상 null.",
+        examples=["engine_load_failed"],
+    )
+    reason_detail: str | None = Field(
+        None,
+        description="실패 exception 의 클래스명. 상세 traceback 은 노출하지 않고 운영 로그로 확인.",
+        examples=["ValueError"],
+    )
 
 
 class CatalogResponse(BaseModel):

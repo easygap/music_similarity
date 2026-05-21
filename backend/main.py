@@ -570,7 +570,7 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
     uptime = round(time.monotonic() - _started_at, 1)
     try:
         size = get_engine().catalog_size
-    except Exception:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         return JSONResponse(
             {
                 "status": "degraded",
@@ -578,6 +578,10 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
                 "env": ENV,
                 "version": app.version,
                 "uptime_seconds": uptime,
+                # 운영자가 어디서 실패했는지 단번에 보도록 reason 명시.
+                # message 는 내부 노출을 피하기 위해 type 만 — detail 은 운영 로그에서.
+                "reason": "engine_load_failed",
+                "reason_detail": type(e).__name__,
             },
             status_code=503,
         )
@@ -587,7 +591,7 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
         try:
             import librosa  # noqa: F401
             import sklearn  # noqa: F401
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             return JSONResponse(
                 {
                     "status": "degraded",
@@ -595,6 +599,8 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
                     "env": ENV,
                     "version": app.version,
                     "uptime_seconds": uptime,
+                    "reason": "ml_imports_unavailable",
+                    "reason_detail": type(e).__name__,
                 },
                 status_code=503,
             )
@@ -603,7 +609,7 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
         try:
             probe.write_bytes(b"ok")
             probe.unlink()
-        except OSError:
+        except OSError as e:
             return JSONResponse(
                 {
                     "status": "degraded",
@@ -611,6 +617,8 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
                     "env": ENV,
                     "version": app.version,
                     "uptime_seconds": uptime,
+                    "reason": "upload_dir_not_writable",
+                    "reason_detail": type(e).__name__,
                 },
                 status_code=503,
             )
