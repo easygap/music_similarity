@@ -441,6 +441,31 @@ def test_cli_status_json_passthrough(monkeypatch, capsys):
     assert parsed["catalog_size"] == 3
 
 
+# --- version 서브커먼드 ----------------------------------------------------
+
+def test_cli_version_human_readable(capsys):
+    """버전 한 줄이 v로 시작해 · 로 묶여 출력되어야 한다."""
+    code = main(["version"])
+    out = capsys.readouterr().out.strip()
+    assert code == 0
+    assert out.startswith("v"), out
+    # 점-구분자가 적어도 한 번은 들어있다 (release_date 또는 commit).
+    assert " · " in out or len(out) > 2
+
+
+def test_cli_version_json(capsys):
+    """--json 옵션은 jq 파싱 가능한 JSON 으로 떨어져야 한다."""
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        code = main(["version", "--json"])
+    assert code == 0
+    parsed = json.loads(buf.getvalue())
+    assert parsed["name"] == "soundmatch"
+    assert "version" in parsed
+    assert "release_date" in parsed
+    assert "git_commit" in parsed
+
+
 # --- export-catalog 서브커먼드 --------------------------------------------
 
 def test_cli_export_catalog_writes_csv(synthetic_dataset, tmp_path, capsys):
