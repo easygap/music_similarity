@@ -23,6 +23,7 @@
   const analyzeBtn = $("#analyze-btn");
   const form = $("#upload-form");
   const topNSelect = $("#top-n");
+  const sampleBtn = $("#sample-btn");
 
   const loadingSection = $("#loading");
   const loadingStep = $("#loading-step");
@@ -1311,6 +1312,32 @@
     renderResults(prev, /* preserveFile */ true);
     seedBackBtn.classList.add("hidden");
   });
+
+  // "샘플로 분석해보기" — 업로드 없이 카탈로그에서 랜덤 한 곡을 골라 by-catalog 분석.
+  // 첫 방문자가 음원 준비 단계 없이 결과 페이지/차트/매칭 설명을 바로 체험할 수 있어
+  // conversion 에 큰 도움. 누를 때마다 다른 곡이 뽑힘 (discovery 성).
+  if (sampleBtn) {
+    sampleBtn.addEventListener("click", async () => {
+      // 중복 클릭 방어 — 첫 클릭 후 fetch 끝날 때까지 비활성.
+      sampleBtn.disabled = true;
+      const originalText = sampleBtn.textContent;
+      sampleBtn.textContent = t("upload.sampleLoading");
+      try {
+        const res = await fetch("/api/catalog/random?n=1");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const item = (data.items || [])[0];
+        if (!item || !item.title) throw new Error("샘플을 찾지 못했어요.");
+        // seedFromHit 가 by-catalog 분석 + 결과 렌더까지 모두 수행 → 코드 재사용.
+        await seedFromHit({ title: item.title, artist: item.artist });
+      } catch (err) {
+        showError(err.message || String(err));
+      } finally {
+        sampleBtn.disabled = false;
+        sampleBtn.textContent = originalText;
+      }
+    });
+  }
 
   // ----------------------------------------------------------------------
   // 초기화

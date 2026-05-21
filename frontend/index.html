@@ -207,6 +207,19 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" class="lock-icon"><path d="M7 11V8a5 5 0 0 1 10 0v3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
           업로드된 음원은 분석이 끝나는 즉시 서버에서 자동 삭제됩니다.
         </p>
+
+        <!-- 음원 없이 바로 결과를 체험할 수 있게 — 첫 방문자 conversion 개선.
+             /api/analyze/by-catalog 는 librosa 호출 없이 카탈로그 raw 특성을 그대로
+             쓰므로 일반 분석보다 훨씬 빠르고, 결과 화면 / 차트 / 매칭 설명까지 동일하다. -->
+        <div class="upload-sample-row">
+          <span class="upload-sample-divider" aria-hidden="true">또는</span>
+          <button type="button" class="upload-sample-btn" id="sample-btn"
+                  data-i18n="upload.sampleButton"
+                  data-i18n-attr="title:upload.sampleHint"
+                  title="업로드 없이 카탈로그 곡으로 분석 결과를 체험해보세요.">
+            🎧 샘플로 분석해보기
+          </button>
+        </div>
       </form>
     </section>
 
