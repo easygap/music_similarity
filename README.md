@@ -66,6 +66,14 @@ python -m backend.cli status --url http://localhost:8000
 # CI / 모니터링 친화 — JSON 만 흘리고 싶으면 --json. 503 / 접속 실패면 0 이 아닌 exit code.
 ```
 
+배포된 빌드가 기대한 SHA 와 일치하는지 (CI / Smoke test 용):
+
+```bash
+python -m backend.cli version
+# v1.6.0 · 2026-05-21 · ab9e26f
+python -m backend.cli version --json    # jq 파이프 친화
+```
+
 카탈로그 CSV 가 엔진에 잘 로딩될지 미리 점검하고, 중복된 키를 정리하려면:
 
 ```bash
@@ -166,19 +174,33 @@ python preview_server.py 8765
   서브 페이지의 정적·동적 텍스트가 같이 바뀐다.
 - 백엔드: threadpool 으로 librosa 분리, IP별 rate limit, magic-byte 검증,
   CSP / HSTS / X-Frame-Options 등 시큐어 헤더, 구조화 JSON 로그.
+- 메인 페이지 업로드 카드 하단에 "🎧 샘플로 분석해보기" 버튼. 음원 준비 없이
+  카탈로그에서 무작위 한 곡을 골라 결과 페이지를 그대로 체험할 수 있다.
+- "새 기능 보기" 배너 — 사이트 접속 시 `/api/version.release_date` 가 사용자가
+  마지막으로 확인한 값과 다르면 상단에 작은 배너가 뜨고, 클릭하면 최근 3개
+  릴리즈 노트를 모달로 보여준다. 처음 방문자에게는 안 띄움.
+- 카탈로그 카드에 화살표 키 네비게이션 (←/→/↑/↓ 이동, Home/End 점프).
+  페이저 이동 시 새 페이지 첫 카드에 자동 포커스. 그리드에 `aria-keyshortcuts`
+  부착으로 스크린리더 친화.
+- 카탈로그 모달에 "🔗 링크" 공유 버튼 — 그 곡의 deep link URL 을 클립보드에 복사
+  + 토스트 피드백.
+- 카탈로그 필터링 결과를 CSV 로 내보내기 (UI 버튼 / API / CLI 동일 코드 경로 공유).
 
 ## API
 
 ```
 POST /api/analyze              # multipart 업로드, top_n=1~20
 GET  /api/analyze/by-catalog   # 카탈로그 곡끼리 즉시 비교 (librosa 호출 없음, LRU 캐시)
-GET  /api/version              # 버전 + 기능 플래그 (호환성 체크)
+GET  /api/version              # 버전 + 기능 플래그 + git_commit + dependencies
+GET  /api/version/changelog    # 최근 published 릴리즈 노트 (?limit=N)
 GET  /api/health               # 라이브니스, ?strict=1 이면 librosa/디스크까지 점검
+                               # degraded 시 reason 식별자 + release_date/git_commit 노출
 GET  /api/catalog              # 사용 중인 특성 컬럼
 GET  /api/catalog/sample       # 카탈로그 일부 미리보기
 GET  /api/catalog/random       # 카탈로그에서 무작위 N곡 추천
 GET  /api/catalog/stats        # BPM/에너지/밝기 min/max/avg + BPM 히스토그램
 GET  /api/catalog/search       # ?q=&page=&size=&min_bpm=&max_bpm=&min_energy=&max_energy=&sort=
+GET  /api/catalog/export.csv   # 같은 필터 조건으로 전체를 한 장의 CSV 로 (UTF-8 BOM + injection 방어)
 POST /api/client-error         # 프론트엔드 글로벌 에러 비콘 (sendBeacon)
 GET  /docs                     # FastAPI 자동 Swagger UI
 GET  /metrics                  # Prometheus exposition (uptime, latency P50/P95 포함)
@@ -186,7 +208,8 @@ GET  /catalog /compare /privacy /terms /sw.js /manifest.webmanifest /offline.htm
 ```
 
 응답에는 `X-Request-ID` 가 항상 붙는다. 분석 응답에는 `X-RateLimit-Limit /
-Remaining / Reset` 도 같이 내려간다.
+Remaining / Reset` 도 같이 내려간다. 429 응답은 표준 `Retry-After` 헤더 +
+JSON body 안에도 `retry_after_seconds` / `limit` / `reset_at` 머신-친화 필드.
 
 ```bash
 curl -X POST http://localhost:8000/api/analyze \
@@ -214,6 +237,7 @@ curl -X POST http://localhost:8000/api/analyze \
 | `MUSIC_LOG_LEVEL` | `INFO` | JSON 로그 레벨 |
 | `PORT` | `8000` | 리스닝 포트 (Fly.io 등 PaaS 호환) |
 | `WEB_CONCURRENCY` | `2` | uvicorn worker 수. **production 권장 `1`** — rate limit / 결과 캐시 / metrics 가 in-memory 라 다중 워커면 한도가 워커 수만큼 곱해진다 (`fly.toml` / `render.yaml` 도 1 로 명시). |
+| `MUSIC_GIT_COMMIT` | "" | 빌드 시 inject 하는 짧은 git SHA. `/api/version` · `/api/health` 응답에 노출. 비어 있으면 `.git/HEAD` 파일에서 자동 감지 (개발 환경). Dockerfile 의 `ARG GIT_COMMIT` 도 같은 변수를 채운다. |
 
 ## 카탈로그 다시 만들기
 
@@ -232,7 +256,7 @@ UI 에서 " - " 로 잘라서 아티스트를 분리 표시한다.
 backend/      FastAPI 앱 (라우트 + 미들웨어 + ML 파이프라인)
 frontend/    SPA + PWA 자산
 data/        카탈로그 CSV
-tests/       pytest 모음 (현재 211 케이스)
+tests/       pytest 모음 (현재 252 케이스)
 scripts/     개발/카탈로그 재빌드 스크립트
 ```
 

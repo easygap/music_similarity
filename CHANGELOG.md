@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Changed
+- README 갱신 — v1.5 / v1.6 에서 추가된 기능 / 엔드포인트 / 환경변수 /
+  CLI 서브커먼드를 본문에 반영. 테스트 케이스 수도 211 → 252 로 갱신.
+  새로 추가된 항목: `python -m backend.cli version`, `/api/version/changelog`,
+  `/api/catalog/export.csv`, `MUSIC_GIT_COMMIT` 환경변수, 샘플 분석 버튼 /
+  새 기능 알림 배너 / 카탈로그 모달 공유 링크 / 화살표 키 nav 기능 설명.
+  Rate limit 응답이 body 에도 머신-친화 필드를 노출한다는 문구도 추가.
+
 ## [1.6.0] — 2026-05-21
 
 운영 가시성 (build SHA / 의존 버전 / health 통합 / rate-limit body) 과
