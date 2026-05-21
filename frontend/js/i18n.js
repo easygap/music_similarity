@@ -233,6 +233,8 @@
         modalSeed: "이 곡 기준으로 다시 보기",
         modalClose: "닫기",
         resetFilters: "필터 초기화",
+        exportCsv: "CSV 내보내기",
+        exportCsvHint: "현재 필터에 걸린 곡 전체를 CSV 파일로 내려받습니다.",
       },
       compare: {
         back: "← 메인으로",
@@ -485,6 +487,8 @@
         modalSeed: "Use this track as the seed",
         modalClose: "Close",
         resetFilters: "Reset filters",
+        exportCsv: "Export CSV",
+        exportCsvHint: "Download every track matching the current filters as a CSV file.",
       },
       compare: {
         back: "← Back home",

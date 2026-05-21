@@ -6,6 +6,23 @@
 
 ## [Unreleased]
 
+### Added
+- 카탈로그 페이지 필터 행에 **CSV 내보내기** 버튼 추가 + 백엔드
+  `/api/catalog/export.csv` 엔드포인트 신설. 현재 적용된 q / BPM / 에너지 /
+  정렬 조건을 그대로 받아 페이지네이션 없이 전체 결과를 CSV 한 장으로
+  다운로드. 컬럼: `title, artist, bpm, energy_rms, brightness, full_name`.
+  Music supervisor / 큐레이터가 외부 도구 (Excel · Numbers · pandas) 로
+  가져가 분석하는 시나리오용. UTF-8 BOM 을 선두에 두어 한글 환경 Excel
+  깨짐을 방지하고, CSV injection 방어 (`= + - @` 로 시작하는 셀에 `'`
+  prefix) 도 함께. 즐겨찾기 전용 모드에서는 클라이언트가 localStorage
+  로 직접 Blob 다운로드 (서버는 즐겨찾기 모르므로). 신규 i18n 키
+  `catalog.exportCsv` / `catalog.exportCsvHint` (ko/en parity).
+
+### Changed
+- `catalog_search` 의 필터/정렬 로직을 `_filter_and_sort_catalog` 헬퍼로
+  추출. `/api/catalog/search` 와 `/api/catalog/export.csv` 가 동일한 함수를
+  공유 → "검색 결과 화면 = 내보낸 CSV" 가 항상 일치하도록 단일 진입점화.
+
 ### Changed
 - `/api/health` 의 degraded 응답에 `reason` / `reason_detail` 필드 추가. 503
   이 떨어졌을 때 운영자가 "왜 떨어졌는지" 응답 본문만 보고도 분류 가능.

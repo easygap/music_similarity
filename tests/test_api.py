@@ -370,6 +370,91 @@ def test_catalog_search_shuffle_disables_caching(fastapi_client):
     assert "no-store" in r.headers.get("Cache-Control", "")
 
 
+# ---- /api/catalog/export.csv ------------------------------------------------
+
+def test_catalog_export_csv_returns_csv_with_header(fastapi_client):
+    """필터 없이 호출하면 카탈로그 전체가 CSV 한 장으로 떨어져야 한다."""
+    r = fastapi_client.get("/api/catalog/export.csv")
+    assert r.status_code == 200
+    assert "text/csv" in r.headers.get("Content-Type", "")
+    assert "attachment" in r.headers.get("Content-Disposition", "")
+    assert "catalog.csv" in r.headers.get("Content-Disposition", "")
+    # Cache-Control 은 사용자 필터마다 새 파일을 받기를 기대하므로 no-store.
+    assert "no-store" in r.headers.get("Cache-Control", "")
+    # BOM 한 글자 + 헤더 라인.
+    body = r.text
+    assert body.startswith("﻿"), "Excel 호환을 위해 UTF-8 BOM 이 선두에 있어야 합니다."
+    lines = body.lstrip("﻿").splitlines()
+    assert lines[0] == "title,artist,bpm,energy_rms,brightness,full_name"
+    # 합성 데이터셋은 3곡이라 헤더 + 3 행.
+    assert len(lines) == 1 + 3
+
+
+def test_catalog_export_csv_respects_query_filter(fastapi_client):
+    """q 필터가 검색 엔드포인트와 동일하게 export 에도 적용돼야 한다."""
+    r = fastapi_client.get("/api/catalog/export.csv?q=alpha")
+    assert r.status_code == 200
+    lines = r.text.lstrip("﻿").splitlines()
+    # 헤더 + Alpha 한 곡.
+    assert len(lines) == 2
+    assert "Alpha" in lines[1]
+
+
+def test_catalog_export_csv_respects_bpm_filter(fastapi_client):
+    """BPM 상한 / 하한 필터가 export 에도 그대로 적용되는지 회귀."""
+    # 합성 데이터셋 bpm < 1 이라 min_bpm=300 이면 결과 0건 (헤더만).
+    r = fastapi_client.get("/api/catalog/export.csv?min_bpm=300")
+    assert r.status_code == 200
+    lines = r.text.lstrip("﻿").splitlines()
+    assert len(lines) == 1  # 헤더만.
+
+
+def test_catalog_export_csv_blocks_formula_injection(fastapi_client, tmp_path, monkeypatch):
+    """CSV injection 방어 — 곡 이름이 ``=`` 로 시작하면 ``'`` prefix 가 붙어야 한다.
+
+    이 방어가 없으면 사용자가 받은 CSV 를 Excel 로 여는 순간 ``=cmd|...`` 같은
+    수식이 실행될 위험이 있다.
+    """
+    import csv as _csv
+
+    # 악성 이름을 가진 카탈로그를 별도로 빌드.
+    from backend.audio_features import FEATURE_COLUMNS
+
+    ds = tmp_path / "evil.csv"
+    with ds.open("w", newline="", encoding="utf-8") as fh:
+        w = _csv.writer(fh)
+        w.writerow(["musicname & artist", *FEATURE_COLUMNS])
+        # 첫 곡: title 이 = 로 시작 — 수식 주입 시도.
+        w.writerow(["=SUM(A1:A9) - Attacker", *[0.5 + 0.01 * i for i in range(len(FEATURE_COLUMNS))]])
+        # similarity engine 이 non-constant 특성 컬럼을 요구하므로 정상 행도 한 개 추가.
+        w.writerow(["Innocent - Person", *[0.6 + 0.02 * i for i in range(len(FEATURE_COLUMNS))]])
+    monkeypatch.setenv("MUSIC_DATASET_PATH", str(ds))
+
+    import importlib
+
+    import backend.main as mod
+
+    importlib.reload(mod)
+    from fastapi.testclient import TestClient
+
+    with TestClient(mod.app) as c:
+        r = c.get("/api/catalog/export.csv")
+    assert r.status_code == 200
+    body = r.text.lstrip("﻿")
+    # 셀이 직접적으로 = 으로 시작해서는 안 된다 — ' prefix 가 붙어야 한다.
+    # csv.writer 는 cell 에 = 가 포함되면 쿼팅 없이 그대로 쓰지만, 우리 _safe_cell 이
+    # ' 를 앞에 붙여 막아주므로 결과는 ``'=SUM...`` 으로 시작해야 한다.
+    rows = body.splitlines()
+    assert len(rows) >= 2
+    assert rows[1].startswith("'=SUM"), f"수식 셀에 quote prefix 가 빠졌습니다: {rows[1]!r}"
+
+
+def test_catalog_export_csv_invalid_sort(fastapi_client):
+    """검색과 동일하게 허용되지 않은 sort 값은 422 로 차단되어야 한다."""
+    r = fastapi_client.get("/api/catalog/export.csv?sort=bogus")
+    assert r.status_code == 422
+
+
 def test_client_error_beacon(fastapi_client):
     """/api/client-error 가 비콘을 받아 204 로 응답해야 한다."""
     r = fastapi_client.post(

@@ -956,6 +956,72 @@ def catalog_search(
         - sort: default(사전식) / title / artist / bpm / energy 오름차순.
     """
     eng = get_engine()
+    names = _filter_and_sort_catalog(
+        eng,
+        q=q,
+        min_bpm=min_bpm,
+        max_bpm=max_bpm,
+        min_energy=min_energy,
+        max_energy=max_energy,
+        sort=sort,
+    )
+
+    total = len(names)
+    start = (page - 1) * size
+    end = start + size
+    # 페이지에 들어가는 N곡만 메트릭(bpm/energy/brightness) 까지 함께 채워서 응답한다.
+    # frontend 의 카탈로그 카드가 작은 라인으로 BPM/에너지를 보여주는 데 필요.
+    # 페이로드는 24~96곡 × 3 float 이라 부담 없음.
+    items: list[dict[str, object]] = []
+    for n in names[start:end]:
+        base = _split_catalog_name(n)
+        row = eng.catalog_row_raw(n) or {}
+        bpm = float(row.get("bpm", 0.0) or 0.0)
+        rms = float(row.get("rms_mean", 0.0) or 0.0)
+        sc = float(row.get("spectral_centroid_mean", 0.0) or 0.0)
+        # 0 인 값은 표시 의미 없으므로 None 으로 내려서 frontend 가 안전하게 분기.
+        base["metrics"] = {
+            "bpm": round(bpm, 1) if bpm > 0 else None,
+            "energy_rms": round(rms, 3) if rms > 0 else None,
+            "brightness": round(sc, 0) if sc > 0 else None,
+        }
+        items.append(base)
+    # shuffle 모드는 매 호출이 새 순서여야 하므로 캐시 금지. 일반 정렬은 짧게.
+    cache_header = "no-store" if sort == "shuffle" else "public, max-age=120"
+    return JSONResponse(
+        {
+            "total": total,
+            "page": page,
+            "size": size,
+            "has_more": end < total,
+            "items": items,
+        },
+        headers={"Cache-Control": cache_header},
+    )
+
+
+def _split_catalog_name(full: str) -> dict[str, str]:
+    """"곡명 - 아티스트" 키를 title/artist 딕셔너리로 안전 분리."""
+    title, _, artist = full.partition(" - ")
+    return {"title": title.strip() or full, "artist": artist.strip() or "Unknown"}
+
+
+def _filter_and_sort_catalog(
+    eng,
+    *,
+    q: str = "",
+    min_bpm: float | None = None,
+    max_bpm: float | None = None,
+    min_energy: float | None = None,
+    max_energy: float | None = None,
+    sort: str = "default",
+) -> list[str]:
+    """카탈로그 이름 목록에 검색/필터/정렬을 적용한다 (페이지네이션 없음).
+
+    catalog_search 와 catalog_export_csv 가 동일한 필터 로직을 공유하도록 분리.
+    엔드포인트별로 살짝씩 다른 동작을 하지 않게 — 즉 "검색 결과 화면에서 보던 곡 = 내보낸 CSV 행" 이
+    항상 일치하도록 보장하는 것이 이 함수의 핵심 책임.
+    """
     needle = (q or "").strip().lower()
     names = eng.iter_catalog_names()
 
@@ -999,45 +1065,85 @@ def catalog_search(
         names = list(names)
         _random.shuffle(names)
     # default 정렬은 이미 iter_catalog_names 가 사전식으로 반환.
+    return names
 
-    total = len(names)
-    start = (page - 1) * size
-    end = start + size
-    # 페이지에 들어가는 N곡만 메트릭(bpm/energy/brightness) 까지 함께 채워서 응답한다.
-    # frontend 의 카탈로그 카드가 작은 라인으로 BPM/에너지를 보여주는 데 필요.
-    # 페이로드는 24~96곡 × 3 float 이라 부담 없음.
-    items: list[dict[str, object]] = []
-    for n in names[start:end]:
+
+@app.get(
+    "/api/catalog/export.csv",
+    summary="필터 적용된 카탈로그 전체를 CSV 로 내보내기",
+    tags=["system"],
+)
+def catalog_export_csv(
+    q: str = Query("", description="제목/아티스트 부분 일치"),  # noqa: B008
+    min_bpm: float | None = Query(None, ge=0, le=400),  # noqa: B008
+    max_bpm: float | None = Query(None, ge=0, le=400),  # noqa: B008
+    min_energy: float | None = Query(None, ge=0, le=1),  # noqa: B008
+    max_energy: float | None = Query(None, ge=0, le=1),  # noqa: B008
+    sort: str = Query("default", pattern="^(default|title|artist|bpm|energy|shuffle)$"),  # noqa: B008
+):
+    """``/api/catalog/search`` 와 동일한 필터/정렬을 적용한 결과 **전체**를
+    한 장의 CSV 로 내려준다. 페이지네이션 없음.
+
+    Music supervisor / 큐레이터가 외부 도구 (Excel / Numbers / pandas) 로
+    가져가 분석하는 용도. 1000곡 규모에서는 응답이 수십 KB 수준이라
+    streaming 까지 갈 필요 없이 한 번에 빌드해 내려보낸다.
+
+    CSV injection 회피: 셀 첫 문자가 ``= + - @`` 면 ``'`` 를 prepend.
+    Excel 류에서 수식으로 해석되는 위험을 차단 — 사용자가 받은 CSV 를
+    그대로 열어도 안전하다.
+    """
+    import csv as _csv
+    import io as _io
+
+    eng = get_engine()
+    names = _filter_and_sort_catalog(
+        eng,
+        q=q,
+        min_bpm=min_bpm,
+        max_bpm=max_bpm,
+        min_energy=min_energy,
+        max_energy=max_energy,
+        sort=sort,
+    )
+
+    def _safe_cell(value: object) -> str:
+        # None / 빈 값은 빈 문자열로. CSV injection 방어를 위해 leading ``= + - @`` 차단.
+        s = "" if value is None else str(value)
+        if s and s[0] in "=+-@":
+            return "'" + s
+        return s
+
+    buf = _io.StringIO()
+    # lineterminator 를 명시하지 않으면 환경에 따라 \r\n / \n 이 섞일 수 있어 일관되게 \n 으로.
+    writer = _csv.writer(buf, lineterminator="\n")
+    writer.writerow(["title", "artist", "bpm", "energy_rms", "brightness", "full_name"])
+    for n in names:
         base = _split_catalog_name(n)
         row = eng.catalog_row_raw(n) or {}
         bpm = float(row.get("bpm", 0.0) or 0.0)
         rms = float(row.get("rms_mean", 0.0) or 0.0)
         sc = float(row.get("spectral_centroid_mean", 0.0) or 0.0)
-        # 0 인 값은 표시 의미 없으므로 None 으로 내려서 frontend 가 안전하게 분기.
-        base["metrics"] = {
-            "bpm": round(bpm, 1) if bpm > 0 else None,
-            "energy_rms": round(rms, 3) if rms > 0 else None,
-            "brightness": round(sc, 0) if sc > 0 else None,
-        }
-        items.append(base)
-    # shuffle 모드는 매 호출이 새 순서여야 하므로 캐시 금지. 일반 정렬은 짧게.
-    cache_header = "no-store" if sort == "shuffle" else "public, max-age=120"
-    return JSONResponse(
-        {
-            "total": total,
-            "page": page,
-            "size": size,
-            "has_more": end < total,
-            "items": items,
+        writer.writerow([
+            _safe_cell(base["title"]),
+            _safe_cell(base["artist"]),
+            f"{bpm:.1f}" if bpm > 0 else "",
+            f"{rms:.3f}" if rms > 0 else "",
+            f"{sc:.0f}" if sc > 0 else "",
+            _safe_cell(n),
+        ])
+
+    # BOM 을 붙여 Excel 한글 환경에서 인코딩 깨짐을 방지. 다른 도구는 BOM 을 자동 스킵.
+    body = "﻿" + buf.getvalue()
+    return Response(
+        content=body,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            # 파일명은 ASCII 고정 — 한글 파일명을 강제하면 일부 클라이언트에서 깨진다.
+            "Content-Disposition": 'attachment; filename="catalog.csv"',
+            # 사용자가 필터를 바꾸자마자 새 CSV 를 받기를 기대하므로 캐시 금지.
+            "Cache-Control": "no-store",
         },
-        headers={"Cache-Control": cache_header},
     )
-
-
-def _split_catalog_name(full: str) -> dict[str, str]:
-    """"곡명 - 아티스트" 키를 title/artist 딕셔너리로 안전 분리."""
-    title, _, artist = full.partition(" - ")
-    return {"title": title.strip() or full, "artist": artist.strip() or "Unknown"}
 
 
 @app.get(
