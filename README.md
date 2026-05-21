@@ -87,6 +87,16 @@ python -m backend.cli dataset-diff data/dataset.old.csv data/dataset.csv
 # 긴 목록은 --limit 0 로 무제한, 또는 --json
 ```
 
+카탈로그를 필터링해서 새 CSV 로 내보내고 싶다면 (API export 의 CLI 미러):
+
+```bash
+# 빠른 BPM 의 곡만 따로 모아 export
+python -m backend.cli export-catalog --min-bpm 140 -o fast_tracks.csv
+
+# 검색 + 정렬 + stdout 파이프
+python -m backend.cli export-catalog -q remix --sort artist --stdout | head
+```
+
 서버를 띄우지 않고도 같은 엔진으로 동작한다 (배치 작업 / 디버깅 용).
 
 librosa / sklearn 깔지 않고 디자인만 돌려볼 때:
