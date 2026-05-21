@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Changed
+- Rate limit 429 응답이 헤더뿐 아니라 JSON body 에도 `retry_after_seconds`
+  / `limit` / `reset_at` 를 함께 내려준다. 기존에도 `Retry-After` +
+  `X-RateLimit-*` 헤더는 있었지만 body 에는 한글 detail 문자열만 있어
+  SDK / 모니터링 도구가 retry backoff 로직을 짤 때 헤더만 파싱해야 했다.
+  body 에도 같은 머신-친화 필드를 두어 클라이언트 구현이 단순해진다.
+  전용 `RateLimitExceeded` 예외 + 전역 핸들러로 헤더/바디 single source.
+
 ### Added
 - 메인 페이지 업로드 카드 하단에 "🎧 샘플로 분석해보기" 버튼 추가. 클릭
   하면 `/api/catalog/random?n=1` 으로 카탈로그에서 무작위 한 곡을 뽑아

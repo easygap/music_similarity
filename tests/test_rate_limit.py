@@ -136,3 +136,34 @@ def test_client_ip_unknown_when_no_client(mod):
         headers: dict[str, str] = {}
 
     assert mod._client_ip(_Req()) == "unknown"
+
+
+def test_rate_limit_exception_body_includes_retry_after_fields(mod):
+    """RateLimitExceeded 핸들러가 헤더와 동일한 값을 JSON body 에도 채워야 한다.
+
+    클라이언트가 헤더 파싱 없이 body 만으로도 backoff 로직을 짤 수 있어야
+    SDK / 모니터링 도구가 단순해진다.
+    """
+    import asyncio
+
+    exc = mod.RateLimitExceeded(
+        retry_after_seconds=42,
+        limit=12,
+        reset_at=1_700_000_000,
+        detail="요청이 너무 잦습니다. 약 42초 뒤에 다시 시도해주세요.",
+    )
+    response = asyncio.run(mod._rate_limit_exception_handler(request=None, exc=exc))
+    # 상태 코드 + 헤더 검증.
+    assert response.status_code == 429
+    assert response.headers["Retry-After"] == "42"
+    assert response.headers["X-RateLimit-Limit"] == "12"
+    assert response.headers["X-RateLimit-Remaining"] == "0"
+    assert response.headers["X-RateLimit-Reset"] == "1700000000"
+    # body 도 같은 값.
+    import json
+
+    body = json.loads(response.body)
+    assert body["detail"].startswith("요청이")
+    assert body["retry_after_seconds"] == 42
+    assert body["limit"] == 12
+    assert body["reset_at"] == 1_700_000_000
