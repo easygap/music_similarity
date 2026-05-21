@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-05-21
+
+이번 릴리즈는 사용자에게 보이는 polish (새 기능 알림 배너 · 카탈로그 공유 링크) 와
+운영자가 자주 쓰는 도구 (CSV 내보내기 · CLI export-catalog · health degraded 이유)
+를 한꺼번에 묶었다. 백엔드/CLI/UI 가 같은 catalog 필터 코드 경로를 공유하도록
+정리해서 "검색 화면에서 보던 곡 = CSV 행 = CLI 결과" 가 항상 일치한다.
+
 ### Added
 - 카탈로그 모달 헤더에 "🔗 링크" 공유 버튼 추가. 사용자가 모달을 연 곡의
   deep link URL (`/catalog?song=<encoded>`) 을 클립보드로 복사. 토스트
