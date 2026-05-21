@@ -18,6 +18,18 @@ def _read(rel: str) -> str:
     return (FRONTEND / rel).read_text(encoding="utf-8")
 
 
+def test_html_pages_have_noscript_fallback():
+    """JS 비활성 환경 사용자에게 안내가 떠야 한다 (index / catalog / compare)."""
+    for page in ("index.html", "catalog.html", "compare.html"):
+        html = _read(page)
+        # noscript 블록이 있어야 한다.
+        assert "<noscript>" in html, f"{page} 에 noscript 폴백이 없습니다."
+        # 한글 안내 문구가 포함되어야 한다.
+        assert "JavaScript 가 켜져 있어야" in html, f"{page} 의 noscript 한글 안내가 누락"
+        # 영문 안내도 포함 — 외국 사용자 대응.
+        assert "requires JavaScript" in html, f"{page} 의 noscript 영문 안내가 누락"
+
+
 def test_favorites_js_exports_import_export_helpers():
     """favorites.js 가 exportJson / importJson / replaceAll 을 노출해야 한다."""
     text = _read("js/favorites.js")
