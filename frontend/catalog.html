@@ -376,6 +376,25 @@
       color: var(--text-mute);
       font-size: 13px;
     }
+    /* 필터 행 우측 끝에 붙는 CSV 내보내기 버튼.
+       기존 pager 버튼과 톤을 맞추되 살짝 강조 — 다운로드 액션이라 우연 클릭은 피하면서도
+       "찾을 수 있는" 위치여야 한다. */
+    .cat-export-btn {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      padding: 7px 12px;
+      border-radius: 9px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-left: auto;  /* flex row 우측 정렬 */
+    }
+    .cat-export-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .cat-export-btn:active { transform: translateY(1px); }
+    /* 모바일에선 margin-left:auto 가 자기 줄로 떨어져 어색하므로 폭 100% 로 */
+    @media (max-width: 720px) {
+      .cat-export-btn { margin-left: 0; width: 100%; text-align: center; }
+    }
     .cat-back {
       display: inline-flex;
       align-items: center;
@@ -465,6 +484,14 @@
           <option value="96">96</option>
         </select>
       </label>
+      <button
+        type="button"
+        id="cat-export-csv"
+        class="cat-export-btn"
+        data-i18n="catalog.exportCsv"
+        data-i18n-attr="title:catalog.exportCsvHint"
+        title="현재 필터에 걸린 곡 전체를 CSV 파일로 내려받습니다."
+      >CSV 내보내기</button>
     </div>
 
     <!-- BPM 분포 미니 차트 (페이지 처음 진입 시 한 번만 로드). -->
@@ -1181,6 +1208,62 @@
         state.page = 1;
         writeStateToUrl();
         load();
+      });
+    }
+
+    // CSV 내보내기 — 현재 적용된 q / 필터 / 정렬을 그대로 백엔드에 넘겨 전체를 한 장의 CSV 로.
+    // 즐겨찾기 전용 모드는 localStorage 기반이라 백엔드가 모르므로, 그 모드에서는 클라이언트가
+    // 즐겨찾기 목록을 직접 직렬화해 Blob 다운로드한다.
+    var exportBtn = document.getElementById("cat-export-csv");
+    if (exportBtn) {
+      exportBtn.addEventListener("click", function () {
+        if (state.favOnly && Fav) {
+          // 즐겨찾기 전용 — 클라이언트가 직접 CSV 만들어 내려준다.
+          var favs = Fav.list();
+          var rows = [["title", "artist", "full_name"]];
+          favs.forEach(function (f) {
+            // CSV injection 방어: 셀 첫 글자가 = + - @ 면 ' prefix.
+            function s(v) {
+              var x = v == null ? "" : String(v);
+              return x && "=+-@".indexOf(x[0]) !== -1 ? "'" + x : x;
+            }
+            // CSV 표준 quoting: 콤마/큰따옴표/줄바꿈이 있으면 큰따옴표로 감싸고 내부 " 를 "" 로.
+            function q(v) {
+              var x = s(v);
+              return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x;
+            }
+            rows.push([
+              q(f.title),
+              q(f.artist),
+              q(f.name || ((f.title || "") + " - " + (f.artist || ""))),
+            ]);
+          });
+          var body = "﻿" + rows.map(function (r) { return r.join(","); }).join("\n");
+          var blob = new Blob([body], { type: "text/csv;charset=utf-8" });
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "favorites.csv";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+          return;
+        }
+        // 일반 모드 — 백엔드 export 엔드포인트로 navigate 하면 브라우저가 다운로드를 트리거.
+        var qs = ["q=" + encodeURIComponent(state.q || "")];
+        if (state.sort && state.sort !== "default") qs.push("sort=" + encodeURIComponent(state.sort));
+        if (state.minBpm !== "") qs.push("min_bpm=" + encodeURIComponent(state.minBpm));
+        if (state.maxBpm !== "") qs.push("max_bpm=" + encodeURIComponent(state.maxBpm));
+        if (state.minEnergy !== "") qs.push("min_energy=" + encodeURIComponent(state.minEnergy));
+        if (state.maxEnergy !== "") qs.push("max_energy=" + encodeURIComponent(state.maxEnergy));
+        var url = "/api/catalog/export.csv?" + qs.join("&");
+        // window.location 으로 갈아엎으면 페이지가 빈 채로 깜빡이고 뒤로가기도 어색하다.
+        // download 속성을 가진 임시 <a> 로 트리거하면 페이지 상태가 보존된다.
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "catalog.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       });
     }
 
