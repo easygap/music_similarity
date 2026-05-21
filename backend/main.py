@@ -431,6 +431,46 @@ def _gc_rate_state(now: float, window: float) -> None:
         _rate_state.pop(ip, None)
 
 
+class RateLimitExceeded(Exception):
+    """429 응답을 구조화된 JSON body 로 내려주기 위한 전용 예외.
+
+    HTTPException 만 쓰면 body 가 ``{"detail": "..."}`` 한 줄로 끝나서
+    클라이언트가 retry_after / limit / reset_at 를 헤더에서만 파싱해야 한다.
+    이걸 별도 예외로 raise → 전역 핸들러가 헤더 + JSON body 양쪽에 같은
+    값을 채우면 SDK / 모니터링 / 디버깅이 한층 편해진다.
+    """
+
+    def __init__(self, *, retry_after_seconds: int, limit: int, reset_at: int, detail: str) -> None:
+        self.retry_after_seconds = retry_after_seconds
+        self.limit = limit
+        self.reset_at = reset_at
+        self.detail = detail
+
+
+@app.exception_handler(RateLimitExceeded)
+async def _rate_limit_exception_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """RateLimitExceeded → 429 + 헤더 + 구조화 body 한 묶음.
+
+    헤더만으로도 표준 클라이언트는 동작하지만, SDK / 모니터링 / 사용자 도구에서는
+    body 의 ``retry_after_seconds`` 를 그대로 읽을 수 있으면 backoff 로직이 훨씬 단순.
+    """
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": exc.detail,
+            "retry_after_seconds": exc.retry_after_seconds,
+            "limit": exc.limit,
+            "reset_at": exc.reset_at,
+        },
+        headers={
+            "Retry-After": str(exc.retry_after_seconds),
+            "X-RateLimit-Limit": str(exc.limit),
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": str(exc.reset_at),
+        },
+    )
+
+
 async def _rate_limit(request: Request) -> None:
     """IP별 sliding-window rate limiter (RATE_LIMIT_PER_MIN / 60s).
 
@@ -450,18 +490,17 @@ async def _rate_limit(request: Request) -> None:
         cutoff = now - window
         history[:] = [t for t in history if t > cutoff]
         if len(history) >= RATE_LIMIT_PER_MIN:
-            retry = window - (now - history[0])
+            retry = int(window - (now - history[0])) + 1
             _bump("soundmatch_rate_limited_total")
             reset_at = int(history[0] + window)
-            raise HTTPException(
-                status_code=429,
-                detail=f"요청이 너무 잦습니다. 약 {int(retry) + 1}초 뒤에 다시 시도해주세요.",
-                headers={
-                    "Retry-After": str(int(retry) + 1),
-                    "X-RateLimit-Limit": str(RATE_LIMIT_PER_MIN),
-                    "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(reset_at),
-                },
+            # HTTPException 의 detail 만으로는 클라이언트가 retry_after 를 응답 body 에서
+            # 파싱하기 어렵다 ("약 N초" 라는 한글 문자열만 들어있음). 별도 exception 으로
+            # raise 해서 전역 핸들러가 구조화된 JSON body 까지 함께 내려주도록.
+            raise RateLimitExceeded(
+                retry_after_seconds=retry,
+                limit=RATE_LIMIT_PER_MIN,
+                reset_at=reset_at,
+                detail=f"요청이 너무 잦습니다. 약 {retry}초 뒤에 다시 시도해주세요.",
             )
         history.append(now)
         remaining = max(0, RATE_LIMIT_PER_MIN - len(history))
