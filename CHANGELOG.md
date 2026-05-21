@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- `/api/health` 응답에도 `release_date` / `git_commit` 필드 추가. 운영자가
+  `/api/version` 까지 추가 호출하지 않고도 health 한 번 만에 "어떤 빌드가
+  떠 있는지" 확인 가능. alert 룰 (`status=degraded AND git_commit=X`)
+  작성이 단일 응답으로 가능해진다. `HealthResponse` Pydantic 모델에도
+  옵션 필드로 반영 → OpenAPI / Swagger UI 자동 갱신. `python -m backend.cli
+  status` 출력 표에도 두 라인이 추가되어 cron / monitoring 용 한 화면이
+  더 풍부해진다.
 - `python -m backend.cli version` 서브커먼드 신설. `/api/version` 과 동일한
   정보 (version / release_date / git_commit) 를 서버 없이 즉시 출력. CI 가
   배포 후 "deploy 된 빌드가 기대한 SHA 와 일치하는지" 검증하는 용도에 적합.
