@@ -439,3 +439,89 @@ def test_cli_status_json_passthrough(monkeypatch, capsys):
     parsed = json.loads(out)
     assert parsed["status"] == "ok"
     assert parsed["catalog_size"] == 3
+
+
+# --- export-catalog 서브커먼드 --------------------------------------------
+
+def test_cli_export_catalog_writes_csv(synthetic_dataset, tmp_path, capsys):
+    """파일 출력 모드 — 헤더 + 3행이 BOM 포함 CSV 로 떨어져야 한다."""
+    out_path = tmp_path / "out.csv"
+    code = main([
+        "export-catalog",
+        "--dataset", str(synthetic_dataset),
+        "-o", str(out_path),
+    ])
+    assert code == 0
+    text = out_path.read_text(encoding="utf-8")
+    assert text.startswith("﻿"), "BOM 이 선두에 있어야 합니다 (Excel 한글 호환)."
+    lines = text.lstrip("﻿").splitlines()
+    assert lines[0] == "title,artist,bpm,energy_rms,brightness,full_name"
+    # 합성 카탈로그 3행.
+    assert len(lines) == 1 + 3
+
+
+def test_cli_export_catalog_query_filter(synthetic_dataset, tmp_path):
+    """-q 옵션은 부분 일치 (대소문자 무시) 로 동작해야 한다."""
+    out_path = tmp_path / "alpha.csv"
+    code = main([
+        "export-catalog",
+        "--dataset", str(synthetic_dataset),
+        "-q", "ALPHA",
+        "-o", str(out_path),
+    ])
+    assert code == 0
+    lines = out_path.read_text(encoding="utf-8").lstrip("﻿").splitlines()
+    # 헤더 + Alpha 한 곡.
+    assert len(lines) == 2
+    assert "Alpha" in lines[1]
+
+
+def test_cli_export_catalog_stdout_no_bom(synthetic_dataset, capsys):
+    """--stdout 옵션은 파이프 친화로 BOM 없이 CSV 만 흘려야 한다."""
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        code = main([
+            "export-catalog",
+            "--dataset", str(synthetic_dataset),
+            "--stdout",
+        ])
+    assert code == 0
+    body = buf.getvalue()
+    # stdout 모드는 BOM 없음.
+    assert not body.startswith("﻿"), "stdout 모드에서는 BOM 이 붙으면 안 됩니다."
+    assert body.startswith("title,artist,bpm,energy_rms,brightness,full_name")
+
+
+def test_cli_export_catalog_missing_dataset(tmp_path, capsys):
+    """없는 데이터셋 → exit code 2."""
+    code = main([
+        "export-catalog",
+        "--dataset", str(tmp_path / "nope.csv"),
+        "-o", str(tmp_path / "out.csv"),
+    ])
+    err = capsys.readouterr().err
+    assert code == 2
+    assert "찾을 수 없습니다" in err
+
+
+def test_cli_export_catalog_blocks_formula_injection(tmp_path, feature_columns):
+    """API export 와 동일하게 = 로 시작하는 셀에 ' prefix 가 붙어야 한다."""
+    import csv as _csv
+
+    ds = tmp_path / "evil.csv"
+    with ds.open("w", newline="", encoding="utf-8") as fh:
+        w = _csv.writer(fh)
+        w.writerow(["musicname & artist", *feature_columns])
+        w.writerow(["=cmd|calc!A1 - Attacker", *[0.5] * len(feature_columns)])
+    out_path = tmp_path / "out.csv"
+    code = main([
+        "export-catalog",
+        "--dataset", str(ds),
+        "-o", str(out_path),
+    ])
+    assert code == 0
+    body = out_path.read_text(encoding="utf-8").lstrip("﻿")
+    rows = body.splitlines()
+    assert len(rows) >= 2
+    # 셀이 = 으로 직접 시작해서는 안 된다.
+    assert rows[1].startswith("'=cmd"), f"수식 셀에 quote prefix 가 빠졌습니다: {rows[1]!r}"

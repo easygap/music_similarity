@@ -7,6 +7,15 @@
 ## [Unreleased]
 
 ### Added
+- `python -m backend.cli export-catalog` 서브커먼드 신설. 백엔드의 `/api/catalog/export.csv`
+  와 같은 필터/정렬/컬럼/CSV injection 방어를 CLI 로도 노출. CI · cron ·
+  Makefile 단계에서 서버 띄우지 않고도 동일한 결과물을 생성할 수 있다.
+  옵션은 API 와 정확히 매핑: `-q` (검색), `--min-bpm` / `--max-bpm`,
+  `--min-energy` / `--max-energy`, `--sort` (default/title/artist/bpm/energy).
+  `-o` 로 파일 출력 (기본 `./catalog-export.csv`), `--stdout` 로 파이프
+  친화 (BOM 없이 표준 CSV). 파일 출력은 Excel 한글 호환 BOM 선두. exit
+  code: 정상 0 / 파일 없음 2 / CSV 로딩 실패 3 / 필수 컬럼 누락 4. README
+  "실행" 섹션에 사용 예시 2개 추가.
 - "새 기능" 알림 배너 + 모달 추가. 사이트 진입 시 `/api/version.release_date`
   가 사용자의 마지막 확인 값 (localStorage `soundmatch.lastSeenRelease`)
   과 다르면 상단에 작은 배너가 뜨고, 클릭하면 최근 3개 릴리즈의 노트를

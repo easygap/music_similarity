@@ -605,6 +605,110 @@ def cmd_dataset_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export_catalog(args: argparse.Namespace) -> int:
+    """카탈로그 CSV 를 q/BPM/에너지/정렬 필터로 가공해 새 CSV 로 떨군다.
+
+    백엔드의 ``GET /api/catalog/export.csv`` 와 동일한 컬럼/필터를 그대로
+    CLI 로 노출. 서버를 띄우지 않고도 CI / cron / Makefile 단계에서 같은
+    결과물을 만들 수 있게 한다.
+
+    출력 컬럼: ``title, artist, bpm, energy_rms, brightness, full_name``
+    (API export 와 동일 — 운영자가 어디서 가져온 CSV 인지 헷갈리지 않게).
+
+    동일한 CSV injection 방어 (셀이 ``= + - @`` 로 시작하면 ``'`` prefix) 와
+    UTF-8 BOM 선두 → Excel 한글 호환 보장.
+    """
+    import csv as _csv
+
+    import pandas as pd
+
+    src = Path(args.dataset)
+    if not src.exists():
+        print(f"error: 데이터셋을 찾을 수 없습니다: {src}", file=sys.stderr)
+        return 2
+
+    try:
+        df = pd.read_csv(src)
+    except Exception as e:  # noqa: BLE001
+        print(f"error: CSV 로딩 실패: {e}", file=sys.stderr)
+        return 3
+
+    name_col = "musicname & artist"
+    if name_col not in df.columns:
+        print(f"error: 필수 키 컬럼 누락: '{name_col}'", file=sys.stderr)
+        return 4
+
+    # ---- 필터링 (API 와 동일 의미) ----------------------------------
+    needle = (args.q or "").strip().lower()
+    if needle:
+        df = df[df[name_col].str.lower().str.contains(needle, na=False)]
+    if args.min_bpm is not None and "bpm" in df.columns:
+        df = df[pd.to_numeric(df["bpm"], errors="coerce").fillna(0) >= args.min_bpm]
+    if args.max_bpm is not None and "bpm" in df.columns:
+        df = df[pd.to_numeric(df["bpm"], errors="coerce").fillna(0) <= args.max_bpm]
+    if args.min_energy is not None and "rms_mean" in df.columns:
+        df = df[pd.to_numeric(df["rms_mean"], errors="coerce").fillna(0) >= args.min_energy]
+    if args.max_energy is not None and "rms_mean" in df.columns:
+        df = df[pd.to_numeric(df["rms_mean"], errors="coerce").fillna(0) <= args.max_energy]
+
+    # ---- 정렬 (default 면 입력 순서 유지) -----------------------------
+    def _split(name: str) -> tuple[str, str]:
+        title, _, artist = (name or "").partition(" - ")
+        return title.strip() or name, artist.strip() or "Unknown"
+
+    if args.sort == "title":
+        df = df.sort_values(by=name_col, key=lambda s: s.map(lambda x: _split(x)[0].lower()))
+    elif args.sort == "artist":
+        df = df.sort_values(by=name_col, key=lambda s: s.map(lambda x: _split(x)[1].lower()))
+    elif args.sort == "bpm" and "bpm" in df.columns:
+        df = df.assign(_bpm_sort=pd.to_numeric(df["bpm"], errors="coerce").fillna(0)).sort_values("_bpm_sort").drop(columns=["_bpm_sort"])
+    elif args.sort == "energy" and "rms_mean" in df.columns:
+        df = df.assign(_e_sort=pd.to_numeric(df["rms_mean"], errors="coerce").fillna(0)).sort_values("_e_sort").drop(columns=["_e_sort"])
+
+    # ---- CSV 직렬화 ------------------------------------------------
+    def _safe(cell: object) -> str:
+        s = "" if cell is None else str(cell)
+        if s and s[0] in "=+-@":
+            return "'" + s
+        return s
+
+    import io as _io
+
+    buf = _io.StringIO()
+    writer = _csv.writer(buf, lineterminator="\n")
+    writer.writerow(["title", "artist", "bpm", "energy_rms", "brightness", "full_name"])
+    rows_written = 0
+    for _, row in df.iterrows():
+        full = str(row[name_col])
+        title, artist = _split(full)
+        bpm = float(row.get("bpm", 0.0) or 0.0)
+        rms = float(row.get("rms_mean", 0.0) or 0.0)
+        sc = float(row.get("spectral_centroid_mean", 0.0) or 0.0)
+        writer.writerow([
+            _safe(title),
+            _safe(artist),
+            f"{bpm:.1f}" if bpm > 0 else "",
+            f"{rms:.3f}" if rms > 0 else "",
+            f"{sc:.0f}" if sc > 0 else "",
+            _safe(full),
+        ])
+        rows_written += 1
+
+    body = "﻿" + buf.getvalue()  # Excel 한글 호환 BOM.
+
+    if args.stdout:
+        # 파이프 친화 — BOM 없이 표준 CSV 만 흘림 (다른 도구가 BOM 을 헤더로 오인하는 케이스 회피).
+        sys.stdout.write(buf.getvalue())
+        print(f"# {rows_written}행 출력", file=sys.stderr)
+        return 0
+
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(body, encoding="utf-8")
+    print(f"{rows_written}행 작성: {out_path}")
+    return 0
+
+
 def cmd_batch(args: argparse.Namespace) -> int:
     """폴더 안의 음원들을 한꺼번에 분석해 CSV 로 떨군다."""
     import csv
@@ -734,6 +838,34 @@ def build_parser() -> argparse.ArgumentParser:
     stats.add_argument("path", help="dataset.csv 경로")
     stats.add_argument("--json", action="store_true", help="JSON 만 출력 (jq 파이프 친화)")
     stats.set_defaults(func=cmd_dataset_stats)
+
+    export_cat = sub.add_parser(
+        "export-catalog",
+        help="카탈로그 CSV 를 q/BPM/에너지/정렬 필터로 가공해 새 CSV 로 내보냄 (API export 의 CLI 미러).",
+    )
+    export_cat.add_argument(
+        "--dataset", default="data/dataset.csv",
+        help="원본 카탈로그 CSV 경로 (기본 data/dataset.csv)",
+    )
+    export_cat.add_argument("-q", "--query", dest="q", default="", help="제목/아티스트 부분 일치 (대소문자 무시)")
+    export_cat.add_argument("--min-bpm", type=float, default=None, help="BPM 하한")
+    export_cat.add_argument("--max-bpm", type=float, default=None, help="BPM 상한")
+    export_cat.add_argument("--min-energy", type=float, default=None, help="RMS 에너지 하한 (0~1)")
+    export_cat.add_argument("--max-energy", type=float, default=None, help="RMS 에너지 상한 (0~1)")
+    export_cat.add_argument(
+        "--sort", default="default",
+        choices=["default", "title", "artist", "bpm", "energy"],
+        help="정렬 (API 의 sort 와 동일)",
+    )
+    export_cat.add_argument(
+        "-o", "--out", default="catalog-export.csv",
+        help="출력 파일 경로 (기본 ./catalog-export.csv). --stdout 와 동시 사용 금지.",
+    )
+    export_cat.add_argument(
+        "--stdout", action="store_true",
+        help="결과를 파일 대신 표준 출력으로 (BOM 없음, 파이프 친화).",
+    )
+    export_cat.set_defaults(func=cmd_export_catalog)
 
     diff = sub.add_parser(
         "dataset-diff",
