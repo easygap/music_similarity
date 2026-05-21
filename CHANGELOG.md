@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-05-21
+
+운영 가시성 (build SHA / 의존 버전 / health 통합 / rate-limit body) 과
+사용자 첫 인상 (샘플 분석 버튼 · OS 테마 실시간 동기) 을 한 번에 묶은
+릴리즈. 같은 날 cut 된 1.5.0 직후의 누적 변경 7건을 정리한다.
+
 ### Added
 - `/api/version` 응답에 `dependencies` 딕셔너리 추가. 운영자가 떠 있는
   서버의 numpy / pandas / scikit-learn / librosa / fastapi / pydantic /
