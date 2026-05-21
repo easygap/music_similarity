@@ -158,11 +158,13 @@
         }
       }
 
-      // footer 빌드 정보 — 'v1.4.0 · 2026-05-15' 형태. release_date 가 없으면
-      // 버전만 표시. 응답이 죽어 있으면 라인 자체를 숨김 (이미 hidden 기본).
+      // footer 빌드 정보 — 'v1.5.0 · 2026-05-21 · abc1234' 형태.
+      // git_commit / release_date 가 없으면 차례로 생략. 응답이 죽어 있으면 라인 자체를 숨김.
       if (buildEl && data.version) {
-        const v = `v${String(data.version)}`;
-        buildEl.textContent = data.release_date ? `${v} · ${data.release_date}` : v;
+        const parts = [`v${String(data.version)}`];
+        if (data.release_date) parts.push(String(data.release_date));
+        if (data.git_commit) parts.push(String(data.git_commit));
+        buildEl.textContent = parts.join(" · ");
         buildEl.hidden = false;
       }
 

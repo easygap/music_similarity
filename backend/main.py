@@ -591,9 +591,46 @@ def _parse_recent_releases_from_changelog(limit: int = 3) -> list[dict]:
     return releases
 
 
+def _detect_git_commit() -> str | None:
+    """현재 빌드의 짧은 git SHA 를 식별한다.
+
+    우선순위:
+    1. 환경변수 ``MUSIC_GIT_COMMIT`` — 컨테이너 빌드 시 inject 하는 표준 패턴
+       (Dockerfile / fly.toml / render.yaml 빌드 단계에서 ``GIT_COMMIT=$(git rev-parse --short HEAD)``).
+    2. 로컬 ``.git/HEAD`` 파일 — 개발 환경에서 환경변수 없이도 자동 감지.
+    3. 둘 다 실패하면 None — 호출 측이 fallback.
+
+    SHA 는 항상 7자로 truncate (짧은 form). 운영자가 ``v1.5.0 · ab12cd3`` 형태로 보기 위함.
+    """
+    env_sha = os.environ.get("MUSIC_GIT_COMMIT", "").strip()
+    if env_sha:
+        return env_sha[:7]
+    # .git/HEAD 가 있으면 거기서 HEAD 가 가리키는 ref 를 따라가 SHA 를 읽는다.
+    head_file = ROOT / ".git" / "HEAD"
+    try:
+        head = head_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    # detached HEAD 면 그 자체가 SHA, 아니면 "ref: refs/heads/main" 형태.
+    if head.startswith("ref:"):
+        ref_path = head.split(":", 1)[1].strip()
+        ref_file = ROOT / ".git" / ref_path
+        try:
+            sha = ref_file.read_text(encoding="utf-8").strip()
+        except OSError:
+            return None
+    else:
+        sha = head
+    # SHA 가 hex 40자 인지만 sanity check — 아니면 None.
+    if len(sha) != 40 or not all(c in "0123456789abcdef" for c in sha.lower()):
+        return None
+    return sha[:7]
+
+
 # 모듈 로드 시 한 번만 계산. 핫리로드 안 됨 — 새 release 가 cut 되면 워커 재시작.
 _RELEASE_DATE: str | None = _parse_release_date_from_changelog()
 _RECENT_RELEASES: list[dict] = _parse_recent_releases_from_changelog(limit=3)
+_GIT_COMMIT: str | None = _detect_git_commit()
 
 
 def _dataset_mtime_iso() -> str | None:
@@ -772,6 +809,9 @@ def version_info():
         "name": "soundmatch",
         "version": app.version,
         "release_date": _RELEASE_DATE,
+        # 짧은 git SHA (7자). 같은 version 으로 여러 빌드가 떠 있을 때 운영자가 정확히
+        # 어느 빌드인지 식별. 환경변수 MUSIC_GIT_COMMIT 가 우선, 없으면 .git/HEAD fallback.
+        "git_commit": _GIT_COMMIT,
         "env": ENV,
         "catalog_size": catalog_size,
         "analyses_total": analyses_total,
