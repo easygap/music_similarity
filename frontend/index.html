@@ -98,6 +98,39 @@
     </div>
   </div>
 
+  <!-- "새 기능" 알림 배너.
+       /api/version.release_date 가 사용자의 localStorage `soundmatch.lastSeenRelease`
+       와 다를 때만 노출. 닫거나 보기 누르면 현재 release_date 가 localStorage 에
+       저장되어 다음 릴리즈 cut 까지 다시 안 나타난다. -->
+  <div class="whatsnew-banner hidden" id="whatsnew-banner" role="status" aria-live="polite">
+    <span class="whatsnew-banner-text">
+      <strong data-i18n="whatsNew.bannerTitle">새 버전이 배포됐어요</strong>
+      <span class="whatsnew-banner-version" id="whatsnew-version"></span>
+      <span data-i18n="whatsNew.bannerBody">— 무엇이 바뀌었는지 한눈에 확인해보세요.</span>
+    </span>
+    <div class="whatsnew-banner-actions">
+      <button type="button" class="ghost-pill" id="whatsnew-open"
+              data-i18n="whatsNew.viewButton">새 기능 보기</button>
+      <button type="button" class="install-dismiss" id="whatsnew-dismiss"
+              aria-label="닫기" data-i18n-attr="aria-label:whatsNew.dismiss">×</button>
+    </div>
+  </div>
+
+  <!-- "새 기능" 모달 — 배너 클릭 시 열림. /api/version/changelog 응답을 그대로 렌더. -->
+  <div class="whatsnew-modal hidden" id="whatsnew-modal" role="dialog"
+       aria-modal="true" aria-labelledby="whatsnew-modal-title">
+    <div class="whatsnew-modal-card">
+      <header class="whatsnew-modal-head">
+        <h2 id="whatsnew-modal-title" data-i18n="whatsNew.modalTitle">새로 바뀐 것들</h2>
+        <button type="button" class="modal-close" id="whatsnew-modal-close"
+                aria-label="닫기" data-i18n-attr="aria-label:whatsNew.dismiss">×</button>
+      </header>
+      <div class="whatsnew-modal-body" id="whatsnew-modal-body">
+        <p class="whatsnew-loading" data-i18n="whatsNew.loading">불러오는 중…</p>
+      </div>
+    </div>
+  </div>
+
   <!-- 히어로 영역 (왼쪽 카피 + 오른쪽 업로드 카드) ----------------- -->
   <main id="main">
     <section class="hero">

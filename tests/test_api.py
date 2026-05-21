@@ -455,6 +455,54 @@ def test_catalog_export_csv_invalid_sort(fastapi_client):
     assert r.status_code == 422
 
 
+# ---- /api/version/changelog ------------------------------------------------
+
+def test_version_changelog_returns_recent_releases(fastapi_client):
+    """CHANGELOG 의 최근 release 가 구조화되어 떨어져야 한다."""
+    r = fastapi_client.get("/api/version/changelog")
+    assert r.status_code == 200
+    body = r.json()
+    assert "releases" in body
+    rels = body["releases"]
+    # 우리 CHANGELOG 에 1.x 릴리즈가 여러 개 있으므로 최소 1개 이상 떨어져야 한다.
+    assert len(rels) >= 1
+    first = rels[0]
+    assert "version" in first
+    assert "date" in first
+    assert "sections" in first
+    # version 은 semver 형식 (X.Y.Z), date 는 YYYY-MM-DD.
+    import re
+
+    assert re.match(r"^\d+\.\d+\.\d+$", first["version"]), first["version"]
+    assert re.match(r"^\d{4}-\d{2}-\d{2}$", first["date"]), first["date"]
+    # sections 안에 Added 가 적어도 하나는 있다고 가정 (전체 CHANGELOG 패턴).
+    assert isinstance(first["sections"], dict)
+
+
+def test_version_changelog_respects_limit(fastapi_client):
+    """limit 파라미터로 응답 개수가 제한되어야 한다."""
+    r = fastapi_client.get("/api/version/changelog?limit=1")
+    assert r.status_code == 200
+    assert len(r.json()["releases"]) == 1
+
+
+def test_version_changelog_validates_limit_bound(fastapi_client):
+    """limit 가 너무 크거나 작으면 422."""
+    r = fastapi_client.get("/api/version/changelog?limit=999")
+    assert r.status_code == 422
+    r2 = fastapi_client.get("/api/version/changelog?limit=0")
+    assert r2.status_code == 422
+
+
+def test_version_changelog_caches_safely(fastapi_client):
+    """같은 빌드 안에서는 변경 없으므로 public 캐시 헤더가 있어야 한다."""
+    r = fastapi_client.get("/api/version/changelog")
+    assert r.status_code == 200
+    cc = r.headers.get("Cache-Control", "")
+    # max-age 가 명시되어 있어야 한다 — CDN 이 짧게 캐시하도록.
+    assert "max-age" in cc
+
+
 def test_client_error_beacon(fastapi_client):
     """/api/client-error 가 비콘을 받아 204 로 응답해야 한다."""
     r = fastapi_client.post(
