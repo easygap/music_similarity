@@ -579,6 +579,16 @@ def test_app_js_wires_favorites_export_button():
     assert "importJson" in text
 
 
+def test_catalog_loading_skeleton_wired():
+    """카탈로그가 로딩 중 스켈레톤 카드를 그려 레이아웃 점프를 막아야 한다."""
+    html = _read("catalog.html")
+    # 스켈레톤 카드 스타일.
+    assert ".cat-card-skel" in html
+    # load() 가 시작 시점에 renderSkeletons() 를 호출해야 한다.
+    assert "function renderSkeletons(" in html
+    assert "renderSkeletons();" in html
+
+
 @pytest.mark.parametrize("page", ["catalog.html", "compare.html"])
 def test_subpages_load_i18n(page: str):
     """카탈로그 / 비교 페이지도 i18n.js 를 직접 로딩해야 lang 토글이 동작한다."""
