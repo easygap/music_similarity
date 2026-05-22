@@ -190,22 +190,54 @@ class PreviewHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(FRONTEND), **kwargs)
 
-    # Same convenience aliases the FastAPI app exposes.
-    PATH_ALIASES = {
-        "/style.css": "/css/style.css",
-        "/app.js": "/js/app.js",
-        "/i18n.js": "/js/i18n.js",
-        "/visualizers.js": "/js/visualizers.js",
+    # FastAPI 앱은 /<name>.js 를 frontend/js/ 에서, /<name>.css 를 frontend/css/ 에서
+    # 서빙한다. 프리뷰 서버도 같은 규칙을 따라가야 HTML 의 <script src="/app.js"> 같은
+    # 루트 경로 참조가 깨지지 않는다. 개별 파일을 일일이 나열하면 새 JS 가 추가될 때마다
+    # 빠뜨리므로, 확장자 기준으로 하위 디렉토리를 자동 탐색한다.
+    STATIC_ALIASES = {
         "/favicon.svg": "/assets/favicon.svg",
     }
+
+    # FastAPI 앱이 확장자 없이 노출하는 페이지 라우트 (/catalog → catalog.html 등).
+    PAGE_ALIASES = {
+        "/catalog": "/catalog.html",
+        "/compare": "/compare.html",
+        "/privacy": "/privacy.html",
+        "/terms": "/terms.html",
+        "/404": "/404.html",
+    }
+
+    def _resolve_static_alias(self, path: str) -> str | None:
+        """루트 경로의 정적 파일 / pretty 페이지 경로를 실제 파일로 매핑. 없으면 None."""
+        if path in self.STATIC_ALIASES:
+            return self.STATIC_ALIASES[path]
+        if path in self.PAGE_ALIASES:
+            return self.PAGE_ALIASES[path]
+        # /foo.js → /js/foo.js, /foo.css → /css/foo.css (해당 파일이 실제로 있을 때만).
+        for ext, subdir in ((".js", "js"), (".css", "css")):
+            if path.endswith(ext) and path.count("/") == 1:
+                candidate = FRONTEND / subdir / path.lstrip("/")
+                if candidate.is_file():
+                    return f"/{subdir}{path}"
+        return None
 
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
+        alias = self._resolve_static_alias(path)
         if path == "/":
             self.path = "/index.html"
-        elif path in self.PATH_ALIASES:
-            self.path = self.PATH_ALIASES[path]
+        elif alias:
+            self.path = alias
+        elif path == "/api/catalog/sample":
+            # 메인 페이지 하단 '카탈로그 미리보기' 가 호출.
+            qs = parse_qs(parsed.query)
+            limit = min(int((qs.get("limit", ["12"])[0]) or 12), len(PREVIEW_CATALOG))
+            picks = random.sample(PREVIEW_CATALOG, k=limit)
+            return self._send_json({
+                "catalog_size": 1006,
+                "items": [{"title": p["title"], "artist": p["artist"]} for p in picks],
+            })
         elif path == "/api/catalog":
             return self._send_json({"catalog_size": 1006, "feature_count": 57, "features": []})
         elif path == "/api/health":

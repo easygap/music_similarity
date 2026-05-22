@@ -103,3 +103,43 @@ def test_preview_export_csv(preview_url):
     assert status == 200
     # BOM 을 떼고 헤더 검증.
     assert body.lstrip("﻿").startswith("title,artist,bpm,energy_rms,brightness,full_name")
+
+
+@pytest.mark.parametrize("js", [
+    "/app.js", "/i18n.js", "/theme-init.js", "/favorites.js",
+    "/visualizers.js", "/error-boundary.js", "/sw-register.js",
+])
+def test_preview_serves_root_js_files(preview_url, js):
+    """HTML 이 루트 경로(<script src="/app.js">)로 부르는 JS 가 200 이어야 한다.
+
+    FastAPI 앱은 frontend/js/ 를 루트에서 서빙한다. 프리뷰 서버도 같은 alias 를
+    따라가지 않으면 페이지가 통째로 동작 안 한다 (실제로 한 번 깨졌던 회귀).
+    """
+    status, _ = _get(preview_url + js)
+    assert status == 200, f"{js} 가 200 이 아닙니다."
+
+
+def test_preview_serves_root_style_css(preview_url):
+    """/style.css 도 frontend/css/ 에서 서빙되어야 한다."""
+    status, _ = _get(preview_url + "/style.css")
+    assert status == 200
+
+
+@pytest.mark.parametrize("page", ["/catalog", "/compare", "/privacy", "/terms"])
+def test_preview_serves_pretty_page_routes(preview_url, page):
+    """확장자 없는 페이지 라우트(/catalog 등) 도 HTML 을 돌려줘야 한다.
+
+    FastAPI 앱이 @app.get("/catalog") 식으로 노출하는 경로 — 프리뷰 서버도
+    같은 매핑을 해줘야 nav 링크 / deep link 가 동작한다.
+    """
+    status, body = _get(preview_url + page)
+    assert status == 200, f"{page} 가 200 이 아닙니다."
+    assert "<!DOCTYPE html>" in body or "<!doctype html>" in body.lower()
+
+
+def test_preview_serves_catalog_sample(preview_url):
+    """/api/catalog/sample — 메인 페이지 하단 카탈로그 미리보기용."""
+    status, body = _get(preview_url + "/api/catalog/sample?limit=6")
+    assert status == 200
+    data = json.loads(body)
+    assert len(data["items"]) == 6
