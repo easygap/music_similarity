@@ -277,7 +277,7 @@ def _warmup_pipeline() -> None:
 app = FastAPI(
     title="SoundMatch · Music Similarity API",
     description="음원을 업로드하면 카탈로그에서 가장 닮은 곡을 찾아 순위와 함께 돌려준다.",
-    version="1.7.0",
+    version="1.7.1",
     lifespan=lifespan,
 )
 
