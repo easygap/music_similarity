@@ -95,6 +95,12 @@
         exportPngFailed: "PNG 변환에 실패했어요. SVG 저장으로 대체해주세요.",
         emptyTitle: "유사한 곡을 찾지 못했습니다.",
         emptyHint: "다른 곡으로 다시 시도해보세요.",
+        confidenceLow: (pct) =>
+          `1위 매칭도 유사도 ${pct}% 로, 카탈로그에 잘 맞는 곡이 없었어요. ` +
+          `결과는 "그나마 가까운" 곡들이니 참고용으로만 봐주세요.`,
+        confidenceMid: (pct) =>
+          `1위 매칭 유사도가 ${pct}% 예요. 느슨하게 닮은 정도라 ` +
+          `장르나 분위기가 정확히 일치하지 않을 수 있어요.`,
         uploadedTrackTitle: "업로드한 음원",
         uploadedTrackSub: "분석에 사용된 첫 30초가 동일하게 재생됩니다.",
         radarTitle: "오디오 지문 비교 (1위 매칭과)",
@@ -367,6 +373,12 @@
         exportPngFailed: "PNG conversion failed. Try SVG instead.",
         emptyTitle: "No similar songs found.",
         emptyHint: "Try a different file.",
+        confidenceLow: (pct) =>
+          `Even the top match is only ${pct}% similar — the catalog didn't have a close fit. ` +
+          `Treat these as "nearest available" rather than true matches.`,
+        confidenceMid: (pct) =>
+          `The top match is ${pct}% similar — a loose resemblance, ` +
+          `so the genre or mood may not line up precisely.`,
         uploadedTrackTitle: "Your upload",
         uploadedTrackSub: "Same first 30 seconds used by the analyzer.",
         radarTitle: "Acoustic fingerprint vs. top match",

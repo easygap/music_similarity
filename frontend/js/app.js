@@ -946,6 +946,10 @@
       resultTagsEl.classList.add("hidden");
     }
 
+    // 1위 매칭 유사도가 낮으면 신뢰도 안내 배너를 띄운다. 카탈로그에 잘 맞는 곡이
+    // 없을 때 순위만 보고 사용자가 과신하지 않도록 솔직하게 알려주는 장치.
+    renderConfidenceNote(data.results);
+
     // 멜 스펙트로그램 SVG (백엔드가 직접 만들어줌). 빈 문자열이면 카드 숨김.
     if (typeof data.spectrogram_svg === "string" && data.spectrogram_svg.length > 0) {
       spectrogramHost.innerHTML = data.spectrogram_svg;
@@ -1084,6 +1088,35 @@
     renderResultMeta(data);
 
     resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // 1위 매칭 유사도를 보고 신뢰도 안내 배너를 그린다.
+  //   - 65% 이상: 배너 없음 (좋은 매칭).
+  //   - 50~65%: "느슨하게 닮은" 수준 — 톤 다운된 info 안내.
+  //   - 50% 미만: "잘 맞는 곡 없음" — 좀 더 강한 warn 안내.
+  // 임계값은 z-score 거리 기반 코사인 유사도의 경험적 분포에서 잡았다. 카탈로그가
+  // ~1000곡 규모라 정말 새로운 장르를 올리면 1위도 50%대로 떨어지는 일이 흔하다.
+  function renderConfidenceNote(results) {
+    const el = document.getElementById("confidence-note");
+    if (!el) return;
+    const topPct = Array.isArray(results) && results[0]
+      ? Number(results[0].similarity_percent) || 0
+      : 0;
+    // 결과가 아예 없으면 (빈 상태) 배너도 숨김 — 빈 상태 카드가 따로 안내함.
+    if (!Array.isArray(results) || results.length === 0 || topPct >= 65) {
+      el.classList.add("hidden");
+      el.innerHTML = "";
+      el.removeAttribute("data-level");
+      return;
+    }
+    const level = topPct < 50 ? "low" : "mid";
+    const msgKey = level === "low" ? "results.confidenceLow" : "results.confidenceMid";
+    const icon = level === "low" ? "⚠" : "ℹ";
+    el.dataset.level = level;
+    el.innerHTML =
+      `<span class="confidence-note-icon" aria-hidden="true">${icon}</span>`
+      + `<span class="confidence-note-text">${escapeHtml(t(msgKey, topPct.toFixed(1)))}</span>`;
+    el.classList.remove("hidden");
   }
 
   // 분석 시각 ISO (UTC) 를 사용자 로컬 타임존으로 포맷한다. 한국 사용자는

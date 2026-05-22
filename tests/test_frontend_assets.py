@@ -571,6 +571,22 @@ def test_subpages_load_i18n(page: str):
     assert '<script src="/i18n.js">' in text, f"{page} 가 i18n.js 를 불러오지 않습니다."
 
 
+def test_confidence_note_wired_in_index_and_app():
+    """1위 유사도가 낮을 때 뜨는 신뢰도 안내 배너가 마크업 + JS + i18n 에 모두 있어야 한다."""
+    html = _read("index.html")
+    assert 'id="confidence-note"' in html, "index.html 에 confidence-note 요소가 없습니다."
+    app = _read("js/app.js")
+    # renderResults 가 renderConfidenceNote 를 호출해야 한다.
+    assert "renderConfidenceNote(" in app
+    # 두 단계 임계값 (low / mid) 모두 i18n 키를 참조해야 한다.
+    assert "results.confidenceLow" in app
+    assert "results.confidenceMid" in app
+    # i18n 사전 ko/en 양쪽에 키가 존재해야 한다 (parity 는 별도 테스트가 더 엄격히 검증).
+    i18n = _read("js/i18n.js")
+    assert i18n.count("confidenceLow") >= 2, "confidenceLow 가 ko/en 양쪽에 없습니다."
+    assert i18n.count("confidenceMid") >= 2, "confidenceMid 가 ko/en 양쪽에 없습니다."
+
+
 @pytest.mark.parametrize(
     "marker",
     [

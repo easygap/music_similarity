@@ -359,6 +359,10 @@
       <!-- 휴리스틱 태그 (예: 빠른 템포 / 에너지 폭발 / 밝은 톤) -->
       <div class="result-tags hidden" id="result-tags" aria-label="이 곡의 특성 태그"></div>
 
+      <!-- 1위 매칭 유사도가 낮을 때만 노출되는 신뢰도 안내. 사용자에게 솔직하게
+           "카탈로그에 잘 맞는 곡이 없었다" 는 점을 알려서 결과 해석에 도움. -->
+      <div class="confidence-note hidden" id="confidence-note" role="status" aria-live="polite"></div>
+
       <div class="audio-summary card" id="audio-summary"></div>
 
       <!-- 멜 스펙트로그램 (백엔드에서 SVG 로 생성한 결과) -->
