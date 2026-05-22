@@ -1061,6 +1061,12 @@
 
       const bar = li.querySelector(".hit-bar");
       bar.setAttribute("aria-valuenow", String(Math.round(hit.similarity_percent)));
+      // progressbar 에 라벨이 없으면 스크린리더가 "55%" 만 읽고 무슨 값인지 모른다.
+      // "곡명 유사도 55%" 형태로 맥락을 붙여준다.
+      bar.setAttribute(
+        "aria-label",
+        `${hit.title} ${t("results.hitSimilarityLabel")} ${hit.similarity_percent.toFixed(1)}%`,
+      );
       const fillEl = li.querySelector(".hit-bar-fill");
       // 약간의 지연을 두고 채우면 transition 이 실제로 보인다.
       setTimeout(() => {

@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+### Fixed
+- 접근성 / 대비 마감 (디자인 감사 후속):
+  - 비교 페이지의 delta 색상(`.delta-up` / `.delta-down`) 이 다크 배경
+    기준 밝은 톤이라 라이트 테마 흰 배경에서 대비가 부족했다. 라이트
+    테마용 진한 변형(`#c0392b` / `#0f8a5f`) 으로 보정.
+  - 결과 hit 카드의 유사도 막대(`role="progressbar"`) 에 `aria-label`
+    부재 → 스크린리더가 값(%)만 읽고 무슨 값인지 알 수 없었다.
+    "곡명 유사도 NN%" 형태 라벨을 JS 에서 부착.
+  - 분석 로딩 중 경과 시간(`#loading-elapsed`) 이 700ms 마다 갱신되는데
+    부모가 `aria-live` 라 스크린리더가 매번 읽어 소음이 됐다.
+    `aria-hidden="true"` 로 시각 표시만 유지.
+
 ### Changed
 - 결과 액션 행의 내보내기 버튼 4종(JSON / CSV / SVG / PNG) 을 native
   `<details>` 드롭다운 "내보내기" 메뉴로 묶었다. 액션 행에 버튼이 10개나

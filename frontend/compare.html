@@ -113,9 +113,13 @@
       margin-bottom: 16px;
     }
     .compare-back:hover { color: var(--text); }
+    /* delta 색은 다크 배경 기준 (밝은 톤). 라이트 테마에서는 흰 배경 대비가
+       부족하므로 더 진한 변형으로 보정 (WCAG AA 충족 목표). */
     .delta-up { color: #f87171; }
     .delta-down { color: #34d399; }
     .delta-flat { color: var(--text-mute); }
+    :root[data-theme="light"] .delta-up { color: #c0392b; }
+    :root[data-theme="light"] .delta-down { color: #0f8a5f; }
 
     @media (max-width: 760px) {
       .picker-row, .compare-grid { grid-template-columns: 1fr; }

@@ -275,7 +275,9 @@
       </div>
       <p class="loading-title" data-i18n="loading.title">오디오 특성을 추출하는 중…</p>
       <p class="loading-sub" id="loading-step">librosa · STFT · MFCC · 코사인 유사도</p>
-      <p class="loading-elapsed" id="loading-elapsed"></p>
+      <!-- 경과 시간은 700ms 마다 갱신 — 부모가 aria-live 라 그대로 두면 스크린리더가
+           매번 읽어 소음이 된다. aria-hidden 으로 시각 표시만 유지. -->
+      <p class="loading-elapsed" id="loading-elapsed" aria-hidden="true"></p>
     </section>
 
     <!-- 에러 표시 ---------------------------------------------------- -->
