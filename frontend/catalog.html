@@ -94,6 +94,19 @@
       transform: translateY(-1px);
       outline: none;
     }
+    /* 카드 클릭 후 모달 fetch 동안 — accent 테두리 + 은은한 펄스로 "처리 중" 표시. */
+    .cat-card.is-loading {
+      border-color: var(--accent-1);
+      animation: cat-card-pulse 1s ease-in-out infinite;
+      cursor: progress;
+    }
+    @keyframes cat-card-pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.55; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cat-card.is-loading { animation: none; }
+    }
     .cat-card-body {
       display: flex;
       flex-direction: column;
@@ -1021,12 +1034,12 @@
         el.addEventListener("click", function (e) {
           // ★ 버튼 클릭은 상위 카드 클릭과 분리.
           if (e.target.closest(".cat-fav-btn")) return;
-          openSimilarModal(el.getAttribute("data-key"));
+          openSimilarModal(el.getAttribute("data-key"), el);
         });
         el.addEventListener("keydown", function (e) {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            openSimilarModal(el.getAttribute("data-key"));
+            openSimilarModal(el.getAttribute("data-key"), el);
             return;
           }
           // 화살표 키 네비게이션 — 키보드 사용자가 1000곡 카탈로그를 빠르게 훑을 수 있게.
@@ -1197,11 +1210,17 @@
       }
     });
 
-    async function openSimilarModal(name) {
+    async function openSimilarModal(name, triggerCard) {
       // 상태 + URL 에 곡 이름을 박아두고 열기 — 새로고침이나 공유 시 같은 모달이 열린다.
       state.song = name || "";
       writeStateToUrl();
       _lastFocusedEl = document.activeElement;
+      // 클릭한 카드에 로딩 상태 표시 — 모달이 뜨기 전 잠깐의 fetch 동안 "반응 없음" 으로
+      // 보이지 않도록. aria-busy 로 보조기기에도 알리고, .is-loading 으로 펄스 시각화.
+      if (triggerCard) {
+        triggerCard.classList.add("is-loading");
+        triggerCard.setAttribute("aria-busy", "true");
+      }
       modal.classList.add("is-open");
       document.body.style.overflow = "hidden";
       modalTitle.textContent = "—";
@@ -1278,6 +1297,12 @@
         });
       } catch (e) {
         modalBody.innerHTML = '<p class="modal-loading">' + escapeHtml(t("catalog.modalFail")) + '</p>';
+      } finally {
+        // 성공/실패 무관하게 카드 로딩 상태 해제.
+        if (triggerCard) {
+          triggerCard.classList.remove("is-loading");
+          triggerCard.removeAttribute("aria-busy");
+        }
       }
     }
 

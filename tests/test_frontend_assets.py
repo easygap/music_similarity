@@ -589,6 +589,19 @@ def test_catalog_loading_skeleton_wired():
     assert "renderSkeletons();" in html
 
 
+def test_catalog_card_click_shows_loading_state():
+    """카드 클릭 시 모달 fetch 동안 그 카드에 로딩 상태가 표시되어야 한다."""
+    html = _read("catalog.html")
+    # 로딩 상태 스타일 + 펄스 애니메이션.
+    assert ".cat-card.is-loading" in html
+    assert "cat-card-pulse" in html
+    # openSimilarModal 이 triggerCard 인자를 받아 aria-busy 를 토글해야 한다.
+    assert "openSimilarModal(name, triggerCard)" in html
+    assert 'setAttribute("aria-busy"' in html
+    # finally 블록에서 해제 (성공/실패 무관).
+    assert "} finally {" in html
+
+
 @pytest.mark.parametrize("page", ["catalog.html", "compare.html"])
 def test_subpages_load_i18n(page: str):
     """카탈로그 / 비교 페이지도 i18n.js 를 직접 로딩해야 lang 토글이 동작한다."""

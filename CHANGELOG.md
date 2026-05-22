@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Changed
+- 카탈로그 카드를 클릭하면 모달 데이터 fetch 동안 그 카드에 로딩 상태를
+  표시한다. 기존에는 카드를 눌러도 카드 자체엔 아무 변화가 없어 클릭이
+  먹혔는지 잠깐 알 수 없었다. 이제 accent 테두리 + 은은한 펄스로 "처리
+  중" 을 시각화하고 `aria-busy="true"` 로 보조기기에도 알린다. 성공/
+  실패 무관하게 `finally` 에서 상태를 해제하고, `prefers-reduced-motion`
+  환경은 펄스 애니메이션을 끈다.
+
 ### Fixed
 - 전역 `:focus-visible` 규칙이 `border-radius: 6px` 를 강제하던 것을 제거.
   pill 버튼(`.ghost-pill`, `border-radius: 999px`) 처럼 자체 radius 를
