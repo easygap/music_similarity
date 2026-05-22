@@ -7,6 +7,15 @@
 ## [Unreleased]
 
 ### Fixed
+- 디자인 프리뷰 서버의 정적 자산 / 페이지 라우트 누락 수정 (실제 브라우저
+  렌더 검증 중 발견). HTML 이 `<script src="/app.js">` 처럼 루트 경로로
+  부르는 JS 중 `theme-init.js` / `favorites.js` / `error-boundary.js` /
+  `sw-register.js` 가 alias 목록에서 빠져 있어 콘솔에 404 가 떴고,
+  확장자 없는 페이지 라우트(`/catalog` `/compare` `/privacy` `/terms`)
+  와 `/api/catalog/sample` 도 처리되지 않았다. 이제 `.js` / `.css` 는
+  하위 디렉토리(`js/` `css/`) 를 자동 탐색하고, pretty 페이지 라우트는
+  `PAGE_ALIASES` 로 매핑한다. 회귀 테스트도 루트 JS 7종 / pretty
+  route 4종 / catalog sample 까지 커버하도록 보강.
 - 디자인 프리뷰 서버(`preview_server.py`) 현행화. 그동안 백엔드에 새
   엔드포인트가 여러 개 추가됐는데 프리뷰 서버는 `/api/catalog` /
   `/api/health` / `/api/analyze` 만 더미로 처리해서, librosa 없이
