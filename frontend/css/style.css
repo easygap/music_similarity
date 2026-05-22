@@ -947,6 +947,42 @@ main {
   background: rgba(109, 76, 240, 0.12);
 }
 
+/* 신뢰도 안내 배너 — 1위 매칭 유사도가 낮을 때만 노출.
+   data-level="mid" 는 차분한 info 톤, "low" 는 좀 더 눈에 띄는 warn 톤. */
+.confidence-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.confidence-note.hidden { display: none; }
+.confidence-note[data-level="mid"] {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.38);
+  color: var(--text);
+}
+.confidence-note[data-level="low"] {
+  background: rgba(255, 176, 32, 0.12);
+  border: 1px solid rgba(255, 176, 32, 0.45);
+  color: var(--text);
+}
+.confidence-note-icon { font-size: 15px; line-height: 1.5; flex-shrink: 0; }
+.confidence-note[data-level="low"] .confidence-note-icon { color: #ffb020; }
+.confidence-note[data-level="mid"] .confidence-note-icon { color: var(--accent-1); }
+.confidence-note-text { min-width: 0; }
+:root[data-theme="light"] .confidence-note[data-level="mid"] {
+  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(8, 145, 178, 0.35);
+}
+:root[data-theme="light"] .confidence-note[data-level="low"] {
+  background: rgba(180, 120, 10, 0.12);
+  border-color: rgba(180, 120, 10, 0.4);
+}
+
 /* 오디오 요약 메트릭 (Tempo / 에너지 / 밝기 등) */
 .audio-summary {
   display: grid;
@@ -1729,6 +1765,16 @@ main {
   .audio-summary {
     display: none !important;
   }
+
+  /* 신뢰도 안내는 인쇄물에서도 중요한 맥락이라 유지 — 단 흑백 톤으로 단순화. */
+  .confidence-note {
+    border: 1px solid #999 !important;
+    background: #f4f4f4 !important;
+    color: #111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .confidence-note-icon { color: #111 !important; }
 
   /* 링크는 밑줄 그대로. */
   a { color: #111 !important; text-decoration: underline; }
