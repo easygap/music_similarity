@@ -630,11 +630,30 @@ main {
   position: relative;
 }
 .dropzone:hover,
-.dropzone.is-drag,
 .dropzone:focus-visible {
   border-color: var(--accent-1);
   background: rgba(124, 92, 255, 0.08);
   transform: translateY(-1px);
+}
+/* 드래그 중에는 hover 보다 확실히 강한 시그널 — 파일을 여기 놓으라는 신호.
+   실선 테두리 + 더 진한 배경 + 살짝 키워서 "착" 받는 느낌. */
+.dropzone.is-drag {
+  border-style: solid;
+  border-color: var(--accent-1);
+  background: rgba(124, 92, 255, 0.16);
+  transform: translateY(-2px) scale(1.012);
+  box-shadow: 0 12px 32px rgba(124, 92, 255, 0.22);
+}
+.dropzone.is-drag .dropzone-icon {
+  animation: dropzone-bounce 0.7s ease-in-out infinite;
+}
+@keyframes dropzone-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dropzone.is-drag { transform: none; }
+  .dropzone.is-drag .dropzone-icon { animation: none; }
 }
 .dropzone input[type="file"] {
   position: absolute;
@@ -646,6 +665,7 @@ main {
   width: 44px; height: 44px;
   margin: 0 auto 12px;
   color: var(--accent-2);
+  transition: transform 0.18s ease;
 }
 .dropzone-title {
   font-weight: 600;
@@ -1177,6 +1197,18 @@ main {
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   overflow: hidden;
+}
+/* 결과 카드 등장 애니메이션 — 위에서 아래로 살짝 fade-up. JS 가 카드별로
+   animation-delay 를 줘서 1위부터 차례로 부드럽게 나타난다 (staggered). */
+.hit.hit-enter {
+  animation: hit-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes hit-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hit.hit-enter { animation: none; }
 }
 .hit:hover {
   transform: translateY(-2px);
