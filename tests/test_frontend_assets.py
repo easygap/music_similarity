@@ -571,6 +571,27 @@ def test_subpages_load_i18n(page: str):
     assert '<script src="/i18n.js">' in text, f"{page} 가 i18n.js 를 불러오지 않습니다."
 
 
+def test_mobile_nav_hamburger_wired():
+    """모바일 햄버거 메뉴가 마크업 / CSS / JS 에 모두 갖춰져야 한다.
+
+    이게 빠지면 모바일 사용자가 카탈로그 / 비교 페이지로 갈 방법이 없다 (출시 블로커).
+    """
+    html = _read("index.html")
+    # 햄버거 버튼 + 링크 그룹 컨테이너.
+    assert 'id="nav-menu-toggle"' in html
+    assert 'id="nav-links-group"' in html
+    # 접근성 — aria-expanded / aria-controls.
+    assert 'aria-controls="nav-links-group"' in html
+    css = _read("css/style.css")
+    # 모바일에서 햄버거가 노출되고 링크 그룹이 드롭다운이 되어야 한다.
+    assert ".nav-menu-toggle" in css
+    assert ".nav-links-group.is-open" in css
+    app = _read("js/app.js")
+    # 토글 / 바깥 클릭 / Esc 닫기 핸들러.
+    assert 'getElementById("nav-menu-toggle")' in app or '"#nav-menu-toggle"' in app
+    assert "is-open" in app
+
+
 def test_confidence_note_wired_in_index_and_app():
     """1위 유사도가 낮을 때 뜨는 신뢰도 안내 배너가 마크업 + JS + i18n 에 모두 있어야 한다."""
     html = _read("index.html")
