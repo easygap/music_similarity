@@ -6,6 +6,19 @@
 
 ## [Unreleased]
 
+### Fixed
+- 디자인 프리뷰 서버(`preview_server.py`) 현행화. 그동안 백엔드에 새
+  엔드포인트가 여러 개 추가됐는데 프리뷰 서버는 `/api/catalog` /
+  `/api/health` / `/api/analyze` 만 더미로 처리해서, librosa 없이
+  디자인만 보려고 띄우면 카탈로그 페이지 / 샘플 버튼 / 새 기능 배너 /
+  footer 빌드 정보가 전부 깨졌다. 이제 `/api/version`,
+  `/api/version/changelog`, `/api/catalog/search` (q 필터 + 페이지네이션),
+  `/api/catalog/random`, `/api/catalog/stats`, `/api/catalog/export.csv`,
+  `/api/analyze/by-catalog` 까지 모두 더미 응답으로 처리한다. 합성 카탈로그
+  30곡을 들고 있어 검색·필터·정렬 UI 가 실제처럼 동작. 백엔드와의 drift
+  를 잡는 회귀 테스트(`tests/test_preview_server.py`, 6건) 도 추가 —
+  서버를 백그라운드 스레드로 띄워 각 엔드포인트 응답을 검증.
+
 ### Changed
 - 카탈로그 카드를 클릭하면 모달 데이터 fetch 동안 그 카드에 로딩 상태를
   표시한다. 기존에는 카드를 눌러도 카드 자체엔 아무 변화가 없어 클릭이
