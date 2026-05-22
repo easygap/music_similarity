@@ -230,6 +230,52 @@
       padding: 12px 14px;
       margin-bottom: 18px;
     }
+    /* 최근 본 곡 — cat-hist 와 같은 패널 톤. 칩 행. */
+    .cat-recent {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+    }
+    .cat-recent[hidden] { display: none; }
+    .cat-recent-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      color: var(--text-mute);
+      margin-bottom: 8px;
+    }
+    .cat-recent-clear {
+      background: transparent;
+      border: none;
+      color: var(--text-mute);
+      font-size: 12px;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+    .cat-recent-clear:hover { color: var(--accent); }
+    .cat-recent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cat-recent-chip {
+      background: rgba(124, 92, 255, 0.12);
+      border: 1px solid rgba(124, 92, 255, 0.32);
+      color: var(--text);
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: border-color 0.14s ease, background 0.14s ease;
+    }
+    .cat-recent-chip:hover, .cat-recent-chip:focus-visible {
+      border-color: var(--accent-1);
+      background: rgba(124, 92, 255, 0.2);
+    }
+    .cat-recent-chip .chip-artist { color: var(--text-mute); }
     .cat-hist-head {
       display: flex;
       justify-content: space-between;
@@ -586,6 +632,16 @@
       >CSV 내보내기</button>
     </div>
 
+    <!-- 최근 본 곡 — 모달을 열어봤던 곡을 칩으로. 비어 있으면 통째로 숨김. -->
+    <div class="cat-recent" id="cat-recent" hidden>
+      <div class="cat-recent-head">
+        <span data-i18n="catalog.recentViewed">최근 본 곡</span>
+        <button type="button" class="cat-recent-clear" id="cat-recent-clear"
+                data-i18n="catalog.recentClear">지우기</button>
+      </div>
+      <div class="cat-recent-chips" id="cat-recent-chips"></div>
+    </div>
+
     <!-- BPM 분포 미니 차트 (페이지 처음 진입 시 한 번만 로드). -->
     <div class="cat-hist" id="cat-hist" aria-hidden="true">
       <div class="cat-hist-head">
@@ -846,6 +902,74 @@
         .join("");
     }
     renderRecentSearches();
+
+    // ------------------------------------------------------------------
+    // 최근 본 곡 — 모달을 열어본 곡을 localStorage 에 쌓아 칩으로 노출한다.
+    // 즐겨찾기처럼 영구 저장은 아니고 "방금 둘러본 흔적" 정도의 가벼운 네비 보조.
+    // ------------------------------------------------------------------
+    var RECENT_VIEWED_KEY = "soundmatch.catalog.recently-viewed";
+    var RECENT_VIEWED_MAX = 8;
+
+    function readRecentViewed() {
+      try {
+        var raw = localStorage.getItem(RECENT_VIEWED_KEY);
+        if (!raw) return [];
+        var parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.filter(function (s) { return typeof s === "string"; }) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function pushRecentViewed(name) {
+      var s = (name || "").trim();
+      if (!s) return;
+      // 같은 곡이 이미 있으면 제거 후 맨 앞으로 — 최신순 유지.
+      var items = readRecentViewed().filter(function (x) { return x !== s; });
+      items.unshift(s);
+      items = items.slice(0, RECENT_VIEWED_MAX);
+      try {
+        localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(items));
+      } catch (e) { /* 쿼터 초과 / 시크릿 모드 무시 */ }
+      renderRecentViewed();
+    }
+
+    function renderRecentViewed() {
+      var wrap = document.getElementById("cat-recent");
+      var chips = document.getElementById("cat-recent-chips");
+      if (!wrap || !chips) return;
+      var items = readRecentViewed();
+      if (!items.length) {
+        wrap.hidden = true;
+        chips.innerHTML = "";
+        return;
+      }
+      chips.innerHTML = items.map(function (name) {
+        var parts = name.split(" - ");
+        var title = parts[0] || name;
+        var artist = parts.slice(1).join(" - ");
+        return '<button type="button" class="cat-recent-chip" data-key="' + escapeHtml(name)
+          + '" title="' + escapeHtml(name) + '">'
+          + escapeHtml(title)
+          + (artist ? ' <span class="chip-artist">· ' + escapeHtml(artist) + '</span>' : '')
+          + '</button>';
+      }).join("");
+      chips.querySelectorAll(".cat-recent-chip").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          openSimilarModal(btn.getAttribute("data-key"));
+        });
+      });
+      wrap.hidden = false;
+    }
+
+    var recentClearBtn = document.getElementById("cat-recent-clear");
+    if (recentClearBtn) {
+      recentClearBtn.addEventListener("click", function () {
+        try { localStorage.removeItem(RECENT_VIEWED_KEY); } catch (e) {}
+        renderRecentViewed();
+      });
+    }
+    renderRecentViewed();
 
     // 검색어와 매칭된 부분만 <mark> 로 감싸 강조. escape 는 직접 처리하므로
     // 호출 측에서 추가 escape 가 필요 없다. 케이스 무시.
@@ -1214,6 +1338,8 @@
       // 상태 + URL 에 곡 이름을 박아두고 열기 — 새로고침이나 공유 시 같은 모달이 열린다.
       state.song = name || "";
       writeStateToUrl();
+      // 모달을 연 곡을 "최근 본 곡" 에 기록 — 칩으로 빠른 재접근.
+      if (name) pushRecentViewed(name);
       _lastFocusedEl = document.activeElement;
       // 클릭한 카드에 로딩 상태 표시 — 모달이 뜨기 전 잠깐의 fetch 동안 "반응 없음" 으로
       // 보이지 않도록. aria-busy 로 보조기기에도 알리고, .is-loading 으로 펄스 시각화.

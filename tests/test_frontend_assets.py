@@ -579,6 +579,22 @@ def test_app_js_wires_favorites_export_button():
     assert "importJson" in text
 
 
+def test_catalog_recently_viewed_wired():
+    """카탈로그 '최근 본 곡' 섹션이 마크업 / JS / i18n 에 모두 갖춰져야 한다."""
+    html = _read("catalog.html")
+    assert 'id="cat-recent"' in html
+    assert 'id="cat-recent-chips"' in html
+    assert 'id="cat-recent-clear"' in html
+    # openSimilarModal 이 pushRecentViewed 로 기록해야 한다.
+    assert "function pushRecentViewed(" in html
+    assert "pushRecentViewed(name)" in html
+    # localStorage 키 + 칩 렌더 함수.
+    assert "soundmatch.catalog.recently-viewed" in html
+    assert "function renderRecentViewed(" in html
+    i18n = _read("js/i18n.js")
+    assert i18n.count("recentViewed") >= 2, "recentViewed 가 ko/en 양쪽에 없습니다."
+
+
 def test_catalog_loading_skeleton_wired():
     """카탈로그가 로딩 중 스켈레톤 카드를 그려 레이아웃 점프를 막아야 한다."""
     html = _read("catalog.html")
