@@ -1207,8 +1207,20 @@ main {
 }
 .hit-toggle:hover .hit-title { color: var(--accent-2); }
 
+/* 펼침/접힘을 grid-template-rows 0fr↔1fr 로 부드럽게 애니메이션.
+   display:none 토글이면 툭 끊겨서 상품 완성도가 떨어진다. */
+.hit-details {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.28s ease;
+}
+.hit-details-inner {
+  /* 0fr 일 때 콘텐츠가 깔끔히 잘리도록 — grid 트릭의 필수 조건. */
+  overflow: hidden;
+  min-height: 0;
+}
 .hit[data-expanded="false"] .hit-details {
-  display: none;
+  grid-template-rows: 0fr;
 }
 /* 펼친 상태에선 토글 클릭이 활성화돼 있다는 걸 살짝 표시. */
 .hit[data-expanded="true"] .hit-toggle::after {
@@ -1806,8 +1818,9 @@ main {
   .hit-bar { background: #eee !important; }
   .hit-bar-fill { background: #6a4ce0 !important; }
 
-  /* 모든 카드를 펼친 상태로 강제 — 인쇄본에서 접힌 채로 출력되면 무의미. */
-  .hit[data-expanded="false"] .hit-details { display: block !important; }
+  /* 모든 카드를 펼친 상태로 강제 — 인쇄본에서 접힌 채로 출력되면 무의미.
+     grid 트릭을 쓰므로 display:block 대신 grid-template-rows 를 1fr 로. */
+  .hit[data-expanded="false"] .hit-details { grid-template-rows: 1fr !important; }
 
   /* 미니 메트릭 / 그룹 텍스트는 그대로. */
   .hit-mini-metrics .mini-bar-q { background: #6a4ce0 !important; }
