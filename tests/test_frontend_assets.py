@@ -589,6 +589,28 @@ def test_catalog_loading_skeleton_wired():
     assert "renderSkeletons();" in html
 
 
+def test_dropzone_drag_state_is_distinct_from_hover():
+    """드래그 중(.is-drag) 시각 신호가 단순 hover 와 구분되어야 한다."""
+    css = _read("css/style.css")
+    # .is-drag 가 hover 와 분리된 자체 규칙 블록을 가져야 한다.
+    assert ".dropzone.is-drag {" in css
+    # 드래그 시 아이콘 bounce 애니메이션.
+    assert "dropzone-bounce" in css
+    # reduced-motion 예외도 있어야 한다.
+    assert "@media (prefers-reduced-motion: reduce)" in css
+
+
+def test_result_cards_have_staggered_entrance_animation():
+    """결과 hit 카드가 staggered 등장 애니메이션을 가져야 한다."""
+    css = _read("css/style.css")
+    assert "hit-enter" in css
+    assert "@keyframes hit-enter" in css
+    js = _read("js/app.js")
+    # JS 가 카드별 animation-delay 를 줘서 stagger 를 만든다.
+    assert 'classList.add("hit-enter")' in js
+    assert "animationDelay" in js
+
+
 def test_catalog_card_click_shows_loading_state():
     """카드 클릭 시 모달 fetch 동안 그 카드에 로딩 상태가 표시되어야 한다."""
     html = _read("catalog.html")

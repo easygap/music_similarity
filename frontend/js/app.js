@@ -1146,6 +1146,13 @@
         toggleBtn.setAttribute("aria-expanded", next ? "true" : "false");
       });
 
+      // staggered 등장 — 1위부터 차례로 살짝 fade-up. 앞쪽 5장만 지연을 주고
+      // (90ms 간격) 그 뒤로는 지연 없이 — 카드가 많아도 마지막까지 기다리지 않게.
+      li.classList.add("hit-enter");
+      if (idx < 5) {
+        li.style.animationDelay = `${idx * 0.09}s`;
+      }
+
       hitList.appendChild(li);
     });
 
