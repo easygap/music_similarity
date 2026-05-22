@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Changed
+- 결과 hit 카드의 펼침/접힘이 `display:none` 토글이라 순간이동처럼 툭
+  끊기던 것을 `grid-template-rows` `0fr↔1fr` 트랜지션으로 부드럽게 개선.
+  내부 콘텐츠를 `.hit-details-inner` 로 한 겹 감싸 (`overflow:hidden`)
+  높이가 자연스럽게 늘었다 줄었다 한다. `prefers-reduced-motion` 환경은
+  기존 전역 규칙이 트랜지션을 0.001s 로 죽여 즉시 토글되고, 인쇄 시에는
+  `grid-template-rows:1fr` 강제로 항상 펼친 상태 유지.
+
 ### Fixed
 - 모바일(<600px) 에서 상단 네비게이션의 텍스트 링크(카탈로그 / 사용법 /
   비교 / GitHub) 가 통째로 숨겨져 메인 외 페이지로 이동할 방법이 아예
