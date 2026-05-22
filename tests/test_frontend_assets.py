@@ -363,6 +363,21 @@ def test_results_csv_export_button_present_and_wired():
     assert "function buildResultsCsv(" in js
     # RFC 4180 escape 흔적.
     assert "/[\",\\r\\n]/" in js
+
+
+def test_export_buttons_grouped_in_details_menu():
+    """내보내기 4종이 <details> 드롭다운 안에 묶여 있어야 한다 (액션 행 정리)."""
+    html = _read("index.html")
+    # details 컨테이너 + summary (summary 는 ghost 와 함께 멀티 클래스라 토큰으로 검사).
+    assert "<details class=\"export-menu\"" in html
+    assert "export-menu-summary" in html
+    # 4개 export 버튼이 모두 export-menu-item 클래스로 패널 안에 있어야 한다.
+    for bid in ("export-json-btn", "export-csv-btn", "export-svg-btn", "export-png-btn"):
+        assert f'id="{bid}"' in html, f"{bid} 누락"
+    assert html.count('class="export-menu-item"') == 4
+    js = _read("js/app.js")
+    # 항목 클릭 / 바깥 클릭 시 메뉴가 닫혀야 한다.
+    assert 'removeAttribute("open")' in js
     # UTF-8 BOM (한글 깨짐 방지).
     assert '"﻿"' in js or "'﻿'" in js
 

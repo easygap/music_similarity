@@ -61,7 +61,29 @@
   const exportCsvBtn = $("#export-csv-btn");
   const exportSvgBtn = $("#export-svg-btn");
   const exportPngBtn = $("#export-png-btn");
+  const exportMenu = $("#export-menu");
   const yearSpan = $("#year");
+
+  // 내보내기 <details> 드롭다운 — 항목을 클릭하면 메뉴를 닫고, 바깥을 클릭해도 닫는다.
+  // <details> 자체는 JS 없이 토글되지만, "선택 후 자동 닫힘" 과 "바깥 클릭 닫힘" 은 보조해야
+  // 일반적인 드롭다운 UX 에 맞는다.
+  if (exportMenu) {
+    exportMenu.querySelectorAll(".export-menu-item").forEach((item) => {
+      item.addEventListener("click", () => exportMenu.removeAttribute("open"));
+    });
+    document.addEventListener("click", (e) => {
+      if (exportMenu.hasAttribute("open") && !exportMenu.contains(e.target)) {
+        exportMenu.removeAttribute("open");
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && exportMenu.hasAttribute("open")) {
+        exportMenu.removeAttribute("open");
+        const summary = exportMenu.querySelector("summary");
+        if (summary) summary.focus();
+      }
+    });
+  }
 
   const themeToggleBtn = $("#theme-toggle");
   const langToggleBtn = $("#lang-toggle");

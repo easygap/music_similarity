@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Changed
+- 결과 액션 행의 내보내기 버튼 4종(JSON / CSV / SVG / PNG) 을 native
+  `<details>` 드롭다운 "내보내기" 메뉴로 묶었다. 액션 행에 버튼이 10개나
+  깔려 모바일에서 3~4줄까지 쌓이고 핵심 액션("새 음악 분석") 이 묻히던
+  문제를 완화. 항목 클릭 / 바깥 클릭 / Esc 시 메뉴가 닫히고 (Esc 는
+  포커스를 summary 로 복귀), 캐럿 아이콘이 열림 상태에 따라 회전.
+  버튼 id 는 그대로라 기존 핸들러는 변경 없음. 신규 i18n
+  `results.exportMenu` (ko/en parity).
 - 결과 hit 카드의 펼침/접힘이 `display:none` 토글이라 순간이동처럼 툭
   끊기던 것을 `grid-template-rows` `0fr↔1fr` 트랜지션으로 부드럽게 개선.
   내부 콘텐츠를 `.hit-details-inner` 로 한 겹 감싸 (`overflow:hidden`)
