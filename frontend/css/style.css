@@ -894,6 +894,53 @@ main {
 .ghost:hover { background: rgba(255, 255, 255, 0.06); border-color: var(--accent-1); }
 .ghost svg { width: 16px; height: 16px; }
 
+/* 내보내기 드롭다운 — native <details>. JS 없이 동작하되, 바깥 클릭 닫기만 app.js 에서 보조. */
+.export-menu { position: relative; }
+.export-menu-summary {
+  list-style: none;          /* 기본 삼각형 마커 제거 */
+  cursor: pointer;
+}
+.export-menu-summary::-webkit-details-marker { display: none; }
+.export-menu-caret {
+  width: 14px !important;
+  height: 14px !important;
+  transition: transform 0.18s ease;
+}
+.export-menu[open] .export-menu-caret { transform: rotate(180deg); }
+.export-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 190px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+.export-menu-item {
+  background: transparent;
+  color: var(--text);
+  border: none;
+  padding: 9px 11px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  transition: background 0.14s ease;
+}
+.export-menu-item:hover { background: rgba(124, 92, 255, 0.14); }
+.export-menu-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+
 .link-ghost {
   background: transparent;
   border: none;
