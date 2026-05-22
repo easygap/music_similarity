@@ -108,10 +108,20 @@
       <span>SoundMatch</span>
     </a>
     <nav class="site-nav-links" aria-label="Primary">
-      <a href="/catalog" data-i18n="nav.catalog">카탈로그</a>
-      <a href="#how" data-i18n="nav.how">사용법</a>
-      <a href="/compare" data-i18n="nav.compare">비교</a>
-      <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="nav.github">GitHub</a>
+      <!-- 텍스트 링크 4종. 데스크톱은 인라인, 모바일(<600px) 은 햄버거 토글로 여는 드롭다운. -->
+      <div class="nav-links-group" id="nav-links-group">
+        <a href="/catalog" data-i18n="nav.catalog">카탈로그</a>
+        <a href="#how" data-i18n="nav.how">사용법</a>
+        <a href="/compare" data-i18n="nav.compare">비교</a>
+        <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="nav.github">GitHub</a>
+      </div>
+      <!-- 모바일 전용 햄버거 — 데스크톱에서는 CSS 로 숨김. -->
+      <button type="button" class="nav-menu-toggle" id="nav-menu-toggle"
+              aria-expanded="false" aria-controls="nav-links-group"
+              aria-label="메뉴 열기" data-i18n-attr="aria-label:nav.menuToggle">
+        <svg class="nav-menu-icon-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="nav-menu-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <button type="button" class="icon-btn" id="theme-toggle" aria-label="Toggle theme" data-i18n-attr="aria-label:controls.themeToggle">
         <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 13a8 8 0 0 1-10-10 8.5 8.5 0 1 0 10 10z" fill="currentColor"/></svg>
         <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/></g></svg>

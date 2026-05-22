@@ -116,6 +116,46 @@
   });
 
   // ----------------------------------------------------------------------
+  // 모바일 네비게이션 (햄버거 드롭다운)
+  // ----------------------------------------------------------------------
+  // <600px 에서 nav 텍스트 링크가 드롭다운으로 접히고, 햄버거 버튼으로 토글한다.
+  // 데스크톱에서는 CSS 가 .nav-menu-toggle 을 숨기므로 이 핸들러는 사실상 비활성.
+  const navMenuToggle = $("#nav-menu-toggle");
+  const navLinksGroup = $("#nav-links-group");
+  if (navMenuToggle && navLinksGroup) {
+    const setNavOpen = (open) => {
+      navLinksGroup.classList.toggle("is-open", open);
+      navMenuToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      // aria-label 도 상태에 맞춰 — 스크린리더가 "열기/닫기" 를 정확히 안내.
+      navMenuToggle.setAttribute(
+        "aria-label",
+        t(open ? "nav.menuClose" : "nav.menuToggle"),
+      );
+    };
+    navMenuToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setNavOpen(!navLinksGroup.classList.contains("is-open"));
+    });
+    // 메뉴 안의 링크를 누르면 (페이지 이동 / 앵커 점프) 메뉴를 닫는다.
+    navLinksGroup.querySelectorAll("a").forEach((a) => {
+      a.addEventListener("click", () => setNavOpen(false));
+    });
+    // 바깥 클릭 시 닫기.
+    document.addEventListener("click", (e) => {
+      if (!navLinksGroup.classList.contains("is-open")) return;
+      if (navLinksGroup.contains(e.target) || navMenuToggle.contains(e.target)) return;
+      setNavOpen(false);
+    });
+    // Esc 로 닫고 포커스를 토글 버튼으로 되돌린다.
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && navLinksGroup.classList.contains("is-open")) {
+        setNavOpen(false);
+        navMenuToggle.focus();
+      }
+    });
+  }
+
+  // ----------------------------------------------------------------------
   // 카탈로그 통계 + footer 연도
   // ----------------------------------------------------------------------
   if (yearSpan) yearSpan.textContent = String(new Date().getFullYear());
