@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+### Added
+- 카탈로그 페이지에 "최근 본 곡" 섹션 추가. 모달을 열어본 곡을
+  `localStorage` (`soundmatch.catalog.recently-viewed`, 최대 8건, 최신순)
+  에 기록해 필터 행 아래 칩 행으로 노출한다. 칩을 누르면 그 곡의 유사
+  곡 모달이 바로 열려, 여러 곡을 오가며 탐색할 때 카드 그리드를 다시
+  스크롤할 필요가 없다. "지우기" 버튼으로 기록 초기화 가능, 비어 있으면
+  섹션 통째로 숨김. 즐겨찾기 / 최근 검색어와 동일한 localStorage 패턴.
+  신규 i18n `catalog.recentViewed` / `catalog.recentClear` (ko/en parity).
+
 ## [1.7.1] — 2026-05-22
 
 v1.7.0 직후의 마감 패치. 실제 브라우저 렌더 검증에서 잡은 디자인
