@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Fixed
+- 전역 `:focus-visible` 규칙이 `border-radius: 6px` 를 강제하던 것을 제거.
+  pill 버튼(`.ghost-pill`, `border-radius: 999px`) 처럼 자체 radius 를
+  가진 요소가 포커스 순간 모서리가 6px 로 튀는 시각 글리치가 있었다.
+  모던 브라우저는 outline 을 요소의 실제 `border-radius` 에 맞춰 자동으로
+  둥글게 그려주므로 이 줄은 불필요했다.
+
 ### Changed
 - 카탈로그 페이지가 검색 / 필터 / 페이지 이동 중에 로딩 스켈레톤 카드를
   그리도록 개선. 기존에는 fetch 동안 직전 결과 카드가 그대로 남아 있어
