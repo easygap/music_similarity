@@ -105,9 +105,11 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex="0"]:focus-visible {
+  /* border-radius 는 여기서 만지지 않는다 — 만지면 pill 버튼 등 자체 radius 를
+     가진 요소가 포커스 순간 모양이 6px 로 튄다. 모던 브라우저는 outline 을
+     요소의 실제 border-radius 에 맞춰 자동으로 둥글게 그려준다. */
   outline: 2px solid var(--accent-2);
   outline-offset: 3px;
-  border-radius: 6px;
 }
 
 button { font-family: inherit; cursor: pointer; }
