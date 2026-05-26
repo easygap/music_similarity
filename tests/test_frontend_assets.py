@@ -579,6 +579,22 @@ def test_app_js_wires_favorites_export_button():
     assert "importJson" in text
 
 
+def test_catalog_modal_seed_metrics_and_fav_button():
+    """카탈로그 모달 헤더에 시드 곡 메트릭 + 즐겨찾기 토글이 있어야 한다."""
+    html = _read("catalog.html")
+    # 마크업.
+    assert 'id="modal-seed-metrics"' in html
+    assert 'id="modal-fav-seed"' in html
+    # JS — 모달 fetch 성공 시 두 헬퍼가 호출되어야 한다.
+    assert "function renderSeedMetrics(" in html
+    assert "function setupSeedFavButton(" in html
+    assert "renderSeedMetrics(data.summary)" in html
+    assert "setupSeedFavButton(name" in html
+    # i18n — modalFavSeed 가 ko/en 양쪽에 있어야 한다.
+    i18n = _read("js/i18n.js")
+    assert i18n.count("modalFavSeed") >= 2, "modalFavSeed 가 ko/en 양쪽에 없습니다."
+
+
 def test_catalog_recently_viewed_wired():
     """카탈로그 '최근 본 곡' 섹션이 마크업 / JS / i18n 에 모두 갖춰져야 한다."""
     html = _read("catalog.html")

@@ -354,8 +354,39 @@
       line-height: 1;
     }
     .modal-close:hover { color: var(--text); }
-    /* 모달 헤더 우측 액션 그룹 — copy + close 가 나란히 */
+    .modal-head-text { min-width: 0; flex: 1; }
+    /* 모달 헤더 안의 시드 곡 메트릭 mini-row — 카드의 cat-metrics 와 같은 톤. */
+    .modal-seed-metrics {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .modal-seed-metrics[hidden], .modal-seed-metrics:empty { display: none; }
+    .modal-seed-metrics .sep { color: var(--text-mute); }
+    /* 모달 헤더 우측 액션 그룹 — fav + copy + close 가 나란히 */
     .modal-head-actions { display: flex; align-items: center; gap: 6px; }
+    /* 시드 곡 즐겨찾기 버튼 — 카드 ★ 와 같은 톤. */
+    .modal-fav-seed {
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text-mute);
+      width: 32px; height: 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      transition: color 120ms ease, border-color 120ms ease;
+    }
+    .modal-fav-seed:hover { color: var(--accent-warn); border-color: var(--accent-warn); }
+    .modal-fav-seed[aria-pressed="true"] {
+      color: var(--accent-warn);
+      border-color: var(--accent-warn);
+      text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+    }
     .modal-copy-link {
       background: transparent;
       color: var(--text-mute);
@@ -674,11 +705,18 @@
   <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <header class="modal-head">
-        <div>
+        <div class="modal-head-text">
           <h2 class="modal-title" id="modal-title">—</h2>
           <p class="modal-sub" id="modal-sub">—</p>
+          <!-- 시드 곡의 BPM / E / Hz mini-row — 카드와 같은 패턴으로 모달 안에서도 노출. -->
+          <div class="modal-seed-metrics" id="modal-seed-metrics" aria-hidden="true"></div>
         </div>
         <div class="modal-head-actions">
+          <!-- 시드 곡 즐겨찾기 토글 — 모달 안에서도 카드 ★ 와 동일하게 동작. -->
+          <button type="button" class="modal-fav-seed" id="modal-fav-seed"
+                  aria-pressed="false"
+                  data-i18n-attr="aria-label:catalog.modalFavSeed"
+                  aria-label="이 곡 즐겨찾기 토글">★</button>
           <!-- 현재 URL 의 ?song= deep link 를 클립보드에 복사. 같은 곡 화면으로 바로 보낼 수 있다. -->
           <button type="button" class="modal-copy-link" id="modal-copy-link"
                   data-i18n="catalog.copyLink"
@@ -1111,6 +1149,44 @@
         + '</span>';
     }
 
+    // 시드 곡 모달 헤더 — 메트릭 + 즐겨찾기 토글.
+    // by-catalog 응답의 summary 는 {tempo_bpm, energy_rms, brightness, ...} 형태인데
+    // buildMetricsLine 은 {bpm, energy_rms, brightness} 키를 기대하므로 한 번 변환.
+    function renderSeedMetrics(summary) {
+      var host = document.getElementById("modal-seed-metrics");
+      if (!host) return;
+      if (!summary) { host.innerHTML = ""; return; }
+      // tempo_bpm 키 → bpm 으로 매핑.
+      var adapted = {
+        bpm: summary.tempo_bpm,
+        energy_rms: summary.energy_rms,
+        brightness: summary.brightness,
+      };
+      // buildMetricsLine 결과는 <span class="cat-metrics">…</span> 한 줄. inner 만 떼서 host 에 넣음.
+      var raw = buildMetricsLine(adapted);
+      host.innerHTML = raw
+        ? raw.replace('<span class="cat-metrics">', '').replace(/<\/span>$/, '')
+        : '';
+    }
+
+    function setupSeedFavButton(fullName, title, artist) {
+      var btn = document.getElementById("modal-fav-seed");
+      if (!btn || !Fav || !fullName) return;
+      var apply = function () {
+        var on = Fav.has(fullName);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      };
+      apply();
+      // 모달이 새로 열릴 때마다 핸들러를 갈아끼우므로 이전 리스너 흔적은 onclick 으로 덮어 정리.
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        Fav.toggle(fullName, title, artist);
+        apply();
+        // 즐겨찾기 전용 모드에서 시드를 풀면 카드 그리드 갱신.
+        if (state.favOnly) load();
+      };
+    }
+
     function render(items) {
       if (!items || !items.length) {
         var msg = state.favOnly
@@ -1352,6 +1428,11 @@
       modalTitle.textContent = "—";
       modalSub.textContent = t("catalog.modalAnalysing");
       modalTags.innerHTML = "";
+      // 이전 모달의 시드 메트릭 / 즐겨찾기 잔재 비우기.
+      var smHost = document.getElementById("modal-seed-metrics");
+      if (smHost) smHost.innerHTML = "";
+      var favSeedBtn = document.getElementById("modal-fav-seed");
+      if (favSeedBtn) { favSeedBtn.setAttribute("aria-pressed", "false"); favSeedBtn.onclick = null; }
       modalBody.innerHTML = '<p class="modal-loading">' + escapeHtml(t("catalog.modalLoading")) + '</p>';
       // 닫기 버튼 같은 첫 조작 가능 요소로 포커스 이동 — 키보드 사용자 / 스크린리더 사용자한테 필수.
       // microtask 한 박자 늦춰서 display:none → flex 전환 직후의 layout flush 를 기다린다.
@@ -1366,6 +1447,10 @@
         var data = await res.json();
         modalTitle.textContent = data.title;
         modalSub.textContent = t("catalog.modalSub", data.artist, data.catalog_size);
+        // 시드 곡의 BPM / E / Hz mini-row — by-catalog 응답의 summary 활용.
+        renderSeedMetrics(data.summary);
+        // 시드 곡의 즐겨찾기 상태 동기화.
+        setupSeedFavButton(name, data.title || "", data.artist || "");
         modalTags.innerHTML = (data.tags || []).map(function (tg) {
           return '<span class="modal-tag">' + escapeHtml(tg) + '</span>';
         }).join("");
