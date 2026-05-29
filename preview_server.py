@@ -141,7 +141,7 @@ SAMPLE_RESULTS = {
         },
     ],
     "timing": {"feature_extraction_seconds": 1.42, "similarity_seconds": 0.012},
-    "catalog_size": 1006,
+    "catalog_size": 781,
 }
 
 
@@ -235,14 +235,14 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             limit = min(int((qs.get("limit", ["12"])[0]) or 12), len(PREVIEW_CATALOG))
             picks = random.sample(PREVIEW_CATALOG, k=limit)
             return self._send_json({
-                "catalog_size": 1006,
+                "catalog_size": 781,
                 "items": [{"title": p["title"], "artist": p["artist"]} for p in picks],
             })
         elif path == "/api/catalog":
-            return self._send_json({"catalog_size": 1006, "feature_count": 57, "features": []})
+            return self._send_json({"catalog_size": 781, "feature_count": 57, "features": []})
         elif path == "/api/health":
             return self._send_json({
-                "status": "ok", "catalog_size": 1006, "env": "preview",
+                "status": "ok", "catalog_size": 781, "env": "preview",
                 "version": "1.7.0", "release_date": "2026-05-22", "git_commit": "preview",
                 "uptime_seconds": 12.3, "analyze_latency_p50_seconds": 1.4,
                 "catalog_updated_at": "2026-05-22T00:00:00+00:00",
@@ -250,7 +250,7 @@ class PreviewHandler(SimpleHTTPRequestHandler):
         elif path == "/api/version":
             return self._send_json({
                 "name": "soundmatch", "version": "1.7.0", "release_date": "2026-05-22",
-                "git_commit": "preview", "env": "preview", "catalog_size": 1006,
+                "git_commit": "preview", "env": "preview", "catalog_size": 781,
                 "analyses_total": 1234,
                 "features": {"spectrogram": True, "by_catalog": True, "metrics": True},
                 "max_upload_bytes": 26214400, "rate_limit_per_min": 12,
