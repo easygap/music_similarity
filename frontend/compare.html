@@ -16,10 +16,55 @@
     .compare-head p { margin: 0; color: var(--text-mute); }
     .picker-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      /* 가운데 auto 열이 스왑 버튼 자리. 버튼이 양쪽 셀렉터의 수직 중앙에 오도록 정렬. */
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
       gap: 16px;
       margin: 24px 0 18px;
     }
+    /* A ↔ B 스왑 버튼 — 네비의 .icon-btn 과 같은 톤의 원형 버튼. */
+    .compare-swap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--border-strong);
+      color: var(--text-mute);
+      cursor: pointer;
+      /* 라벨(위) + 셀렉트(아래) 높이를 합친 피커 중앙에 버튼이 살짝 떠 보이지 않도록
+         셀렉트 라인에 맞춰 약간 아래로 내려준다. */
+      margin-top: 18px;
+      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    }
+    .compare-swap:hover {
+      color: var(--accent-2);
+      border-color: var(--accent-1);
+      background: rgba(124, 92, 255, 0.08);
+    }
+    .compare-swap svg {
+      width: 20px;
+      height: 20px;
+      /* 클릭마다 180° 누적 회전 — transform 은 JS 가 인라인으로 채운다.
+         버튼 자체 회전(모바일)과 충돌하지 않도록 회전은 아이콘에만 건다. */
+      transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    /* 같은 곡을 양쪽에 골랐을 때의 안내 — 경고색 토큰 사용. */
+    .compare-same-warn {
+      margin: -4px 0 16px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: var(--accent-warn);
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    /* 라이트 테마에서는 amber 가 흰 배경 대비 부족 — 더 진한 톤으로 보정. */
+    :root[data-theme="light"] .compare-same-warn { color: #b45309; }
     .picker {
       background: var(--panel);
       border: 1px solid var(--border-strong);
@@ -123,6 +168,12 @@
 
     @media (max-width: 760px) {
       .picker-row, .compare-grid { grid-template-columns: 1fr; }
+      /* 세로로 쌓이면 좌우 화살표 의미가 약해지므로 버튼을 90° 돌려 위/아래 스왑으로 보이게.
+         아이콘의 클릭 회전(인라인 transform)과 별개 요소라 충돌하지 않는다. */
+      .compare-swap { justify-self: center; margin: 2px 0; transform: rotate(90deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .compare-swap svg { transition: none; }
     }
   </style>
 </head>
@@ -164,11 +215,25 @@
         <label for="select-a" data-i18n="compare.left">왼쪽 곡</label>
         <select id="select-a"></select>
       </div>
+      <!-- A ↔ B 스왑 — 클릭하면 선택을 맞바꿔준다. 카드 위치 / Top1 매칭이 그대로 좌우 교환. -->
+      <button type="button" class="compare-swap" id="compare-swap"
+              data-i18n-attr="aria-label:compare.swapAria"
+              aria-label="왼쪽과 오른쪽을 바꾸기" title="A ↔ B">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 7l-3 3 3 3M4 10h13a3 3 0 0 1 3 3M17 21l3-3-3-3M20 18H7a3 3 0 0 1-3-3"
+                stroke="currentColor" stroke-width="1.8" fill="none"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
       <div class="picker">
         <label for="select-b" data-i18n="compare.right">오른쪽 곡</label>
         <select id="select-b"></select>
       </div>
     </div>
+
+    <!-- 같은 곡을 양쪽에 골랐을 때 안내. 일반 컨디션에서는 hidden. -->
+    <p class="compare-same-warn" id="compare-same-warn" role="status" hidden
+       data-i18n="compare.sameSongWarn">왼쪽과 오른쪽이 같은 곡입니다. 다른 곡을 골라주세요.</p>
 
     <div class="compare-grid" id="compare-grid">
       <p class="compare-empty">
@@ -285,6 +350,8 @@
       var pickerRow = document.querySelector(".picker-row");
       var selA = document.getElementById("select-a");
       var selB = document.getElementById("select-b");
+      var swapBtn = document.getElementById("compare-swap");
+      var sameWarn = document.getElementById("compare-same-warn");
 
       if (items.length < 2) {
         pickerRow.style.display = "none";
@@ -308,6 +375,9 @@
       function rerender() {
         var a = items[parseInt(selA.value, 10)];
         var b = items[parseInt(selB.value, 10)];
+        // 같은 곡을 양쪽에 고르면 안내만 띄우고 렌더 자체는 막지 않는다.
+        // 서로 다르면 hidden=true(숨김), 같으면 hidden=false(노출).
+        if (sameWarn) sameWarn.hidden = selA.value !== selB.value;
         if (!a || !b) {
           grid.innerHTML = '<p class="compare-empty">' + escapeHtml(t("compare.invalid")) + '</p>';
           return;
@@ -317,6 +387,22 @@
 
       selA.addEventListener("change", rerender);
       selB.addEventListener("change", rerender);
+
+      // A ↔ B 스왑 — 두 셀렉트 값을 맞바꿔 다시 그린다. 클릭마다 아이콘을 180°씩
+      // 더 돌려 "맞바꿨다"는 시각 피드백을 준다.
+      if (swapBtn) {
+        var swapRot = 0;
+        swapBtn.addEventListener("click", function () {
+          var av = selA.value;
+          selA.value = selB.value;
+          selB.value = av;
+          swapRot += 180;
+          var icon = swapBtn.querySelector("svg");
+          if (icon) icon.style.transform = "rotate(" + swapRot + "deg)";
+          rerender();
+        });
+      }
+
       // 언어가 바뀌면 옵션 라벨(날짜) 과 카드 메트릭 라벨이 같이 바뀌어야 한다.
       window.addEventListener("i18n:change", function () {
         var prevA = selA.value;
