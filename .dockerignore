@@ -1,0 +1,51 @@
+# Docker 빌드 컨텍스트에서 제외할 것들.
+# 이미지에는 Dockerfile 이 명시적으로 COPY 하는 것들(backend/ frontend/ data/
+# requirements.txt CHANGELOG.md)만 들어간다. 아래 항목들은 이미지에 필요 없고,
+# 컨텍스트로 데몬에 전송되면 빌드만 느려지고 (특히 .venv 수백 MB) 실수로
+# 민감 파일이 섞일 위험만 키운다.
+
+# 파이썬 가상환경 — 절대 컨텍스트/이미지에 들어가면 안 됨 (수백 MB)
+.venv/
+venv/
+env/
+
+# 버전 관리 / CI / 에디터 / 도구 설정
+.git/
+.gitignore
+.gitattributes
+.github/
+.claude/
+.vscode/
+.idea/
+
+# 테스트 / 개발 전용 (런타임 이미지엔 불필요)
+tests/
+scripts/
+preview_server.py
+requirements-dev.txt
+pyproject.toml
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# 캐시 / 커버리지 / 빌드 산출물
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# 런타임 업로드 (이미지엔 빈 디렉토리만 생성됨)
+uploads/*
+!uploads/.gitkeep
+
+# 문서 — CHANGELOG.md 는 런타임에서 파싱하므로 제외하지 않는다.
+README.md
+LICENSE
+
+# OS 잡파일
+.DS_Store
+Thumbs.db

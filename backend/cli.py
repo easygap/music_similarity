@@ -20,12 +20,14 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from . import __version__ as ENGINE_VERSION
 from .audio_features import AudioFeatureVector, extract_features, summary_metrics
 from .reason_engine import explain_match, report_to_dict
 from .similarity import MusicSimilarityEngine
 from .tagging import derive_tags
 
-ENGINE_VERSION = "1.3.0"
+# ENGINE_VERSION 은 backend.__version__ 을 그대로 따른다 — 서버(app.version)와
+# CLI 출력의 engine_version / User-Agent 가 항상 같은 값이 되도록 단일 소스화.
 
 
 def _build_response(

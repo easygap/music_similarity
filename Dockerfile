@@ -25,6 +25,10 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY backend /app/backend
 COPY frontend /app/frontend
 COPY data /app/data
+# 런타임에 /api/version · /api/health · "새 기능 보기" 모달이 CHANGELOG 를
+# 파싱한다(_parse_release_date_from_changelog). 이미지에 빠지면 release_date 와
+# 릴리즈 노트가 통째로 비어버리므로 함께 복사한다.
+COPY CHANGELOG.md /app/CHANGELOG.md
 
 # 빌드 타임에 git SHA 를 주입 — `/api/version.git_commit` 으로 노출된다.
 # 같은 version 으로 여러 빌드가 떠 있을 때 운영자가 어느 빌드인지 식별하기 위한 정보.

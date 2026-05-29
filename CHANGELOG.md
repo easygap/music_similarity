@@ -34,6 +34,13 @@
   라이트 테마에선 amber(`--accent-warn`) 가 흰 배경 대비 부족해 더 진한
   톤(#b45309)으로 보정. 신규 i18n `compare.sameSongWarn` (ko/en parity).
 
+### Changed
+- `.dockerignore` 추가. 그동안 빌드 컨텍스트에 `.venv`(수백 MB) / `.git` /
+  `tests` 같은 게 통째로 데몬에 전송돼 `docker build` 가 느렸고, 의도치
+  않은 파일이 컨텍스트에 섞일 위험도 있었다. 이미지에 실제로 필요한
+  `backend/` `frontend/` `data/` `requirements.txt` `CHANGELOG.md` 외에는
+  모두 제외하도록 정리.
+
 ### Fixed
 - 정의되지 않은 `var(--accent)` 토큰을 참조하던 hover 스타일 4곳을 실제
   토큰으로 교정. `:root` 에는 `--accent-1` / `--accent-2` 만 있고 바닥
@@ -42,6 +49,19 @@
   버튼의 hover 색이 조용히 죽어 있었다(상속색으로 튀거나 무반응).
   배경 틴트가 cyan 인 샘플 버튼·링크 복사는 `--accent-2`, 보라 계열
   카탈로그 버튼은 `--accent-1` 로 원래 의도에 맞춰 연결.
+- `/api/health` 의 'Duplicate Operation ID health' 경고 제거. GET·HEAD 를
+  `api_route(methods=[...])` 로 한 핸들러에 묶어 두 operation 이 같은
+  `operationId` 를 갖던 것을, GET 만 스키마에 노출(`operation_id="health"`)하고
+  HEAD 는 `include_in_schema=False` 로 분리했다. `/docs` · `/openapi.json`
+  접근 때마다 뜨던 경고와 일부 SDK 생성기 충돌이 사라진다.
+- Docker 프로덕션 이미지에 `CHANGELOG.md` 가 빠져 있던 문제 수정.
+  `/api/version` · `/api/health` 의 `release_date` 와 "새 기능 보기" 모달이
+  런타임에 CHANGELOG 를 파싱하는데, Dockerfile 이 이를 COPY 하지 않아
+  이미지 안에선 이 값들이 전부 비어 있었다. `COPY CHANGELOG.md` 추가로 해결.
+- CLI `ENGINE_VERSION` 하드코딩(`1.3.0`) 제거. 앱 버전이 1.7.x 로 올라가는
+  동안 CLI 의 `engine_version` 출력과 `User-Agent` 만 네 개 마이너 버전이나
+  뒤처져 있었다. 버전을 `backend/__init__.py` 의 `__version__` 단일 소스로
+  옮기고 서버(`app.version`)·CLI 가 함께 참조하도록 정리.
 
 ## [1.7.1] — 2026-05-22
 
