@@ -33,6 +33,7 @@
         sampleButton: "🎧 샘플로 분석해보기",
         sampleHint: "업로드 없이 카탈로그에서 무작위로 한 곡을 골라 결과를 체험해보세요.",
         sampleLoading: "샘플 준비 중…",
+        or: "또는",
         validation: {
           tooBig: (mb) => `파일이 너무 큽니다. 최대 ${mb}MB까지 업로드 가능합니다.`,
           badType: "지원하지 않는 오디오 형식입니다. (.mp3 .wav .flac .ogg .m4a)",
@@ -322,6 +323,7 @@
         sampleButton: "🎧 Try a sample track",
         sampleHint: "Skip the upload — pick a random catalog track to see the result flow.",
         sampleLoading: "Preparing a sample…",
+        or: "or",
         validation: {
           tooBig: (mb) => `File is too large. The maximum size is ${mb}MB.`,
           badType: "Unsupported audio format. (.mp3 .wav .flac .ogg .m4a)",

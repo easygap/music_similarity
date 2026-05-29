@@ -1053,7 +1053,12 @@
     sorted.forEach((hit, idx) => {
       const li = tmpl.content.firstElementChild.cloneNode(true);
       li.querySelector(".rank-num").textContent = hit.rank;
-      li.querySelector(".rank-label").textContent = t("results.hitRankUnit");
+      // 순위 단위 라벨(ko "위"). en 처럼 단위가 없는 언어에선 빈 문자열이라
+      // 라벨 노드를 숨겨 숫자 밑에 빈 칸이 남지 않게 한다.
+      const rankLabelEl = li.querySelector(".rank-label");
+      const rankUnit = t("results.hitRankUnit");
+      rankLabelEl.textContent = rankUnit;
+      rankLabelEl.hidden = !rankUnit;
       li.querySelector(".hit-title").textContent = hit.title;
       li.querySelector(".hit-artist").textContent = hit.artist;
       li.querySelector(".hit-percent-num").textContent = hit.similarity_percent.toFixed(1);
