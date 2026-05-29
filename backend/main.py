@@ -42,6 +42,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from . import __version__
 from .audio_features import AudioFeatureVector, extract_features, summary_metrics
 from .cache import AnalysisResultCache
 from .reason_engine import explain_match, report_to_dict
@@ -277,7 +278,7 @@ def _warmup_pipeline() -> None:
 app = FastAPI(
     title="SoundMatch · Music Similarity API",
     description="음원을 업로드하면 카탈로그에서 가장 닮은 곡을 찾아 순위와 함께 돌려준다.",
-    version="1.7.1",
+    version=__version__,
     lifespan=lifespan,
 )
 
@@ -730,14 +731,18 @@ def _dataset_mtime_date() -> str:
 # ----------------------------------------------------------------------
 # 라우트
 # ----------------------------------------------------------------------
-@app.api_route(
+@app.get(
     "/api/health",
-    methods=["GET", "HEAD"],
     response_model=HealthResponse,
     summary="라이브니스 / 카탈로그 로딩 상태",
     tags=["system"],
     operation_id="health",
 )
+# HEAD 도 같은 핸들러로 처리하되 OpenAPI 에는 GET 하나만 노출한다.
+# 예전엔 api_route(methods=["GET","HEAD"]) 로 묶었는데, 그러면 GET·HEAD 두
+# operation 이 같은 operationId("health") 를 갖게 돼 'Duplicate Operation ID'
+# 경고가 뜨고 일부 SDK 생성기가 깨졌다. HEAD 는 스키마에서 빼서 충돌을 없앤다.
+@app.head("/api/health", include_in_schema=False)
 def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임포트 + 업로드 디렉토리 쓰기까지 검사")):  # noqa: B008
     """라이브니스 프로브.
 
