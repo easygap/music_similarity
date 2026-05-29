@@ -48,6 +48,7 @@
   const audioPlayerTitle = $("#audio-player-title");
   const audioPreview = $("#audio-preview");
   const waveformCanvas = $("#waveform");
+  const seekSlider = $("#waveform-seek");
   const playBtn = $("#play-btn");
   const audioTime = $("#audio-time");
 
@@ -885,6 +886,15 @@
     if (audioPreview.duration > 0) {
       _audioProgress = audioPreview.currentTime / audioPreview.duration;
       if (_waveform) _waveform.draw(_audioProgress);
+      // 보조 시킹 슬라이더(키보드/SR)도 재생 위치에 맞춰 갱신한다. 값 set 은
+      // input 이벤트를 발생시키지 않으므로 사용자의 직접 조작과 충돌하지 않는다.
+      if (seekSlider) {
+        seekSlider.value = String(Math.round(_audioProgress * 100));
+        seekSlider.setAttribute(
+          "aria-valuetext",
+          `${fmtTime(audioPreview.currentTime)} / ${fmtTime(audioPreview.duration)}`,
+        );
+      }
     }
     updateAudioTime();
   });
@@ -894,6 +904,7 @@
     playBtn.dataset.playing = "false";
     _audioProgress = 0;
     if (_waveform) _waveform.draw(0);
+    if (seekSlider) seekSlider.value = "0";
   });
 
   playBtn.addEventListener("click", () => {
@@ -909,6 +920,16 @@
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     audioPreview.currentTime = ratio * audioPreview.duration;
   });
+
+  // 보조 시킹 슬라이더 — 키보드 화살표 / 스크린리더로 재생 위치를 옮긴다.
+  // 파형 캔버스는 마우스 전용(aria-hidden)이라, 이 슬라이더가 같은 기능을
+  // 키보드 사용자에게 제공한다.
+  if (seekSlider) {
+    seekSlider.addEventListener("input", () => {
+      if (!audioPreview.duration) return;
+      audioPreview.currentTime = (parseFloat(seekSlider.value) / 100) * audioPreview.duration;
+    });
+  }
 
   function fmtTime(secs) {
     if (!isFinite(secs)) return "0:00";

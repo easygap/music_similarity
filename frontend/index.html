@@ -376,6 +376,11 @@
           </div>
         </div>
         <canvas id="waveform" class="waveform" aria-hidden="true" height="72"></canvas>
+        <!-- 파형은 마우스 클릭으로 시킹하지만(canvas 는 aria-hidden), 키보드 /
+             스크린리더 사용자를 위해 보조 시킹 슬라이더를 둔다. sr-only 라
+             화면 디자인에는 영향이 없다. (WCAG 2.1.1 키보드 접근) -->
+        <input type="range" id="waveform-seek" class="sr-only" min="0" max="100" value="0"
+               aria-label="재생 위치" data-i18n-attr="aria-label:results.seekLabel" />
         <audio id="audio-preview" preload="metadata"></audio>
       </div>
 
