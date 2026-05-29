@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/style.css" />
   <script src="/theme-init.js"></script>
   <style>
-    .cat-wrap { max-width: 1100px; margin: 0 auto; padding: 56px 24px 120px; }
+    .cat-wrap { max-width: 1100px; margin: 0 auto; padding: 36px 24px 72px; }
     .cat-head { margin-bottom: 24px; }
     .cat-head h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.02em; }
     .cat-head p { margin: 0; color: var(--text-mute); }
@@ -583,8 +583,44 @@
     <div class="noise"></div>
   </div>
 
+  <header class="site-nav">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 32 32" class="brand-mark" aria-hidden="true">
+        <defs>
+          <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="#7c5cff" />
+            <stop offset="1" stop-color="#22d3ee" />
+          </linearGradient>
+        </defs>
+        <rect x="2" y="2" width="28" height="28" rx="9" fill="url(#g1)" />
+        <path d="M11 22V11l10-2v11" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="11" cy="22" r="2.4" fill="white" />
+        <circle cx="21" cy="20" r="2.4" fill="white" />
+      </svg>
+      <span>SoundMatch</span>
+    </a>
+    <nav class="site-nav-links" aria-label="Primary">
+      <div class="nav-links-group" id="nav-links-group">
+        <a href="/catalog" data-i18n="nav.catalog" aria-current="page">카탈로그</a>
+        <a href="/#how" data-i18n="nav.how">사용법</a>
+        <a href="/compare" data-i18n="nav.compare">비교</a>
+        <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="nav.github">GitHub</a>
+      </div>
+      <button type="button" class="nav-menu-toggle" id="nav-menu-toggle"
+              aria-expanded="false" aria-controls="nav-links-group"
+              aria-label="메뉴 열기" data-i18n-attr="aria-label:nav.menuToggle">
+        <svg class="nav-menu-icon-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="nav-menu-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button type="button" class="icon-btn" id="theme-toggle" aria-label="Toggle theme" data-i18n-attr="aria-label:controls.themeToggle">
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 13a8 8 0 0 1-10-10 8.5 8.5 0 1 0 10 10z" fill="currentColor"/></svg>
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/></g></svg>
+      </button>
+      <button type="button" class="ghost-pill" id="lang-toggle" data-i18n="controls.langToggle">Language: English</button>
+    </nav>
+  </header>
+
   <main class="cat-wrap">
-    <a class="cat-back" href="/" data-i18n="catalog.back">← 메인으로</a>
     <header class="cat-head">
       <h1 data-i18n="catalog.title">카탈로그 둘러보기</h1>
       <p data-i18n="catalog.sub">업로드한 음원이 비교되는 카탈로그입니다. 같은 장르 / 음색의 곡이 보이면 매칭이 더 잘 됩니다.</p>
@@ -736,7 +772,19 @@
   <!-- 라이브 토스트 — "복사됨" 같은 짧은 알림. polite 이라 보이스오버에 끼어들지 않음. -->
   <div class="cat-toast" id="cat-toast" role="status" aria-live="polite" hidden></div>
 
+  <footer class="site-foot">
+    <p data-i18n="footer.tagline">졸업작품에서 출발해, 시중 서비스급으로 끝까지 다듬은 프로젝트</p>
+    <p class="muted">
+      © <span id="year"></span> SoundMatch ·
+      <a href="/privacy" data-i18n="footer.privacy">개인정보 처리방침</a> ·
+      <a href="/terms" data-i18n="footer.terms">이용약관</a> ·
+      <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="footer.repoLink">GitHub</a>
+    </p>
+    <p class="muted" data-i18n="footer.notice">서버에 음원을 영구 저장하지 않습니다.</p>
+  </footer>
+
   <script src="/i18n.js"></script>
+  <script src="/site-nav.js"></script>
   <script src="/favorites.js"></script>
   <script>
   (function () {

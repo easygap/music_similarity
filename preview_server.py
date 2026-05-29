@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import random
 import sys
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -348,7 +348,10 @@ class PreviewHandler(SimpleHTTPRequestHandler):
 def main():
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
     print(f"Preview server listening on http://127.0.0.1:{port}", flush=True)
-    HTTPServer(("127.0.0.1", port), PreviewHandler).serve_forever()
+    # ThreadingHTTPServer 로 동시 요청을 처리한다. 단일 스레드면 서비스워커가
+    # 셸 자산을 cache.addAll 로 한꺼번에 받을 때 페이지 요청과 경합해 렌더가
+    # 멈추는 일이 있었다 (디자인 프리뷰 검증 중 발견).
+    ThreadingHTTPServer(("127.0.0.1", port), PreviewHandler).serve_forever()
 
 
 if __name__ == "__main__":
