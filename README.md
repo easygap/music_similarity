@@ -70,7 +70,7 @@ python -m backend.cli status --url http://localhost:8000
 
 ```bash
 python -m backend.cli version
-# v1.6.0 · 2026-05-21 · ab9e26f
+# v1.7.1 · 2026-05-22 · 382d958
 python -m backend.cli version --json    # jq 파이프 친화
 ```
 
@@ -256,7 +256,7 @@ UI 에서 " - " 로 잘라서 아티스트를 분리 표시한다.
 backend/      FastAPI 앱 (라우트 + 미들웨어 + ML 파이프라인)
 frontend/    SPA + PWA 자산
 data/        카탈로그 CSV
-tests/       pytest 모음 (현재 252 케이스)
+tests/       pytest 모음 (CI 매트릭스에서 매 PR 실행)
 scripts/     개발/카탈로그 재빌드 스크립트
 ```
 
@@ -277,7 +277,7 @@ Docker 이미지 빌드까지 캐시 적용해서 한 번 더 확인.
 - in-memory rate limit + metrics 라서 다중 worker 환경에선 값이 worker 별로
   파편화된다. 트래픽이 커지면 Redis 백엔드 limiter + push gateway 같은 별도
   구성이 필요함.
-- 카탈로그는 약 1000곡 규모. 더 커지면 `cosine_similarity` 그대로는 메모리가
+- 카탈로그는 현재 781곡 규모. 더 커지면 `cosine_similarity` 그대로는 메모리가
   부담이라 Annoy / FAISS 같은 ANN 구조로 바꾸는 게 맞다.
 - 분석은 짧은 곡 30초만 사용한다 (`extract_features(max_duration=30)`). 가장
   특징적인 인트로 / 후렴구가 안 잡힐 수 있다는 의미.

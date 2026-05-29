@@ -40,6 +40,12 @@
   않은 파일이 컨텍스트에 섞일 위험도 있었다. 이미지에 실제로 필요한
   `backend/` `frontend/` `data/` `requirements.txt` `CHANGELOG.md` 외에는
   모두 제외하도록 정리.
+- 문서·예시 수치 정합성 정리. README 의 테스트 수(고정 "252 케이스" → "CI
+  매트릭스에서 매 PR 실행"), 카탈로그 규모(약 1000곡 → 실제 781곡), CLI
+  `version` 예시 출력(v1.6.0 → v1.7.1)을 현행화하고, OpenAPI 스키마 예시
+  (`HealthResponse.catalog_size` 1006→781, `version` / `engine_version`
+  1.5.0·1.2.0 → 1.7.1)와 디자인 프리뷰 서버의 더미 카탈로그 수(1006→781)도
+  실제 값에 맞췄다.
 
 ### Fixed
 - 정의되지 않은 `var(--accent)` 토큰을 참조하던 hover 스타일 4곳을 실제
