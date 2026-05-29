@@ -275,6 +275,8 @@
         invalid: "유효하지 않은 선택이에요.",
         topMatch: "Top 1 매칭",
         topSuffix: "유사도",
+        swapAria: "왼쪽 곡과 오른쪽 곡 맞바꾸기",
+        sameSongWarn: "왼쪽과 오른쪽이 같은 곡입니다. 다른 곡을 골라주세요.",
         metric: {
           tempo: "Tempo (BPM)",
           energy: "에너지 (RMS)",
@@ -557,6 +559,8 @@
         invalid: "Invalid selection.",
         topMatch: "Top 1 match",
         topSuffix: "similarity",
+        swapAria: "Swap the left and right tracks",
+        sameSongWarn: "Left and right point to the same track — pick two different ones.",
         metric: {
           tempo: "Tempo (BPM)",
           energy: "Energy (RMS)",
