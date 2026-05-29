@@ -1781,6 +1781,12 @@ if FRONTEND_DIR.exists():
     def error_boundary_js():
         return _cached_file_response(FRONTEND_DIR / "js" / "error-boundary.js")
 
+    @app.get("/site-nav.js", include_in_schema=False)
+    def site_nav_js():
+        # 서브페이지(카탈로그/비교 등) 공용 네비게이션 배선. HTML 은 루트 경로로
+        # 부르지만 실제 파일은 js/ 아래에 있어 다른 스크립트들과 같은 방식으로 매핑.
+        return _cached_file_response(FRONTEND_DIR / "js" / "site-nav.js")
+
     @app.get("/favicon.svg", include_in_schema=False)
     def favicon():
         return _cached_file_response(FRONTEND_DIR / "assets" / "favicon.svg", immutable=True)

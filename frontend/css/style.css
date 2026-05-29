@@ -246,6 +246,8 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 14.5px;
 }
 .site-nav-links a:hover { color: var(--text); }
+/* 현재 페이지에 해당하는 네비 링크 강조 (카탈로그 / 비교 같은 서브페이지에서). */
+.site-nav-links a[aria-current="page"] { color: var(--text); font-weight: 600; }
 
 /* 모바일 햄버거 토글 — 데스크톱에서는 숨김. */
 .nav-menu-toggle {
