@@ -279,7 +279,7 @@ pytest -q
 ruff check backend tests scripts
 ```
 
-CI 는 Python 3.11 / 3.12 매트릭스로 같은 검사를 매 PR 마다 돌린다. 통과 후
+CI 는 Python 3.11 / 3.12 / 3.14 매트릭스로 같은 검사를 매 PR 마다 돌린다. 통과 후
 Docker 이미지 빌드까지 캐시 적용해서 한 번 더 확인.
 
 ## 한계 / 알아둘 것

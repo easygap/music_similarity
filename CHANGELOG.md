@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Changed
+- 계산 스택을 `numpy 2.4.6`, `pandas 3.0.3`, `scikit-learn 1.8.0` 으로
+  업데이트하고 Docker 런타임을 `python:3.14-slim` 으로 올렸다. Python 3.14
+  런타임도 실제 테스트 매트릭스에 포함해, 이미지 빌드만 통과하는 상태가 아니라
+  서버/분석 테스트까지 같이 확인하도록 했다.
 - 오디오 분석 스택을 `librosa 0.11.0`, `soundfile 0.13.1`,
   `audioread 3.1.0` 으로 업데이트하고, `setuptools` 핀을 `>=82.0.1,<83`
   범위로 올렸다. 기존 `librosa 0.10.1` 은 `pkg_resources` 에 의존해서
