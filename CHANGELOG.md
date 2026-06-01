@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+### Fixed
+- "새 기능 보기" 배너가 `release_date` 만 기억하던 문제를 고쳤다. 같은 날
+  패치 릴리즈가 여러 번 나와도 `version + release_date` 조합으로 판단해 새
+  릴리즈 배너가 빠지지 않게 했다.
+
 ## [1.8.4] — 2026-06-01
 
 v1.8.3 이후 배포 healthcheck 와 운영 smoke test 를 같은 readiness 기준으로

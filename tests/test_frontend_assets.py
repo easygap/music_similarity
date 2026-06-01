@@ -164,6 +164,20 @@ def test_hero_shows_social_proof_total_analyses():
     assert 't("hero.totalAnalyses"' in js
 
 
+def test_whats_new_seen_marker_includes_version_and_release_date():
+    """같은 날짜에 여러 패치 릴리즈가 나와도 새 기능 배너가 누락되면 안 된다."""
+    js = _read("js/app.js")
+
+    assert "function releaseSeenId(versionData)" in js
+    assert "versionData.version" in js
+    assert "versionData.release_date" in js
+    assert "lastWhatsNewReleaseId" in js
+    assert "localStorage.setItem(WHATSNEW_KEY, currentSeenId)" in js
+    assert "lastSeen === currentSeenId" in js
+    assert "localStorage.setItem(WHATSNEW_KEY, date)" not in js
+    assert "lastSeen === date" not in js
+
+
 def test_hero_stat_shows_catalog_freshness():
     """Hero stat 카드에 카탈로그 갱신 일자가 노출되어야 한다."""
     html = _read("index.html")
@@ -353,8 +367,8 @@ def test_service_worker_version_string():
     match = re.search(r'VERSION\s*=\s*"soundmatch-v(\d+)"', text)
     assert match, "sw.js 에서 VERSION 상수를 찾을 수 없습니다."
     version_num = int(match.group(1))
-    # 셸 자산이 갱신될 때마다 한 칸씩 올라가야 하므로 v1 이상.
-    assert version_num >= 2, "SW VERSION 이 자산 추가에 맞춰 bump 되지 않았습니다."
+    # app.js 의 새 기능 배너 로직이 바뀌었으므로 기존 캐시를 확실히 밀어내야 한다.
+    assert version_num >= 8, "SW VERSION 이 새 app.js 배포에 맞춰 bump 되지 않았습니다."
 
 
 def test_render_mini_metrics_uses_i18n_labels():

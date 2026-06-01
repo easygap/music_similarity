@@ -262,7 +262,7 @@
         buildEl.hidden = false;
       }
 
-      // "새 기능" 배너 — release_date 가 localStorage 의 마지막 확인 값과 다를 때만 노출.
+      // "새 기능" 배너 — version + release_date 가 마지막 확인 값과 다를 때만 노출.
       // 처음 방문자(localStorage 비어 있음) 에게는 보여주지 않는다 — onboarding 의 다른
       // 신호 (PWA install, 카탈로그 안내) 와 겹치면 노이즈가 되기 때문.
       maybeShowWhatsNew(data);
@@ -278,6 +278,12 @@
   // What's New 배너 + 모달.
   // ------------------------------------------------------------------
   const WHATSNEW_KEY = "soundmatch.lastSeenRelease";
+  let lastWhatsNewReleaseId = "";
+
+  function releaseSeenId(versionData) {
+    if (!versionData || !versionData.version || !versionData.release_date) return "";
+    return `${String(versionData.version)}|${String(versionData.release_date)}`;
+  }
 
   function maybeShowWhatsNew(versionData) {
     const banner = document.getElementById("whatsnew-banner");
@@ -286,15 +292,18 @@
     const date = versionData.release_date;
     const version = versionData.version;
     if (!date || !version) return;
+    const currentSeenId = releaseSeenId(versionData);
+    if (!currentSeenId) return;
+    lastWhatsNewReleaseId = currentSeenId;
     let lastSeen = "";
     try { lastSeen = localStorage.getItem(WHATSNEW_KEY) || ""; } catch (e) { /* private mode */ }
 
     if (!lastSeen) {
       // 처음 방문자 — 배너 띄우지 않고 현재 release 만 silent 하게 기록.
-      try { localStorage.setItem(WHATSNEW_KEY, date); } catch (e) { /* private mode */ }
+      try { localStorage.setItem(WHATSNEW_KEY, currentSeenId); } catch (e) { /* private mode */ }
       return;
     }
-    if (lastSeen === date) {
+    if (lastSeen === currentSeenId) {
       // 이미 확인한 릴리즈 — 표시 안 함.
       banner.classList.add("hidden");
       return;
@@ -307,16 +316,16 @@
   function dismissWhatsNew() {
     const banner = document.getElementById("whatsnew-banner");
     if (banner) banner.classList.add("hidden");
-    // 가장 마지막에 받은 /api/version 응답의 release_date 를 저장. 없으면 today.
-    const v = document.getElementById("whatsnew-version");
-    // version chip 텍스트가 "v1.4.0" 형태인데 우리가 저장할 건 date 라서, 다시 fetch 하지 않고
-    // 모듈 스코프에 마지막 release_date 를 캐시해둔 게 없으므로 그냥 versionData 를 다시 받기보다
-    // localStorage 에 "오늘 본 상태" 라는 표시로 현재 시각 ISO 를 저장한다. 다음 cut 까지 다시
-    // 안 떠야 하니까 fetch 한 시점에 받은 데이터로 다시 저장 (closure 활용 어렵다 — 그래서
-    // 다시 한 번 /api/version 을 한 번만 호출해 release_date 캐싱).
+    // 가장 마지막에 받은 /api/version 의 version + release_date 조합을 저장한다.
+    if (lastWhatsNewReleaseId) {
+      try { localStorage.setItem(WHATSNEW_KEY, lastWhatsNewReleaseId); } catch (e) {}
+      return;
+    }
+    // 예외적으로 캐시된 값이 없으면 한 번 더 조회해서 같은 marker 를 만든다.
     fetch("/api/version").then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-      if (d && d.release_date) {
-        try { localStorage.setItem(WHATSNEW_KEY, d.release_date); } catch (e) {}
+      const seenId = releaseSeenId(d);
+      if (seenId) {
+        try { localStorage.setItem(WHATSNEW_KEY, seenId); } catch (e) {}
       }
     }).catch(function () { /* ignore */ });
   }
