@@ -285,6 +285,10 @@ Docker 이미지 빌드까지 캐시 적용해서 한 번 더 확인한다. 이 
 `GIT_COMMIT=${{ github.sha }}` build-arg 를 넘겨 `/api/version.git_commit` 으로
 이미지 출처를 확인할 수 있게 한다.
 
+Dockerfile / docker-compose healthcheck 는 `/api/health?strict=true` 를 호출한다.
+카탈로그 로드뿐 아니라 librosa/sklearn import 와 업로드 디렉토리 쓰기까지 확인해,
+컨테이너는 떠 있지만 실제 분석 업로드가 실패하는 상태를 더 빨리 잡기 위해서다.
+
 ## 한계 / 알아둘 것
 
 - in-memory rate limit + metrics 라서 다중 worker 환경에선 값이 worker 별로

@@ -9,6 +9,9 @@
 ### Changed
 - Docker 이미지 healthcheck 를 `curl` 대신 Python 표준 라이브러리로 실행하도록
   바꿨다. 런타임에 이미 있는 Python 만 사용해 불필요한 OS 패키지 설치를 줄였다.
+- Dockerfile / docker-compose healthcheck 가 `/api/health?strict=true` 를 호출하도록
+  바꿨다. 컨테이너가 카탈로그 로드뿐 아니라 ML import 와 업로드 디렉토리 쓰기까지
+  통과해야 healthy 로 잡히게 했다.
 
 ## [1.8.3] — 2026-06-01
 
