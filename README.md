@@ -171,6 +171,8 @@ python preview_server.py 8765
 - 결과를 그대로 인쇄 / PDF 변환 가능 — `@media print` 로 nav / 컨트롤 /
   오디오 플레이어를 숨기고 카드만 흑백 톤으로 깔끔하게 출력.
 - 한국어 / 영어 토글, 다크 / 라이트 테마, PWA(오프라인 폴백).
+  PWA shell 에 메인 / 카탈로그 / 비교 / 개인정보 처리방침 / 이용약관을 포함해
+  설치 후 오프라인 재방문에서도 핵심 화면과 법적 고지에 접근할 수 있다.
   메인 / 카탈로그 / 비교 페이지 전부 i18n 적용 — Language 토글 한 번이면 모든
   서브 페이지의 정적·동적 텍스트가 같이 바뀐다.
 - 백엔드: threadpool 으로 librosa 분리, IP별 rate limit, magic-byte 검증,
@@ -207,6 +209,7 @@ GET  /api/catalog/export.csv   # 같은 필터 조건으로 전체를 한 장의
 POST /api/client-error         # 프론트엔드 글로벌 에러 비콘 (sendBeacon)
 GET  /docs                     # FastAPI 자동 Swagger UI
 GET  /metrics                  # Prometheus exposition (uptime, latency P50/P95 포함)
+GET  /sitemap.xml /robots.txt  # 검색 엔진 색인 보조
 GET  /catalog /compare /privacy /terms /sw.js /manifest.webmanifest /offline.html /404
 ```
 
