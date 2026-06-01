@@ -6,6 +6,23 @@
 
 ## [Unreleased]
 
+## [1.8.9] — 2026-06-01
+
+v1.8.8 이후 디자인 프리뷰 서버의 릴리즈 메타데이터 drift 를 없앤 패치
+릴리즈. 로컬 프리뷰에서 보는 footer / 새 기능 모달 / 버전 API 가 실제 앱
+버전과 어긋나지 않도록 정리했다.
+
+### Fixed
+- `preview_server.py` 의 `/api/version`, `/api/health`, `/api/version/changelog`
+  응답이 더 이상 `1.7.0` 과 오래된 릴리즈 날짜를 하드코딩하지 않게 했다.
+  프리뷰 서버는 가벼운 CHANGELOG 파서와 `backend.__version__` 을 사용해 현재
+  릴리즈 버전 / 날짜 / 최근 릴리즈 노트를 그대로 내려준다.
+
+### Tests
+- 프리뷰 서버 회귀 테스트가 `/api/version`, `/api/health`,
+  `/api/version/changelog` 의 첫 릴리즈가 현재 앱 버전과 같은지 확인하도록
+  강화됐다.
+
 ## [1.8.8] — 2026-06-01
 
 v1.8.7 이후 모바일 결과 카드에서 사용자가 다음 행동을 더 쉽게 고를 수 있게

@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import json
 import random
+import re
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+
+from backend import __version__ as APP_VERSION
 
 ROOT = Path(__file__).resolve().parent
 FRONTEND = ROOT / "frontend"
@@ -162,28 +165,49 @@ for _i in range(30):
         },
     })
 
-# /api/version/changelog 더미 — "새 기능" 모달이 그려질 수 있게.
-SAMPLE_CHANGELOG = {
-    "releases": [
-        {
-            "version": "1.7.0",
-            "date": "2026-05-22",
-            "sections": {
-                "Added": ["분석 결과 신뢰도 안내 배너", "noscript 폴백"],
-                "Changed": ["결과 내보내기 메뉴 드롭다운화", "hit 카드 펼침 트랜지션"],
-                "Fixed": ["모바일 네비게이션 햄버거 메뉴"],
-            },
-        },
-        {
-            "version": "1.6.0",
-            "date": "2026-05-21",
-            "sections": {
-                "Added": ["/api/version 에 git_commit / dependencies"],
-                "Changed": ["OS 테마 실시간 동기"],
-            },
-        },
-    ],
-}
+def _recent_releases_from_changelog(limit: int = 3) -> list[dict]:
+    """CHANGELOG.md 를 가볍게 파싱해 프리뷰의 새 기능 모달도 실제 릴리즈를 따라가게 한다."""
+    changelog = ROOT / "CHANGELOG.md"
+    try:
+        text = changelog.read_text(encoding="utf-8")
+    except OSError:
+        return []
+
+    header_re = re.compile(r"^## \[(\d+\.\d+\.\d+)\][^\n]*?(\d{4}-\d{2}-\d{2})", re.MULTILINE)
+    headers = list(header_re.finditer(text))
+    releases: list[dict] = []
+    for i, match in enumerate(headers[:limit]):
+        body_start = match.end()
+        body_end = headers[i + 1].start() if i + 1 < len(headers) else len(text)
+        body = text[body_start:body_end]
+        sections: dict[str, list[str]] = {}
+        section_headers = list(re.finditer(r"^### (\w[^\n]*?)\n", body, re.MULTILINE))
+        for j, section in enumerate(section_headers):
+            name = section.group(1).strip()
+            start = section.end()
+            end = section_headers[j + 1].start() if j + 1 < len(section_headers) else len(body)
+            items: list[str] = []
+            current: list[str] = []
+            for raw in body[start:end].splitlines():
+                if raw.startswith("- "):
+                    if current:
+                        items.append(" ".join(current).strip())
+                    current = [raw[2:].strip()]
+                elif raw.strip() and current:
+                    current.append(raw.strip())
+            if current:
+                items.append(" ".join(current).strip())
+            if items:
+                sections.setdefault(name, []).extend(items)
+        releases.append({"version": match.group(1), "date": match.group(2), "sections": sections})
+    return releases
+
+
+def _preview_release_date() -> str | None:
+    releases = _recent_releases_from_changelog(limit=1)
+    if releases and releases[0]["version"] == APP_VERSION:
+        return releases[0]["date"]
+    return None
 
 
 class PreviewHandler(SimpleHTTPRequestHandler):
@@ -241,15 +265,17 @@ class PreviewHandler(SimpleHTTPRequestHandler):
         elif path == "/api/catalog":
             return self._send_json({"catalog_size": 781, "feature_count": 57, "features": []})
         elif path == "/api/health":
+            release_date = _preview_release_date()
             return self._send_json({
                 "status": "ok", "catalog_size": 781, "env": "preview",
-                "version": "1.7.0", "release_date": "2026-05-22", "git_commit": "preview",
+                "version": APP_VERSION, "release_date": release_date, "git_commit": "preview",
                 "uptime_seconds": 12.3, "analyze_latency_p50_seconds": 1.4,
-                "catalog_updated_at": "2026-05-22T00:00:00+00:00",
+                "catalog_updated_at": f"{release_date}T00:00:00+00:00" if release_date else None,
             })
         elif path == "/api/version":
+            release_date = _preview_release_date()
             return self._send_json({
-                "name": "soundmatch", "version": "1.7.0", "release_date": "2026-05-22",
+                "name": "soundmatch", "version": APP_VERSION, "release_date": release_date,
                 "git_commit": "preview", "env": "preview", "catalog_size": 781,
                 "analyses_total": 1234,
                 "features": {"spectrogram": True, "by_catalog": True, "metrics": True},
@@ -257,7 +283,7 @@ class PreviewHandler(SimpleHTTPRequestHandler):
                 "dependencies": {"python": "3.11.x", "numpy": "preview", "scikit-learn": "preview"},
             })
         elif path == "/api/version/changelog":
-            return self._send_json(SAMPLE_CHANGELOG)
+            return self._send_json({"releases": _recent_releases_from_changelog(limit=3)})
         elif path == "/api/catalog/search":
             return self._catalog_search(parse_qs(parsed.query))
         elif path == "/api/catalog/random":
