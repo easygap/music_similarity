@@ -376,13 +376,20 @@ app.add_middleware(RequestLogMiddleware)
 if ALLOWED_ORIGINS:
     # 와일드카드 origin과 credentials 조합은 브라우저가 거부하므로 차단.
     allow_credentials = "*" not in ALLOWED_ORIGINS
+    exposed_api_headers = [
+        "X-Request-ID",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+        "Retry-After",
+    ]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=ALLOWED_ORIGINS,
         allow_credentials=allow_credentials,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Content-Type", "X-Request-ID"],
-        expose_headers=["X-Request-ID"],
+        expose_headers=exposed_api_headers,
     )
 
 
