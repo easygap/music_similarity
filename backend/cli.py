@@ -243,7 +243,7 @@ def _hit_to_dict(hit) -> dict:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    """떠 있는 서버의 /api/health 응답을 사람 친화적으로 표시한다.
+    """떠 있는 서버의 health/readiness 응답을 사람 친화적으로 표시한다.
 
     배포 후 sanity check / cron monitoring 용 작은 도구. ``--json`` 으로
     그대로 JSON 만 떨궈서 jq / 다른 툴에 파이프하기 쉽게도 만들었다.
@@ -254,7 +254,9 @@ def cmd_status(args: argparse.Namespace) -> int:
     from urllib.error import HTTPError, URLError
     from urllib.request import Request, urlopen
 
-    url = args.url.rstrip("/") + "/api/health"
+    base_url = args.url.rstrip("/")
+    endpoint = "/api/ready" if args.ready else "/api/health"
+    url = base_url + endpoint
     if args.strict:
         url += "?strict=true"
 
@@ -288,7 +290,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     # 사람 친화 표.
     ok = data.get("status") == "ok"
-    head = f"[{data.get('status', '?').upper()}] {args.url}"
+    head = f"[{data.get('status', '?').upper()}] {url}"
     print(head)
     print("─" * len(head))
     rows = [
@@ -944,10 +946,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = sub.add_parser(
         "status",
-        help="떠 있는 서버의 /api/health 응답을 사람 친화적으로 표시 (운영 점검).",
+        help="떠 있는 서버의 health/readiness 응답을 사람 친화적으로 표시 (운영 점검).",
     )
     status.add_argument("--url", default="http://127.0.0.1:8000", help="대상 base URL (기본 127.0.0.1:8000)")
-    status.add_argument("--strict", action="store_true", help="?strict=true 로 호출 (librosa / 디스크 점검까지)")
+    probe = status.add_mutually_exclusive_group()
+    probe.add_argument("--strict", action="store_true", help="/api/health?strict=true 로 호출 (librosa / 디스크 점검까지)")
+    probe.add_argument("--ready", action="store_true", help="/api/ready 로 호출 (배포 readiness 와 같은 경로)")
     status.add_argument("--json", action="store_true", help="JSON 응답을 그대로 출력")
     status.add_argument("--timeout", type=float, default=5.0, help="네트워크 타임아웃 (초, 기본 5)")
     status.set_defaults(func=cmd_status)

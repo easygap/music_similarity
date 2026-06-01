@@ -13,6 +13,8 @@
   docker-compose / Render / Fly healthcheck 를 이 경로로 통일했다. 기존
   `/api/health?strict=true` 와 같은 검사를 수행하되, PaaS 설정에서 query string
   처리 차이를 신경 쓰지 않아도 된다.
+- `python -m backend.cli status --ready` 옵션을 추가해 배포 healthcheck 와 같은
+  `/api/ready` 경로를 CLI smoke test 에서도 바로 확인할 수 있게 했다.
 
 ## [1.8.3] — 2026-06-01
 
