@@ -43,6 +43,20 @@ def test_css_respects_hidden_attribute():
     assert "[hidden] { display: none !important; }" in text
 
 
+def test_results_focus_management_is_wired():
+    """분석 완료 후 결과 제목으로 포커스가 이동해야 상태 전환을 놓치지 않는다."""
+    html = _read("index.html")
+    assert 'aria-labelledby="results-title"' in html
+    assert 'id="results-title" tabindex="-1"' in html
+
+    app = _read("js/app.js")
+    assert 'const resultsTitle = $("#results-title");' in app
+    assert "resultsTitle.focus({ preventScroll: true })" in app
+    assert "function renderResults(data, preserveFile = false, options = {})" in app
+    # 언어/정렬 같은 내부 재렌더에서는 포커스를 훔치지 않는다.
+    assert "{ focus: false, scroll: false }" in app
+
+
 def test_hero_title_keeps_key_phrase_together():
     """히어로 핵심 문구가 '곡' 한 글자만 따로 떨어지지 않게 묶여 있어야 한다."""
     html = _read("index.html")

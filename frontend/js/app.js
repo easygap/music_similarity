@@ -34,6 +34,7 @@
   const errorRetryBtn = $("#error-retry");
 
   const resultsSection = $("#results");
+  const resultsTitle = $("#results-title");
   const resultsSubtitle = $("#results-subtitle");
   const resultTagsEl = $("#result-tags");
   const audioSummary = $("#audio-summary");
@@ -132,7 +133,7 @@
     if (langToggleBtn) langToggleBtn.textContent = t("controls.langToggle");
     syncUploadLimitText();
     renderHistory();
-    if (_lastResults) renderResults(_lastResults, /* preserveFile */ true);
+    if (_lastResults) renderResults(_lastResults, /* preserveFile */ true, { focus: false, scroll: false });
     loadCatalogStat();
   });
 
@@ -1034,7 +1035,26 @@
   // ----------------------------------------------------------------------
   // 결과 렌더링
   // ----------------------------------------------------------------------
-  function renderResults(data, preserveFile = false) {
+  function focusResultTitle() {
+    if (!resultsTitle) return;
+    try {
+      resultsTitle.focus({ preventScroll: true });
+    } catch {
+      resultsTitle.focus();
+    }
+  }
+
+  function revealResults(options = {}) {
+    if (options.focus !== false) {
+      focusResultTitle();
+    }
+    if (options.scroll !== false) {
+      const behavior = options.focus === false ? "smooth" : "auto";
+      resultsSection.scrollIntoView({ behavior, block: "start" });
+    }
+  }
+
+  function renderResults(data, preserveFile = false, options = {}) {
     hideAll();
     resultsSection.classList.remove("hidden");
     // 새 결과를 그리면 키보드 selected 인덱스를 초기화. 사용자가 j 를 처음
@@ -1085,6 +1105,7 @@
           <p>${escapeHtml(t("results.emptyHint"))}</p>
         </div>`;
       radarCard.classList.add("hidden");
+      revealResults(options);
       return;
     }
 
@@ -1223,7 +1244,7 @@
 
     renderResultMeta(data);
 
-    resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    revealResults(options);
   }
 
   // 1위 매칭 유사도를 보고 신뢰도 안내 배너를 그린다.
@@ -1333,7 +1354,7 @@
 
   if (resultsSortSelect) {
     resultsSortSelect.addEventListener("change", () => {
-      if (_lastResults) renderResults(_lastResults, /* preserveFile */ true);
+      if (_lastResults) renderResults(_lastResults, /* preserveFile */ true, { focus: false, scroll: false });
     });
   }
 
