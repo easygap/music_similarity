@@ -422,6 +422,27 @@ def test_privacy_page_discloses_browser_storage_and_error_beacon():
         assert marker in text, f"privacy.html 에 '{marker}' 고지가 없습니다."
 
 
+def test_terms_page_discloses_current_feature_boundaries():
+    """이용약관이 현재 기능과 사용 책임 경계를 같이 설명해야 한다."""
+    text = _read("terms.html")
+
+    assert "최종 업데이트: 2026-06-01" in text
+    for marker in (
+        "공유 링크",
+        "내보내기 파일",
+        "즐겨찾기",
+        "localStorage",
+        "URL hash",
+        "클라이언트 오류 비콘",
+        "저작권",
+        "Rate limit",
+        "법적 판단",
+        "라이선스 판단",
+        "개인정보 처리방침",
+    ):
+        assert marker in text, f"terms.html 에 '{marker}' 고지가 없습니다."
+
+
 def test_service_worker_version_string():
     """SW VERSION 은 'soundmatch-vN' 형태여야 한다 (캐시 무효화 규약)."""
     import re
@@ -430,8 +451,8 @@ def test_service_worker_version_string():
     match = re.search(r'VERSION\s*=\s*"soundmatch-v(\d+)"', text)
     assert match, "sw.js 에서 VERSION 상수를 찾을 수 없습니다."
     version_num = int(match.group(1))
-    # 캐시된 privacy.html 내용이 바뀌었으므로 기존 shell 캐시를 확실히 밀어내야 한다.
-    assert version_num >= 10, "SW VERSION 이 개인정보 고지 갱신에 맞춰 bump 되지 않았습니다."
+    # 캐시된 terms.html 내용이 바뀌었으므로 기존 shell 캐시를 확실히 밀어내야 한다.
+    assert version_num >= 11, "SW VERSION 이 약관 고지 갱신에 맞춰 bump 되지 않았습니다."
 
 
 def test_render_mini_metrics_uses_i18n_labels():
