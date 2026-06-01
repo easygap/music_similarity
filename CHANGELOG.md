@@ -10,6 +10,9 @@
 - `/compare` 에 히스토리가 없는 첫 방문자를 위한 CTA 를 추가했다. 기존에는
   안내 문장만 보여서 다음 행동이 막혔는데, 이제 메인 분석 시작과 카탈로그
   둘러보기로 바로 이동할 수 있다.
+- Dockerfile / docker-compose 의 기본 `WEB_CONCURRENCY` 를 1로 맞췄다.
+  rate limit, 결과 캐시, metrics 가 in-memory 라 다중 worker 기본값은 실제
+  운영 한도와 카운터를 왜곡할 수 있었다.
 
 ## [1.8.1] — 2026-06-01
 

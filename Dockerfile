@@ -6,7 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     MUSIC_ENV=production \
-    PORT=8000
+    PORT=8000 \
+    WEB_CONCURRENCY=1
 
 # librosa / soundfile / audioread 가 의존하는 시스템 라이브러리.
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -49,4 +50,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD curl -fsS "http://localhost:${PORT}/api/health" || exit 1
 
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2}"]
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-1}"]
