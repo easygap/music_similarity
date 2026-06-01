@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Changed
+- 오디오 분석 스택을 `librosa 0.11.0`, `soundfile 0.13.1`,
+  `audioread 3.1.0` 으로 업데이트하고, `setuptools` 핀을 `>=82.0.1,<83`
+  범위로 올렸다. 기존 `librosa 0.10.1` 은 `pkg_resources` 에 의존해서
+  최신 setuptools 에서 테스트가 깨졌고, 이 때문에 setuptools 를 80.x 이하로
+  묶어두고 있었다.
 - FastAPI 를 `0.110.0` 에서 `0.136.3` 로 업데이트했다. 현재 테스트 스위트와
   분석 API 동작을 기준으로 호환성을 다시 확인해 오래된 웹 프레임워크 의존성을
   줄였다.
