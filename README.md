@@ -71,7 +71,7 @@ python -m backend.cli status --url https://내-서비스.example --ready
 
 ```bash
 python -m backend.cli version
-# v1.8.6 · 2026-06-01 · <git-sha>
+# v1.8.7 · 2026-06-01 · <git-sha>
 python -m backend.cli version --json    # jq 파이프 친화
 ```
 

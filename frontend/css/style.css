@@ -256,7 +256,8 @@ button { font-family: inherit; cursor: pointer; }
   background: transparent;
   border: 1px solid var(--border-strong);
   color: var(--text);
-  width: 38px; height: 38px;
+  width: 40px; height: 40px;
+  flex: 0 0 40px;
   border-radius: 10px;
   align-items: center;
   justify-content: center;
@@ -274,7 +275,8 @@ button { font-family: inherit; cursor: pointer; }
   background: transparent;
   border: 1px solid var(--border-strong);
   color: var(--text);
-  width: 38px; height: 38px;
+  width: 40px; height: 40px;
+  flex: 0 0 40px;
   border-radius: 10px;
   display: inline-flex;
   align-items: center;
@@ -292,9 +294,14 @@ button { font-family: inherit; cursor: pointer; }
   border: 1px solid var(--border-strong);
   color: var(--text);
   padding: 7px 14px;
+  min-height: 40px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
   transition: background 0.18s, border-color 0.18s;
 }
 .ghost-pill:hover { background: rgba(255, 255, 255, 0.06); border-color: var(--accent-1); }
@@ -324,7 +331,13 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 0;
+  min-width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .install-dismiss:hover { color: var(--text); }
 
@@ -712,6 +725,7 @@ main {
   border: 1px solid var(--border-strong);
   color: var(--text);
   padding: 10px 12px;
+  min-height: 40px;
   border-radius: 10px;
   font-size: 14px;
   appearance: none;
@@ -892,6 +906,7 @@ main {
   border: 1px solid var(--border-strong);
   color: var(--text);
   padding: 8px 30px 8px 12px;
+  min-height: 40px;
   border-radius: 10px;
   font-size: 13px;
   appearance: none;
@@ -909,6 +924,7 @@ main {
   color: var(--text);
   border: 1px solid var(--border-strong);
   padding: 10px 14px;
+  min-height: 40px;
   border-radius: 10px;
   font-weight: 500;
   font-size: 13.5px;
@@ -953,6 +969,7 @@ main {
   color: var(--text);
   border: none;
   padding: 9px 11px;
+  min-height: 40px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
