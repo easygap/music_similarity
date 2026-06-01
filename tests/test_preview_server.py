@@ -108,6 +108,7 @@ def test_preview_export_csv(preview_url):
 @pytest.mark.parametrize("js", [
     "/app.js", "/i18n.js", "/theme-init.js", "/favorites.js",
     "/visualizers.js", "/error-boundary.js", "/sw-register.js",
+    "/catalog.js", "/compare.js",
 ])
 def test_preview_serves_root_js_files(preview_url, js):
     """HTML 이 루트 경로(<script src="/app.js">)로 부르는 JS 가 200 이어야 한다.
@@ -123,6 +124,15 @@ def test_preview_serves_root_style_css(preview_url):
     """/style.css 도 frontend/css/ 에서 서빙되어야 한다."""
     status, _ = _get(preview_url + "/style.css")
     assert status == 200
+
+
+def test_sw_register_refreshes_once_on_new_controller():
+    """새 서비스워커 활성화 시 오래된 셸 캐시가 남지 않게 한 번만 reload 한다."""
+    text = (preview_server.FRONTEND / "js" / "sw-register.js").read_text(encoding="utf-8")
+    assert "controllerchange" in text
+    assert "refreshing" in text
+    assert "window.location.reload()" in text
+    assert "registration.update()" in text
 
 
 @pytest.mark.parametrize("page", ["/catalog", "/compare", "/privacy", "/terms"])

@@ -141,7 +141,8 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 600;
 }
 
-.hidden { display: none !important; }
+.hidden,
+[hidden] { display: none !important; }
 
 /* ---------------- 배경 데코 ------------------ */
 .bg-canvas {
@@ -510,6 +511,7 @@ main {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  white-space: nowrap;
 }
 .lede {
   color: var(--text-dim);

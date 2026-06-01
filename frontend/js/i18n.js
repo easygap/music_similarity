@@ -12,7 +12,7 @@
       nav: { how: "사용법", features: "기능", compare: "비교", catalog: "카탈로그", github: "GitHub", menuToggle: "메뉴 열기", menuClose: "메뉴 닫기" },
       hero: {
         eyebrow: "Sklearn · librosa · FastAPI · WebAudio",
-        title: "업로드한 음악과 <span class=\"grad\">가장 닮은 곡</span>을<br/>AI가 찾아드립니다.",
+        title: "업로드한 음악과<br/><span class=\"grad\">가장 닮은 곡을</span><br/>AI가 찾아드립니다.",
         lede: "파일 하나만 올리면 60초 안에 끝납니다. 음색·템포·리듬·MFCC 등 <strong>58가지 오디오 특성</strong>을 추출해 코사인 유사도로 가장 닮은 곡 순위와 <strong>닮은 이유</strong>를 알려드려요.",
         statCatalogLabel: "분석 가능한 곡",
         statFeaturesLabel: "추출 특성 수",
@@ -303,7 +303,7 @@
       nav: { how: "How it works", features: "Features", compare: "Compare", catalog: "Catalog", github: "GitHub", menuToggle: "Open menu", menuClose: "Close menu" },
       hero: {
         eyebrow: "Sklearn · librosa · FastAPI · WebAudio",
-        title: "Find the songs <span class=\"grad\">most similar</span> to yours,<br/>powered by AI.",
+        title: "Find the songs<br/><span class=\"grad\">most similar to yours</span><br/>powered by AI.",
         lede: "Drop an audio file and we extract <strong>58 acoustic features</strong> with librosa, rank the closest matches with cosine similarity, and explain <strong>why</strong> each match sounds like yours.",
         statCatalogLabel: "Catalog songs",
         statFeaturesLabel: "Audio features",

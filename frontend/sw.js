@@ -6,7 +6,7 @@
 
 // 캐시 키는 빌드별로 바뀌어야 한다 — 새 자산을 추가하거나 기존 자산을 고치면
 // 이 문자열을 한 칸 올려서 옛 캐시를 강제로 무효화한다.
-const VERSION = "soundmatch-v5";
+const VERSION = "soundmatch-v6";
 const SHELL = [
   "/",
   "/catalog",
@@ -16,6 +16,8 @@ const SHELL = [
   "/i18n.js",
   "/visualizers.js",
   "/favorites.js",
+  "/catalog.js",
+  "/compare.js",
   "/theme-init.js",
   "/sw-register.js",
   "/error-boundary.js",

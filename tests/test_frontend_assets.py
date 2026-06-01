@@ -15,7 +15,14 @@ FRONTEND = REPO_ROOT / "frontend"
 
 
 def _read(rel: str) -> str:
-    return (FRONTEND / rel).read_text(encoding="utf-8")
+    text = (FRONTEND / rel).read_text(encoding="utf-8")
+    # catalog/compare 는 CSP 때문에 페이지 스크립트를 외부 파일로 분리했다.
+    # 기존 정적 회귀 테스트들은 "페이지 단위 동작"을 보는 성격이라, HTML 과
+    # 해당 페이지 JS 를 함께 읽어 마크업/와이어링을 한 번에 검증한다.
+    companion = {"catalog.html": "js/catalog.js", "compare.html": "js/compare.js"}.get(rel)
+    if companion:
+        text += "\n" + (FRONTEND / companion).read_text(encoding="utf-8")
+    return text
 
 
 def test_html_pages_have_noscript_fallback():
@@ -28,6 +35,22 @@ def test_html_pages_have_noscript_fallback():
         assert "JavaScript 가 켜져 있어야" in html, f"{page} 의 noscript 한글 안내가 누락"
         # 영문 안내도 포함 — 외국 사용자 대응.
         assert "requires JavaScript" in html, f"{page} 의 noscript 영문 안내가 누락"
+
+
+def test_css_respects_hidden_attribute():
+    """hidden 속성이 컴포넌트별 display 규칙에 밀려 노출되면 안 된다."""
+    text = _read("css/style.css")
+    assert "[hidden] { display: none !important; }" in text
+
+
+def test_hero_title_keeps_key_phrase_together():
+    """히어로 핵심 문구가 '곡' 한 글자만 따로 떨어지지 않게 묶여 있어야 한다."""
+    html = _read("index.html")
+    i18n = _read("js/i18n.js")
+    assert '<span class="grad">가장 닮은 곡을</span>' in html
+    assert '<span class=\\"grad\\">가장 닮은 곡을</span>' in i18n
+    assert '<span class=\\"grad\\">most similar to yours</span>' in i18n
+    assert "white-space: nowrap;" in _read("css/style.css")
 
 
 def test_favorites_js_exports_import_export_helpers():
@@ -304,7 +327,7 @@ def test_service_worker_shell_includes_subpages():
     안 들어가면 오프라인 첫 진입 시 그 페이지가 안 뜬다.
     """
     text = _read("sw.js")
-    for asset in ("/catalog", "/compare", "/favorites.js"):
+    for asset in ("/catalog", "/compare", "/favorites.js", "/catalog.js", "/compare.js"):
         assert f'"{asset}"' in text, f"sw.js SHELL 에 '{asset}' 가 누락되었습니다."
 
 
