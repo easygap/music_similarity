@@ -17,6 +17,7 @@ from http.server import HTTPServer
 import pytest
 
 import preview_server
+from backend import __version__
 
 
 def _free_port() -> int:
@@ -59,9 +60,20 @@ def test_preview_serves_version(preview_url):
     status, body = _get(preview_url + "/api/version")
     assert status == 200
     data = json.loads(body)
-    assert data["version"]
+    assert data["version"] == __version__
+    assert data["release_date"]
     assert "git_commit" in data
     assert "dependencies" in data
+
+
+def test_preview_health_uses_current_app_version(preview_url):
+    """/api/health 도 footer 와 같은 현재 앱 버전을 내려줘야 한다."""
+    status, body = _get(preview_url + "/api/health")
+    assert status == 200
+    data = json.loads(body)
+    assert data["env"] == "preview"
+    assert data["version"] == __version__
+    assert data["release_date"]
 
 
 def test_preview_serves_version_changelog(preview_url):
@@ -70,7 +82,8 @@ def test_preview_serves_version_changelog(preview_url):
     assert status == 200
     data = json.loads(body)
     assert data["releases"], "releases 가 비어 있으면 모달이 빈 상태로 뜬다."
-    assert "version" in data["releases"][0]
+    assert data["releases"][0]["version"] == __version__
+    assert data["releases"][0]["sections"]
 
 
 def test_preview_catalog_search_paginates_and_filters(preview_url):
