@@ -236,7 +236,7 @@ curl -X POST http://localhost:8000/api/analyze \
 | `MUSIC_ALLOWED_ORIGINS` | "" (개발은 `*`) | CORS 허용 origin, 콤마 구분 |
 | `MUSIC_LOG_LEVEL` | `INFO` | JSON 로그 레벨 |
 | `PORT` | `8000` | 리스닝 포트 (Fly.io 등 PaaS 호환) |
-| `WEB_CONCURRENCY` | `2` | uvicorn worker 수. **production 권장 `1`** — rate limit / 결과 캐시 / metrics 가 in-memory 라 다중 워커면 한도가 워커 수만큼 곱해진다 (`fly.toml` / `render.yaml` 도 1 로 명시). |
+| `WEB_CONCURRENCY` | `1` | uvicorn worker 수. Docker / Render / Fly 기본값은 단일 worker. rate limit / 결과 캐시 / metrics 가 in-memory 라 다중 워커면 한도가 워커 수만큼 곱해진다. 트래픽이 커져 여러 worker 를 쓰려면 Redis 같은 외부 상태 저장소를 먼저 붙여야 한다. |
 | `MUSIC_GIT_COMMIT` | "" | 빌드 시 inject 하는 짧은 git SHA. `/api/version` · `/api/health` 응답에 노출. 비어 있으면 `.git/HEAD` 파일에서 자동 감지 (개발 환경). Dockerfile 의 `ARG GIT_COMMIT` 도 같은 변수를 채운다. |
 
 ## 릴리즈
