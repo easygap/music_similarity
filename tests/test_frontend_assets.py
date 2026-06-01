@@ -752,6 +752,8 @@ def test_catalog_html_has_i18n_markers(marker: str):
         'data-i18n="compare.right"',
         'data-i18n="compare.emptyTitle"',
         'data-i18n="compare.emptyBody"',
+        'data-i18n="compare.emptyCtaAnalyze"',
+        'data-i18n="compare.emptyCtaCatalog"',
     ],
 )
 def test_compare_html_has_i18n_markers(marker: str):
@@ -793,3 +795,12 @@ def test_compare_js_uses_i18n_runtime():
         't("compare.invalid")',
     ):
         assert key in text, f"compare.html 에 '{key}' 가 없습니다."
+
+
+def test_compare_empty_state_has_next_step_links():
+    """히스토리가 없는 첫 방문자가 비교 페이지에서 바로 다음 행동을 고를 수 있어야 한다."""
+    text = _read("compare.html")
+
+    assert 'href="/"' in text
+    assert 'href="/catalog"' in text
+    assert "compare-empty-action primary" in text

@@ -149,6 +149,50 @@
       color: var(--text-mute);
       padding: 60px 20px;
     }
+    .compare-empty strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .compare-empty p {
+      margin: 0 auto;
+      max-width: 520px;
+      line-height: 1.6;
+      text-wrap: pretty;
+    }
+    .compare-empty-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .compare-empty-action {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+      font-weight: 700;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+    .compare-empty-action:hover,
+    .compare-empty-action:focus-visible {
+      transform: translateY(-1px);
+      border-color: var(--accent-1);
+      background: rgba(124, 92, 255, 0.12);
+    }
+    .compare-empty-action.primary {
+      border-color: transparent;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      box-shadow: 0 12px 30px rgba(34, 211, 238, 0.18);
+    }
     .compare-back {
       display: inline-flex;
       align-items: center;
@@ -272,11 +316,14 @@
        data-i18n="compare.sameSongWarn">왼쪽과 오른쪽이 같은 곡입니다. 다른 곡을 골라주세요.</p>
 
     <div class="compare-grid" id="compare-grid">
-      <p class="compare-empty">
-        <span data-i18n="compare.emptyTitle">히스토리에 분석 결과가 2건 이상 있어야 비교할 수 있어요.</span>
-        <br>
-        <span data-i18n="compare.emptyBody">메인 화면에서 음원을 두 곡 이상 분석해 주세요.</span>
-      </p>
+      <div class="compare-empty" role="status">
+        <strong data-i18n="compare.emptyTitle">히스토리에 분석 결과가 2건 이상 있어야 비교할 수 있어요.</strong>
+        <p data-i18n="compare.emptyBody">메인 화면에서 음원을 두 곡 이상 분석해 주세요.</p>
+        <div class="compare-empty-actions">
+          <a class="compare-empty-action primary" href="/" data-i18n="compare.emptyCtaAnalyze">메인에서 분석 시작</a>
+          <a class="compare-empty-action" href="/catalog" data-i18n="compare.emptyCtaCatalog">카탈로그 먼저 둘러보기</a>
+        </div>
+      </div>
     </div>
   </main>
 
