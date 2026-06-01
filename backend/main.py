@@ -15,6 +15,7 @@ GET  /robots.txt    -> 검색 봇 정책
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import threading
@@ -93,6 +94,7 @@ _analysis_semaphore = asyncio.Semaphore(MAX_CONCURRENT_ANALYSES)
 # 간단한 in-process rate limiter (IP별 sliding window).
 # 트래픽이 더 커지면 redis 백엔드 limiter 로 옮기는 게 좋음.
 RATE_LIMIT_PER_MIN = int(os.environ.get("MUSIC_RATE_LIMIT_PER_MIN", 12))
+CLIENT_ERROR_MAX_BYTES = int(os.environ.get("MUSIC_CLIENT_ERROR_MAX_BYTES", 8 * 1024))
 
 
 def _parse_trusted_proxies(raw: str) -> frozenset[str]:
@@ -148,6 +150,7 @@ _metrics_counters: dict[str, int] = {
     "soundmatch_cache_hits_total": 0,
     "soundmatch_cache_misses_total": 0,
     "soundmatch_client_errors_total": 0,
+    "soundmatch_client_error_payloads_capped_total": 0,
 }
 
 # 현재 동시에 처리 중인 분석 요청 수. 게이지로 노출.
@@ -883,17 +886,23 @@ async def client_error(request: Request):
     """
     _bump("soundmatch_client_errors_total")
     request_id = getattr(request.state, "request_id", uuid.uuid4().hex)
+    raw, capped = await _read_client_error_body(request)
+    if capped:
+        _bump("soundmatch_client_error_payloads_capped_total")
+
     try:
-        body = await request.json()
+        body = json.loads(raw.decode("utf-8")) if raw else {}
         if not isinstance(body, dict):
             body = {"raw": str(body)[:500]}
     except Exception:  # noqa: BLE001
-        body = {"raw": (await request.body())[:500].decode("utf-8", errors="replace")}
+        body = {"raw": raw[:500].decode("utf-8", errors="replace")}
 
     # 비콘에 PII 가 들어올 수 있으니 가능한 한 필드만 추려 로그.
     # logging.LogRecord 가 이미 가지고 있는 키('message' 등) 와 충돌하지 않도록
     # 접두사를 붙여둔다.
     client_msg = str(body.get("message", ""))[:500]
+    if capped and not client_msg:
+        client_msg = "[payload capped]"
     src = str(body.get("source", ""))[:300]
     ua = (request.headers.get("user-agent") or "")[:200]
     logger.warning(
@@ -905,10 +914,37 @@ async def client_error(request: Request):
             "user_agent": ua,
             "client_lineno": body.get("lineno"),
             "client_colno": body.get("colno"),
+            "client_payload_capped": capped,
         },
     )
     # 비콘이라 응답은 비워둔다.
     return Response(status_code=204)
+
+
+async def _read_client_error_body(request: Request) -> tuple[bytes, bool]:
+    """오류 비콘 본문을 작은 크기까지만 읽는다.
+
+    브라우저에서 오는 정상 비콘은 error-boundary.js 가 4KB 로 자른다. 서버도
+    같은 방어선을 둬서 공개 엔드포인트에 큰 JSON 을 던져 메모리 / 로그 비용을
+    키우는 상황을 막는다.
+    """
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > CLIENT_ERROR_MAX_BYTES:
+        return b"", True
+
+    chunks: list[bytes] = []
+    size = 0
+    async for chunk in request.stream():
+        if not chunk:
+            continue
+        remaining = CLIENT_ERROR_MAX_BYTES - size
+        if len(chunk) > remaining:
+            if remaining > 0:
+                chunks.append(chunk[:remaining])
+            return b"".join(chunks), True
+        chunks.append(chunk)
+        size += len(chunk)
+    return b"".join(chunks), False
 
 
 @app.get(
@@ -1022,6 +1058,7 @@ def metrics():
         "soundmatch_cache_hits_total": "결과 캐시 히트 — librosa 재실행 안 한 케이스",
         "soundmatch_cache_misses_total": "결과 캐시 미스 — 새로 분석한 케이스",
         "soundmatch_client_errors_total": "프론트엔드에서 보고된 클라이언트 에러 수",
+        "soundmatch_client_error_payloads_capped_total": "크기 제한으로 본문을 버리거나 자른 클라이언트 에러 비콘 수",
     }
     for name, doc in counter_help.items():
         lines.append(f"# HELP {name} {doc}")
