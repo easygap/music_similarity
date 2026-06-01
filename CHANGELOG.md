@@ -7,6 +7,9 @@
 ## [Unreleased]
 
 ### Changed
+- FastAPI 를 `0.110.0` 에서 `0.136.1` 로 업데이트했다. 현재 테스트 스위트와
+  분석 API 동작을 기준으로 호환성을 다시 확인해 오래된 웹 프레임워크 의존성을
+  줄였다.
 - CI / Release workflow 의 GitHub Actions 의존성을 현재 Dependabot 제안 버전으로
   정리했다. `actions/checkout` v6, `actions/setup-python` v6,
   `docker/setup-buildx-action` v4, `docker/build-push-action` v7 로 올려 오래된
