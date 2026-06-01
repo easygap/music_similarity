@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Changed
+- CI / Release workflow 의 GitHub Actions 의존성을 현재 Dependabot 제안 버전으로
+  정리했다. `actions/checkout` v6, `actions/setup-python` v6,
+  `docker/setup-buildx-action` v4, `docker/build-push-action` v7 로 올려 오래된
+  Actions 런타임을 줄이고, 같은 파일을 건드리던 Dependabot PR 들을 한 번에
+  정리할 수 있게 했다.
+
 ### Fixed
 - Release workflow 가 태그 버전, `backend.__version__`, `CHANGELOG.md` 릴리즈
   섹션이 서로 맞는지 먼저 확인하도록 보강. 예전엔 잘못된 태그를 밀어도
