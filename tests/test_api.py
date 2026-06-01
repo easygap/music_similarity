@@ -79,7 +79,13 @@ def test_csp_disallows_inline_script(fastapi_client):
 
 def test_extracted_js_files_served(fastapi_client):
     """인라인에서 떨어져 나온 새 JS 파일들이 200 으로 응답해야 한다."""
-    for path in ("/theme-init.js", "/sw-register.js", "/error-boundary.js"):
+    for path in (
+        "/theme-init.js",
+        "/sw-register.js",
+        "/error-boundary.js",
+        "/catalog.js",
+        "/compare.js",
+    ):
         r = fastapi_client.get(path)
         assert r.status_code == 200, path
         assert "javascript" in r.headers.get("content-type", ""), (path, r.headers)
@@ -91,14 +97,18 @@ def test_no_inline_script_in_html_pages(fastapi_client):
     문법: <script>...</script> 사이에 코드가 들어 있는지 확인. 외부
     <script src="..."></script> 은 자동으로 제외된다.
     """
-    import re
-
     for path in ("/", "/catalog", "/compare", "/privacy", "/terms", "/offline.html"):
         r = fastapi_client.get(path)
         assert r.status_code == 200, path
-        # 본문이 비어 있지 않은 <script>...</script> 블록을 찾는다.
-        matches = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>([^<]+)</script>", r.text)
-        # 공백만 있는 빈 블록은 OK.
+        # 본문이 비어 있지 않은 <script>...</script> 블록을 찾는다. 스크립트 안에
+        # 비교 연산자(<)가 있어도 잡히도록 DOTALL + non-greedy 로 검사한다.
+        import re
+
+        matches = re.findall(
+            r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>",
+            r.text,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
         meaningful = [m for m in matches if m.strip()]
         assert not meaningful, f"{path} 에 인라인 스크립트가 남아 있습니다: {meaningful[:1]}"
 

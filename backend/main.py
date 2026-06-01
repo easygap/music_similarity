@@ -288,8 +288,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     CSP = (
         "default-src 'self'; "
-        # 인라인 스크립트는 사용하지 않는다 (theme-init / sw-register /
-        # error-boundary 모두 외부 파일로 분리됨). 같은 출처에서 받은 JS 만 허용.
+        # 인라인 스크립트는 사용하지 않는다. 같은 출처에서 받은 JS 만 허용.
         "script-src 'self'; "
         "img-src 'self' data:; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
@@ -1786,6 +1785,16 @@ if FRONTEND_DIR.exists():
         # 서브페이지(카탈로그/비교 등) 공용 네비게이션 배선. HTML 은 루트 경로로
         # 부르지만 실제 파일은 js/ 아래에 있어 다른 스크립트들과 같은 방식으로 매핑.
         return _cached_file_response(FRONTEND_DIR / "js" / "site-nav.js")
+
+    @app.get("/catalog.js", include_in_schema=False)
+    def catalog_js():
+        """카탈로그 페이지 전용 스크립트."""
+        return _cached_file_response(FRONTEND_DIR / "js" / "catalog.js")
+
+    @app.get("/compare.js", include_in_schema=False)
+    def compare_js():
+        """비교 페이지 전용 스크립트."""
+        return _cached_file_response(FRONTEND_DIR / "js" / "compare.js")
 
     @app.get("/favicon.svg", include_in_schema=False)
     def favicon():

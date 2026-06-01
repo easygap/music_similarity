@@ -7,6 +7,25 @@
 ## [Unreleased]
 
 ### Fixed
+- `/catalog` / `/compare` 의 페이지 스크립트를 인라인에서 `catalog.js` /
+  `compare.js` 로 분리. CSP 가 `script-src 'self'` 로 인라인 스크립트를 막고
+  있었는데 두 서브페이지는 아직 인라인 스크립트에 의존해서, 실제 브라우저에서
+  카탈로그 카드와 비교 로직이 실행되지 않았다. 루트 JS 라우트와 SW 셸 캐시도
+  같이 추가하고, 인라인 스크립트 회귀 테스트 정규식을 `<` 포함 코드까지 잡도록
+  고쳤다.
+- CSS 전역에서 `[hidden]` 을 `display: none !important` 로 보존. 컴포넌트별
+  `display: flex/block` 규칙이 HTML `hidden` 속성을 덮어 빈 social proof 점과
+  카탈로그 검색창 X 버튼이 초기 화면에 보이던 문제를 막았다.
+- 히어로 제목의 핵심 문구를 한 덩어리로 묶어 모바일/데스크톱에서 `곡` 한 글자만
+  따로 떨어지지 않게 정리. 영어 문구도 같은 줄바꿈 구조로 맞췄다.
+- PWA 설치 지원 메타에 표준 `mobile-web-app-capable` 을 추가해 Chromium 계열
+  브라우저의 deprecated 경고를 없앴다.
+- `sw-register.js` 가 등록 직후 `registration.update()` 를 호출하고, 새
+  서비스워커가 활성화되면 기존 사용자에게 한 번만 새로고침을 걸도록 보강.
+  셸 자산 구조가 바뀐 배포에서 오래된 캐시 HTML 이 잠깐 남아 서브페이지가
+  깨지는 시간을 줄이기 위한 처리다.
+- README 의 `python -m backend.cli version` 출력 예시와 OpenAPI 스키마 예시
+  버전을 현행 `1.8.0` 기준으로 맞췄다.
 - 업로드 음원 파형을 키보드 / 스크린리더로도 시킹할 수 있게 보조 슬라이더 추가.
   파형 캔버스는 마우스 클릭 전용(`aria-hidden`)이라 키보드 사용자는 재생 위치를
   옮길 방법이 없었다(WCAG 2.1.1 키보드). 시각적으로 숨긴(`sr-only`)

@@ -4,7 +4,9 @@ from __future__ import annotations
 import io
 import json
 from contextlib import redirect_stdout
+from pathlib import Path
 
+from backend import __version__
 from backend.cli import main
 
 
@@ -464,6 +466,16 @@ def test_cli_version_json(capsys):
     assert "version" in parsed
     assert "release_date" in parsed
     assert "git_commit" in parsed
+
+
+def test_version_examples_follow_package_version():
+    """README / OpenAPI 예시 버전이 패키지 버전과 같이 움직여야 한다."""
+    root = Path(__file__).resolve().parent.parent
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    schemas = (root / "backend" / "schemas.py").read_text(encoding="utf-8")
+
+    assert f"# v{__version__} " in readme
+    assert f'examples=["{__version__}"]' in schemas
 
 
 # --- export-catalog 서브커먼드 --------------------------------------------
