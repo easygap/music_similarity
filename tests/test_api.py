@@ -194,13 +194,14 @@ def test_robots_txt(fastapi_client):
     r = fastapi_client.get("/robots.txt")
     assert r.status_code == 200
     assert "User-agent" in r.text
-    assert "Sitemap" in r.text
+    assert "Sitemap: http://testserver/sitemap.xml" in r.text
 
 
 def test_sitemap_xml(fastapi_client):
     r = fastapi_client.get("/sitemap.xml")
     assert r.status_code == 200
     assert "<urlset" in r.text
+    assert "<loc>http://testserver/" in r.text
 
 
 def test_pwa_manifest(fastapi_client):
@@ -792,7 +793,38 @@ def test_sitemap_lists_static_pages(fastapi_client):
     assert r.status_code == 200
     body = r.text
     for path in ("/", "/catalog", "/compare", "/privacy", "/terms"):
-        assert f"<loc>{path}</loc>" in body
+        assert f"<loc>http://testserver{path}</loc>" in body
+
+
+def test_sitemap_and_robots_use_request_host(fastapi_client):
+    """배포 도메인으로 요청되면 sitemap / robots 도 그 Host 기준 절대 URL을 써야 한다."""
+    headers = {"host": "soundmatch.example"}
+    site = fastapi_client.get("/sitemap.xml", headers=headers)
+    assert site.status_code == 200
+    assert "<loc>http://soundmatch.example/catalog</loc>" in site.text
+
+    robots = fastapi_client.get("/robots.txt", headers=headers)
+    assert robots.status_code == 200
+    assert "Sitemap: http://soundmatch.example/sitemap.xml" in robots.text
+
+
+def test_sitemap_uses_trusted_forwarded_proto_and_host(fastapi_client, monkeypatch):
+    """신뢰 프록시 뒤에서는 X-Forwarded-* 기준 public origin 을 sitemap 에 써야 한다."""
+    import backend.main as backend_main
+
+    monkeypatch.setattr(backend_main, "TRUSTED_PROXIES", frozenset({"*"}))
+    headers = {
+        "host": "internal.local:8000",
+        "x-forwarded-proto": "https",
+        "x-forwarded-host": "soundmatch.example",
+    }
+    site = fastapi_client.get("/sitemap.xml", headers=headers)
+    assert site.status_code == 200
+    assert "<loc>https://soundmatch.example/catalog</loc>" in site.text
+
+    robots = fastapi_client.get("/robots.txt", headers=headers)
+    assert robots.status_code == 200
+    assert "Sitemap: https://soundmatch.example/sitemap.xml" in robots.text
 
 
 def test_sitemap_includes_catalog_song_deeplinks(fastapi_client):
@@ -803,13 +835,13 @@ def test_sitemap_includes_catalog_song_deeplinks(fastapi_client):
     assert r.status_code == 200
     body = r.text
     # 합성 카탈로그(conftest.py)는 Alpha/Beta/Gamma 세 곡을 만든다.
-    # 적어도 하나의 /catalog?song=... 항목이 percent-encoded 형태로 들어가야 한다.
-    assert "/catalog?song=" in body
-    expected = "<loc>/catalog?song=" + quote("Alpha - Tester", safe="") + "</loc>"
+    # 적어도 하나의 /catalog?song=... 항목이 절대 URL + percent-encoded 형태로 들어가야 한다.
+    assert "http://testserver/catalog?song=" in body
+    expected = "<loc>http://testserver/catalog?song=" + quote("Alpha - Tester", safe="") + "</loc>"
     assert expected in body
     # 카탈로그 3곡 모두 포함되어야 한다.
     for name in ("Alpha - Tester", "Beta - Tester", "Gamma - Tester"):
-        assert "<loc>/catalog?song=" + quote(name, safe="") + "</loc>" in body
+        assert "<loc>http://testserver/catalog?song=" + quote(name, safe="") + "</loc>" in body
 
 
 def test_unknown_browser_route_returns_styled_404(fastapi_client):

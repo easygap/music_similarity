@@ -7,6 +7,10 @@
 ## [Unreleased]
 
 ### Changed
+- `/sitemap.xml` 의 `<loc>` 와 `/robots.txt` 의 `Sitemap:` 값을 요청 Host /
+  신뢰 프록시의 `X-Forwarded-Proto`, `X-Forwarded-Host` 기준 절대 URL 로
+  바꿨다. 배포 도메인에서 검색 봇이 그대로 읽을 수 있는 표준 sitemap 형태에
+  맞췄다.
 - PWA 서비스워커 shell 캐시에 `/privacy`, `/terms` 를 추가했다. 설치형 앱이나
   오프라인 재방문에서도 개인정보 처리방침 / 이용약관을 바로 열 수 있게 했다.
 - 개인정보 처리방침의 localStorage / 클라이언트 오류 비콘 설명을 실제 기능과

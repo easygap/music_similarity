@@ -735,6 +735,29 @@ def _dataset_mtime_date() -> str:
     return date.today().isoformat()
 
 
+def _absolute_url(request: Request, path: str) -> str:
+    """현재 요청의 public origin 을 기준으로 sitemap / robots 용 절대 URL 생성.
+
+    Host 는 검색 봇이 접속한 도메인을 그대로 쓰고, 신뢰 프록시 뒤에서는
+    X-Forwarded-Proto / X-Forwarded-Host 도 반영한다. PaaS TLS termination 뒤에서
+    내부 ASGI 요청이 http 로 보여도 sitemap 은 https 절대 URL 로 나가야 한다.
+    """
+    scheme = request.url.scheme or "http"
+    host = request.headers.get("host") or request.url.netloc
+    peer = request.client.host if request.client else ""
+    trusted_proxy = "*" in TRUSTED_PROXIES or (TRUSTED_PROXIES and peer in TRUSTED_PROXIES)
+    if trusted_proxy:
+        forwarded_proto = (request.headers.get("x-forwarded-proto") or "").split(",", 1)[0].strip()
+        if forwarded_proto in {"http", "https"}:
+            scheme = forwarded_proto
+        forwarded_host = (request.headers.get("x-forwarded-host") or "").split(",", 1)[0].strip()
+        if forwarded_host:
+            host = forwarded_host
+    base = f"{scheme}://{host}".rstrip("/")
+    suffix = path if path.startswith("/") else f"/{path}"
+    return f"{base}{suffix}"
+
+
 # ----------------------------------------------------------------------
 # 라우트
 # ----------------------------------------------------------------------
@@ -1875,8 +1898,8 @@ if FRONTEND_DIR.exists():
         return _cached_file_response(FRONTEND_DIR / "catalog.html")
 
     @app.get("/robots.txt", include_in_schema=False)
-    def robots():
-        body = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
+    def robots(request: Request):
+        body = f"User-agent: *\nAllow: /\nSitemap: {_absolute_url(request, '/sitemap.xml')}\n"
         return Response(
             body,
             media_type="text/plain",
@@ -1884,11 +1907,11 @@ if FRONTEND_DIR.exists():
         )
 
     @app.get("/sitemap.xml", include_in_schema=False)
-    def sitemap():
+    def sitemap(request: Request):
         """정적 페이지 + 카탈로그 곡 딥링크 전부를 sitemap 에 노출한다.
 
-        곡 딥링크는 /catalog?song=<encoded name> 형태. 모달이 자동으로 열리도록
-        와이어링되어 있어서, 검색 봇이 와도 곡 단위 유일한 URL 이 보장된다.
+        곡 딥링크는 /catalog?song=<encoded name> 형태의 절대 URL. 모달이 자동으로
+        열리도록 와이어링되어 있어서, 검색 봇이 와도 곡 단위 유일한 URL 이 보장된다.
 
         sitemap 표준이 한 파일당 50k URL / 50MB 라 781곡 규모는 충분히 한 파일.
         """
@@ -1909,7 +1932,7 @@ if FRONTEND_DIR.exists():
             ("/terms", "0.4", "yearly"),
         ]
         url_blocks = [
-            f"<url><loc>{loc}</loc><lastmod>{today}</lastmod>"
+            f"<url><loc>{_absolute_url(request, loc)}</loc><lastmod>{today}</lastmod>"
             f"<changefreq>{cf}</changefreq><priority>{pri}</priority></url>"
             for loc, pri, cf in static_entries
         ]
@@ -1920,8 +1943,9 @@ if FRONTEND_DIR.exists():
             engine = get_engine()
             for name in engine.iter_catalog_names():
                 encoded = quote(name, safe="")
+                loc = _absolute_url(request, f"/catalog?song={encoded}")
                 url_blocks.append(
-                    f"<url><loc>/catalog?song={encoded}</loc>"
+                    f"<url><loc>{loc}</loc>"
                     f"<lastmod>{catalog_lastmod}</lastmod>"
                     "<changefreq>monthly</changefreq><priority>0.5</priority></url>"
                 )
