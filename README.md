@@ -239,6 +239,16 @@ curl -X POST http://localhost:8000/api/analyze \
 | `WEB_CONCURRENCY` | `2` | uvicorn worker 수. **production 권장 `1`** — rate limit / 결과 캐시 / metrics 가 in-memory 라 다중 워커면 한도가 워커 수만큼 곱해진다 (`fly.toml` / `render.yaml` 도 1 로 명시). |
 | `MUSIC_GIT_COMMIT` | "" | 빌드 시 inject 하는 짧은 git SHA. `/api/version` · `/api/health` 응답에 노출. 비어 있으면 `.git/HEAD` 파일에서 자동 감지 (개발 환경). Dockerfile 의 `ARG GIT_COMMIT` 도 같은 변수를 채운다. |
 
+## 릴리즈
+
+1. `CHANGELOG.md` 의 `[Unreleased]` 내용을 `## [x.y.z] — YYYY-MM-DD` 섹션으로 옮긴다.
+2. `backend/__init__.py` 의 `__version__` 을 같은 `x.y.z` 로 올린다.
+3. main CI 가 초록인지 확인한 뒤 `git tag vx.y.z && git push origin vx.y.z`.
+
+태그가 푸시되면 GitHub Release 워크플로가 실행된다. 이때 태그 버전,
+`backend.__version__`, `CHANGELOG.md` 의 릴리즈 섹션이 하나라도 다르면
+릴리즈 생성을 중단한다.
+
 ## 카탈로그 다시 만들기
 
 본인의 음원 폴더로 카탈로그를 다시 만들고 싶다면:

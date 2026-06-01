@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Fixed
+- Release workflow 가 태그 버전, `backend.__version__`, `CHANGELOG.md` 릴리즈
+  섹션이 서로 맞는지 먼저 확인하도록 보강. 예전엔 잘못된 태그를 밀어도
+  `[Unreleased]` 를 폴백 릴리즈 노트로 삼아 GitHub Release 가 만들어질 수
+  있었는데, 이제 셋 중 하나라도 어긋나면 릴리즈 생성을 중단한다. README 에도
+  실제 릴리즈 순서를 추가했다.
 - `/catalog` / `/compare` 의 페이지 스크립트를 인라인에서 `catalog.js` /
   `compare.js` 로 분리. CSP 가 `script-src 'self'` 로 인라인 스크립트를 막고
   있었는데 두 서브페이지는 아직 인라인 스크립트에 의존해서, 실제 브라우저에서
