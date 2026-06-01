@@ -15,6 +15,7 @@ GET  /robots.txt    -> 검색 봇 정책
 from __future__ import annotations
 
 import asyncio
+import html
 import json
 import logging
 import os
@@ -1819,6 +1820,37 @@ def _cached_file_response(path: Path, *, immutable: bool = False) -> FileRespons
     return FileResponse(str(path), headers={"Cache-Control": cache})
 
 
+def _index_html_response(path: Path, request: Request) -> Response:
+    """홈 HTML 의 공유 메타를 현재 public origin 기준 절대 URL 로 보정한다."""
+    canonical_url = html.escape(_absolute_url(request, "/"), quote=True)
+    og_image_url = html.escape(_absolute_url(request, "/og-image.svg"), quote=True)
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(
+        '<link rel="canonical" href="/" />',
+        f'<link rel="canonical" href="{canonical_url}" />',
+    )
+    text = text.replace(
+        '<meta property="og:url" content="/" />',
+        f'<meta property="og:url" content="{canonical_url}" />',
+    )
+    text = text.replace(
+        '<meta property="og:image" content="/og-image.svg" />',
+        f'<meta property="og:image" content="{og_image_url}" />',
+    )
+    text = text.replace(
+        '<meta name="twitter:image" content="/og-image.svg" />',
+        f'<meta name="twitter:image" content="{og_image_url}" />',
+    )
+    return Response(
+        text,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "public, max-age=300, must-revalidate",
+            "Vary": "Host, X-Forwarded-Proto, X-Forwarded-Host",
+        },
+    )
+
+
 if FRONTEND_DIR.exists():
     app.mount(
         "/static",
@@ -1827,11 +1859,11 @@ if FRONTEND_DIR.exists():
     )
 
     @app.get("/", include_in_schema=False)
-    def index():
+    def index(request: Request):
         index_html = FRONTEND_DIR / "index.html"
         if not index_html.exists():
             raise HTTPException(status_code=404, detail="프론트엔드 빌드 결과를 찾지 못했습니다.")
-        return _cached_file_response(index_html, immutable=False)
+        return _index_html_response(index_html, request)
 
     # HTML 에서 <link href="/style.css"> 식으로 짧게 쓰기 위한 단축 라우트들.
     @app.get("/style.css", include_in_schema=False)

@@ -86,6 +86,16 @@ def test_hero_title_keeps_key_phrase_together():
     assert "white-space: nowrap;" in _read("css/style.css")
 
 
+def test_index_share_meta_is_runtime_rewritable():
+    """정적 홈 HTML 의 공유 메타는 서버가 public origin 으로 치환할 수 있어야 한다."""
+    html = _read("index.html")
+    assert '<link rel="canonical" href="/" />' in html
+    assert '<meta property="og:url" content="/" />' in html
+    assert '<meta property="og:image" content="/og-image.svg" />' in html
+    assert '<meta name="twitter:image" content="/og-image.svg" />' in html
+    assert '<meta property="og:url" content="https://github.com/easygap/music_similarity" />' not in html
+
+
 def test_favorites_js_exports_import_export_helpers():
     """favorites.js 가 exportJson / importJson / replaceAll 을 노출해야 한다."""
     text = _read("js/favorites.js")
