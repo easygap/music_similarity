@@ -1,5 +1,5 @@
 # 메인 CI 파이프라인.
-# - Python 3.11 / 3.12 매트릭스로 ruff + pytest 실행
+# - Python 3.11 / 3.12 / 3.14 매트릭스로 ruff + pytest 실행
 # - lint/test 통과하면 Docker 이미지를 빌드해본다 (push 는 안 함)
 
 name: CI
@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.11", "3.12"]
+        python: ["3.11", "3.12", "3.14"]
     steps:
       - uses: actions/checkout@v6
 
