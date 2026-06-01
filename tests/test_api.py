@@ -815,6 +815,20 @@ def test_sitemap_and_robots_use_request_host(fastapi_client):
     assert "Sitemap: http://soundmatch.example/sitemap.xml" in robots.text
 
 
+def test_index_share_meta_uses_request_host(fastapi_client):
+    """홈 공유 메타도 배포 도메인 기준 절대 URL 로 내려가야 한다."""
+    headers = {"host": "soundmatch.example"}
+    r = fastapi_client.get("/", headers=headers)
+    assert r.status_code == 200
+    assert '<link rel="canonical" href="http://soundmatch.example/" />' in r.text
+    assert '<meta property="og:url" content="http://soundmatch.example/" />' in r.text
+    assert '<meta property="og:image" content="http://soundmatch.example/og-image.svg" />' in r.text
+    assert '<meta name="twitter:image" content="http://soundmatch.example/og-image.svg" />' in r.text
+    vary = r.headers.get("vary", "")
+    assert "Host" in vary
+    assert "X-Forwarded-Host" in vary
+
+
 def test_sitemap_uses_trusted_forwarded_proto_and_host(fastapi_client, monkeypatch):
     """신뢰 프록시 뒤에서는 X-Forwarded-* 기준 public origin 을 sitemap 에 써야 한다."""
     import backend.main as backend_main
@@ -832,6 +846,23 @@ def test_sitemap_uses_trusted_forwarded_proto_and_host(fastapi_client, monkeypat
     robots = fastapi_client.get("/robots.txt", headers=headers)
     assert robots.status_code == 200
     assert "Sitemap: https://soundmatch.example/sitemap.xml" in robots.text
+
+
+def test_index_share_meta_uses_trusted_forwarded_host(fastapi_client, monkeypatch):
+    """PaaS 프록시 뒤 홈 공유 메타는 내부 Host 대신 외부 Host 를 써야 한다."""
+    import backend.main as backend_main
+
+    monkeypatch.setattr(backend_main, "TRUSTED_PROXIES", frozenset({"*"}))
+    headers = {
+        "host": "internal.local:8000",
+        "x-forwarded-proto": "https",
+        "x-forwarded-host": "soundmatch.example",
+    }
+    r = fastapi_client.get("/", headers=headers)
+    assert r.status_code == 200
+    assert '<link rel="canonical" href="https://soundmatch.example/" />' in r.text
+    assert '<meta property="og:url" content="https://soundmatch.example/" />' in r.text
+    assert '<meta property="og:image" content="https://soundmatch.example/og-image.svg" />' in r.text
 
 
 def test_sitemap_includes_catalog_song_deeplinks(fastapi_client):
