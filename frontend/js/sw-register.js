@@ -1,5 +1,6 @@
 // Service Worker 등록 — CSP 'unsafe-inline' 제거 차원에서 외부 파일로 분리.
-// 메인 페이지에서만 로드된다.
+// 프리캐시되는 주요 HTML 페이지가 직접 로드해서, 사용자가 서브페이지로 바로
+// 들어와도 오래된 shell 캐시를 가능한 빨리 새 버전으로 교체한다.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
     var refreshing = false;

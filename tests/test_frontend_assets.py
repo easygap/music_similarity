@@ -369,6 +369,26 @@ def test_service_worker_shell_includes_subpages():
     assert '"/404"' not in text, "404 응답은 SW install cache.addAll 대상이면 안 됩니다."
 
 
+def test_privacy_page_discloses_browser_storage_and_error_beacon():
+    """개인정보 처리방침이 실제 브라우저 저장/오류 비콘 범위를 설명해야 한다."""
+    text = _read("privacy.html")
+
+    assert "최종 업데이트: 2026-06-01" in text
+    for marker in (
+        "클라이언트 오류 비콘",
+        "localStorage",
+        "최근 분석 결과 5건",
+        "카탈로그 즐겨찾기",
+        "결과 카드 펼침/접힘 선호",
+        "카탈로그 최근 검색어",
+        "최근 본 곡",
+        "PWA 설치 배너",
+        '"새 기능 보기" 배너',
+        "서버로 자동 전송되지 않습니다",
+    ):
+        assert marker in text, f"privacy.html 에 '{marker}' 고지가 없습니다."
+
+
 def test_service_worker_version_string():
     """SW VERSION 은 'soundmatch-vN' 형태여야 한다 (캐시 무효화 규약)."""
     import re
@@ -377,8 +397,8 @@ def test_service_worker_version_string():
     match = re.search(r'VERSION\s*=\s*"soundmatch-v(\d+)"', text)
     assert match, "sw.js 에서 VERSION 상수를 찾을 수 없습니다."
     version_num = int(match.group(1))
-    # 법적 고지 페이지가 shell 에 추가됐으므로 기존 캐시를 확실히 밀어내야 한다.
-    assert version_num >= 9, "SW VERSION 이 새 PWA shell 배포에 맞춰 bump 되지 않았습니다."
+    # 캐시된 privacy.html 내용이 바뀌었으므로 기존 shell 캐시를 확실히 밀어내야 한다.
+    assert version_num >= 10, "SW VERSION 이 개인정보 고지 갱신에 맞춰 bump 되지 않았습니다."
 
 
 def test_render_mini_metrics_uses_i18n_labels():
@@ -722,6 +742,13 @@ def test_subpages_load_i18n(page: str):
     """카탈로그 / 비교 페이지도 i18n.js 를 직접 로딩해야 lang 토글이 동작한다."""
     text = _read(page)
     assert '<script src="/i18n.js">' in text, f"{page} 가 i18n.js 를 불러오지 않습니다."
+
+
+@pytest.mark.parametrize("page", ["index.html", "catalog.html", "compare.html", "privacy.html", "terms.html"])
+def test_shell_pages_load_sw_register(page: str):
+    """프리캐시되는 주요 HTML 은 직접 SW 업데이트 체크를 걸어야 한다."""
+    text = _read(page)
+    assert '<script src="/sw-register.js">' in text, f"{page} 가 sw-register.js 를 불러오지 않습니다."
 
 
 def test_mobile_nav_hamburger_wired():
