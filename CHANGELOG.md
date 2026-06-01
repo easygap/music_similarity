@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [1.8.3] — 2026-06-01
+
+v1.8.2 이후 운영자가 배포 이미지를 식별하고, 프론트가 서버 설정과 같은 기준으로
+동작하도록 맞춘 패치 릴리즈. 외부 도메인에서 붙는 클라이언트도 rate limit 상태를
+브라우저에서 읽을 수 있게 CORS 노출 헤더까지 정리했다.
+
 ### Fixed
 - CI Docker 이미지 빌드에 `GIT_COMMIT=${{ github.sha }}` build-arg 를 전달해,
   `.git` 이 제외된 이미지에서도 `/api/version.git_commit` 이 배포 커밋을
