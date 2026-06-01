@@ -57,6 +57,25 @@ def test_results_focus_management_is_wired():
     assert "{ focus: false, scroll: false }" in app
 
 
+def test_mobile_touch_targets_have_minimum_hit_area():
+    """모바일에서 자주 누르는 버튼/폼 컨트롤은 최소 40px 터치 면적을 확보한다."""
+    css = _read("css/style.css")
+    assert "width: 40px; height: 40px;" in css
+    assert "flex: 0 0 40px;" in css
+    assert "min-height: 40px;" in css
+
+    catalog = _read("catalog.html")
+    for marker in (
+        ".cat-fav-btn",
+        "width: 40px;\n      height: 40px;",
+        ".cat-filter-range input[type=\"number\"],",
+        ".cat-filter-range select",
+        ".modal-fav, .modal-seed",
+        ".cat-pager button",
+    ):
+        assert marker in catalog
+
+
 def test_hero_title_keeps_key_phrase_together():
     """히어로 핵심 문구가 '곡' 한 글자만 따로 떨어지지 않게 묶여 있어야 한다."""
     html = _read("index.html")
