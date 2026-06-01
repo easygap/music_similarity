@@ -7,7 +7,7 @@
 
   const $ = (sel) => document.querySelector(sel);
 
-  const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+  let maxUploadBytes = 25 * 1024 * 1024;
   const ALLOWED_EXT = new Set([".wav", ".mp3", ".flac", ".ogg", ".m4a"]);
   const HISTORY_KEY = "soundmatch.history.v1";
   const HISTORY_LIMIT = 5;
@@ -100,6 +100,25 @@
   // ----------------------------------------------------------------------
   const t = (k, ...args) => (window.i18n ? window.i18n.t(k, ...args) : k);
 
+  function formatUploadLimit(bytes) {
+    const value = Number(bytes);
+    if (!Number.isFinite(value) || value <= 0) return "25MB";
+    const mb = value / (1024 * 1024);
+    if (mb >= 1) {
+      const rounded = mb >= 10 ? Math.round(mb) : Math.round(mb * 10) / 10;
+      return `${String(rounded).replace(/\.0$/, "")}MB`;
+    }
+    const kb = Math.max(1, Math.round(value / 1024));
+    return `${kb}KB`;
+  }
+
+  function syncUploadLimitText() {
+    const uploadSub = $(".upload-sub");
+    if (uploadSub) {
+      uploadSub.textContent = t("upload.subtitleWithLimit", formatUploadLimit(maxUploadBytes));
+    }
+  }
+
   function rebuildLocalizedSelectOptions() {
     // 언어가 바뀌면 select 옵션 텍스트도 다시 그려야 한다.
     [...topNSelect.options].forEach((opt) => {
@@ -111,6 +130,7 @@
     rebuildLocalizedSelectOptions();
     if (yearSpan) yearSpan.textContent = String(new Date().getFullYear());
     if (langToggleBtn) langToggleBtn.textContent = t("controls.langToggle");
+    syncUploadLimitText();
     renderHistory();
     if (_lastResults) renderResults(_lastResults, /* preserveFile */ true);
     loadCatalogStat();
@@ -213,6 +233,11 @@
       const res = await fetch("/api/version");
       if (!res.ok) throw new Error("offline");
       const data = await res.json();
+      const configuredMax = Number(data.max_upload_bytes);
+      if (Number.isFinite(configuredMax) && configuredMax > 0) {
+        maxUploadBytes = configuredMax;
+        syncUploadLimitText();
+      }
 
       // 누적 분석 횟수 (social proof).
       if (el) {
@@ -406,6 +431,7 @@
   // 언어 토글 시 "최근 갱신:" 라벨도 다시 그려야 한다.
   window.addEventListener("i18n:change", () => loadLatencyStat());
   rebuildLocalizedSelectOptions();
+  syncUploadLimitText();
   if (langToggleBtn) langToggleBtn.textContent = t("controls.langToggle");
 
   // 카탈로그 일부 미리보기 — 메인 페이지 하단 정보용.
@@ -638,10 +664,10 @@
       analyzeBtn.setAttribute("disabled", "");
       return;
     }
-    if (selectedFile.size > MAX_UPLOAD_BYTES) {
+    if (selectedFile.size > maxUploadBytes) {
       dropzoneError.textContent = t(
         "upload.validation.tooBig",
-        Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024)),
+        formatUploadLimit(maxUploadBytes),
       );
       dropzoneError.classList.remove("hidden");
       selectedFile = null;

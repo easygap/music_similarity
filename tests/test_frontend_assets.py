@@ -140,6 +140,20 @@ def test_footer_shows_build_info_from_version_api():
     assert ' · ' in js
 
 
+def test_upload_limit_uses_version_api_value():
+    """프론트 업로드 안내와 사전 검증은 서버가 노출한 업로드 한도를 따라야 한다."""
+    js = _read("js/app.js")
+    i18n = _read("js/i18n.js")
+
+    assert "let maxUploadBytes = 25 * 1024 * 1024" in js
+    assert "data.max_upload_bytes" in js
+    assert "maxUploadBytes = configuredMax" in js
+    assert "syncUploadLimitText()" in js
+    assert "selectedFile.size > maxUploadBytes" in js
+    assert "formatUploadLimit(maxUploadBytes)" in js
+    assert "subtitleWithLimit" in i18n
+
+
 def test_hero_shows_social_proof_total_analyses():
     """Hero 영역에 누적 분석 횟수 라인이 있어야 한다."""
     html = _read("index.html")

@@ -23,6 +23,7 @@
       upload: {
         title: "지금 분석해보기",
         subtitle: ".mp3 · .wav · .flac · .ogg · .m4a (25MB 이하)",
+        subtitleWithLimit: (limit) => `.mp3 · .wav · .flac · .ogg · .m4a (${limit} 이하)`,
         dropTitle: "음악 파일을 여기에 드래그하거나 클릭",
         dropHint: "최대 30초가 분석에 사용됩니다.",
         topNLabel: "찾을 곡 수",
@@ -35,7 +36,7 @@
         sampleLoading: "샘플 준비 중…",
         or: "또는",
         validation: {
-          tooBig: (mb) => `파일이 너무 큽니다. 최대 ${mb}MB까지 업로드 가능합니다.`,
+          tooBig: (limit) => `파일이 너무 큽니다. 최대 ${limit}까지 업로드 가능합니다.`,
           badType: "지원하지 않는 오디오 형식입니다. (.mp3 .wav .flac .ogg .m4a)",
         },
       },
@@ -316,6 +317,7 @@
       upload: {
         title: "Try it now",
         subtitle: ".mp3 · .wav · .flac · .ogg · .m4a (up to 25MB)",
+        subtitleWithLimit: (limit) => `.mp3 · .wav · .flac · .ogg · .m4a (up to ${limit})`,
         dropTitle: "Drop a music file here, or click to choose",
         dropHint: "The first 30 seconds are used for analysis.",
         topNLabel: "Match count",
@@ -328,7 +330,7 @@
         sampleLoading: "Preparing a sample…",
         or: "or",
         validation: {
-          tooBig: (mb) => `File is too large. The maximum size is ${mb}MB.`,
+          tooBig: (limit) => `File is too large. The maximum size is ${limit}.`,
           badType: "Unsupported audio format. (.mp3 .wav .flac .ogg .m4a)",
         },
       },
