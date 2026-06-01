@@ -549,6 +549,37 @@ def test_hit_card_has_catalog_deeplink_button():
     assert "encodeURIComponent(songKey)" in js
 
 
+def test_hit_card_prioritizes_in_app_actions_before_external_links():
+    """결과 카드 CTA 는 재탐색/저장/카탈로그 확인을 외부 이동보다 먼저 보여준다."""
+    html = _read("index.html")
+    block = html.split('<div class="hit-links">', 1)[1].split("</div>", 1)[0]
+    markers = [
+        'data-action="seed"',
+        'data-action="favorite"',
+        'data-link="catalog"',
+        'data-link="yt"',
+        'data-link="sp"',
+    ]
+    positions = [block.index(marker) for marker in markers]
+    assert positions == sorted(positions)
+
+
+def test_mobile_hit_card_actions_have_primary_cta_layout():
+    """모바일 결과 카드 액션은 40px 터치 면적과 1순위 CTA 전체 폭을 보장한다."""
+    css = _read("css/style.css")
+    for marker in (
+        ".link-btn-external",
+        "min-height: 40px;",
+        "grid-template-columns: repeat(2, minmax(0, 1fr));",
+        ".hit-links .link-btn-seed",
+        ".hit-links .link-btn-fav,",
+        ".hit-links .link-btn-catalog",
+        "grid-column: 1 / -1;",
+        "white-space: normal;",
+    ):
+        assert marker in css
+
+
 def test_result_meta_uses_local_timezone_formatter():
     """결과 메타의 analyzed_at 이 ISO 를 사용자 로컬 타임존으로 포맷해야 한다."""
     text = _read("js/app.js")
