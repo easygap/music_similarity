@@ -288,6 +288,16 @@ def test_health_strict_mode(fastapi_client):
     assert r.json()["status"] == "ok"
 
 
+def test_ready_endpoint_matches_strict_health(fastapi_client):
+    """/api/ready 는 배포 healthcheck 용 path-only strict probe 다."""
+    r = fastapi_client.get("/api/ready")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    assert body["catalog_size"] == 3
+    assert "uptime_seconds" in body
+
+
 def test_catalog_search_default(fastapi_client):
     r = fastapi_client.get("/api/catalog/search")
     assert r.status_code == 200
@@ -769,6 +779,13 @@ def test_health_head_method(fastapi_client):
     assert r.content == b""
 
 
+def test_ready_head_method(fastapi_client):
+    """PaaS healthcheck 가 HEAD 로 와도 readiness 엔드포인트는 응답해야 한다."""
+    r = fastapi_client.head("/api/ready")
+    assert r.status_code == 200
+    assert r.content == b""
+
+
 def test_sitemap_lists_static_pages(fastapi_client):
     """sitemap.xml 에 정적 페이지들이 모두 포함되어야 한다."""
     r = fastapi_client.get("/sitemap.xml")
@@ -978,6 +995,7 @@ def test_openapi_docs_available(fastapi_client):
     # 우리가 등록한 엔드포인트가 스펙에 들어 있어야 한다.
     paths = data.get("paths", {})
     assert "/api/health" in paths
+    assert "/api/ready" in paths
     assert "/api/catalog" in paths
     assert "/api/analyze" in paths
 

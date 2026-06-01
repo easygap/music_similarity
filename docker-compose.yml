@@ -14,7 +14,7 @@ services:
       # rate limit / 결과 캐시 / metrics 가 in-memory 라 기본 compose 도 단일 worker 로 맞춘다.
       - WEB_CONCURRENCY=1
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/api/health?strict=true', timeout=3); sys.exit(0)"]
+      test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/api/ready', timeout=3); sys.exit(0)"]
       interval: 30s
       timeout: 5s
       retries: 3

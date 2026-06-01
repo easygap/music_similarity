@@ -7,7 +7,7 @@ services:
     runtime: docker
     plan: starter
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/health
+    healthCheckPath: /api/ready
     autoDeploy: true
     envVars:
       - key: MUSIC_ENV

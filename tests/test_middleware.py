@@ -143,6 +143,22 @@ def test_health_strict_returns_503_when_upload_dir_unwritable(fresh_module, tmp_
     assert body["reason_detail"] in {"FileNotFoundError", "PermissionError", "OSError"}
 
 
+def test_ready_returns_503_when_upload_dir_unwritable(fresh_module, tmp_path, monkeypatch):
+    """/api/ready 는 query string 없이도 strict health 와 같은 실패를 드러낸다."""
+    monkeypatch.setattr(
+        fresh_module,
+        "UPLOAD_DIR",
+        tmp_path / "no-such-parent" / "no-such-dir",
+        raising=True,
+    )
+    with TestClient(fresh_module.app) as c:
+        r = c.get("/api/ready")
+    assert r.status_code == 503
+    body = r.json()
+    assert body["status"] == "degraded"
+    assert body["reason"] == "upload_dir_not_writable"
+
+
 def test_health_ok_does_not_leak_reason_fields(fresh_module):
     """정상(ok) 응답에서는 reason / reason_detail 이 null 이어야 한다.
 

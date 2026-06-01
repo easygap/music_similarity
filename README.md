@@ -195,6 +195,7 @@ GET  /api/version              # 버전 + 기능 플래그 + git_commit + depend
 GET  /api/version/changelog    # 최근 published 릴리즈 노트 (?limit=N)
 GET  /api/health               # 라이브니스, ?strict=1 이면 librosa/디스크까지 점검
                                # degraded 시 reason 식별자 + release_date/git_commit 노출
+GET  /api/ready                # 배포 readiness. /api/health?strict=true 와 같은 검사
 GET  /api/catalog              # 사용 중인 특성 컬럼
 GET  /api/catalog/sample       # 카탈로그 일부 미리보기
 GET  /api/catalog/random       # 카탈로그에서 무작위 N곡 추천
@@ -285,9 +286,10 @@ Docker 이미지 빌드까지 캐시 적용해서 한 번 더 확인한다. 이 
 `GIT_COMMIT=${{ github.sha }}` build-arg 를 넘겨 `/api/version.git_commit` 으로
 이미지 출처를 확인할 수 있게 한다.
 
-Dockerfile / docker-compose healthcheck 는 `/api/health?strict=true` 를 호출한다.
-카탈로그 로드뿐 아니라 librosa/sklearn import 와 업로드 디렉토리 쓰기까지 확인해,
-컨테이너는 떠 있지만 실제 분석 업로드가 실패하는 상태를 더 빨리 잡기 위해서다.
+Dockerfile / docker-compose / Render / Fly healthcheck 는 `/api/ready` 를 호출한다.
+`/api/ready` 는 `/api/health?strict=true` 와 같은 readiness probe 라서 카탈로그
+로드뿐 아니라 librosa/sklearn import 와 업로드 디렉토리 쓰기까지 확인한다.
+프로세스는 떠 있지만 실제 분석 업로드가 실패하는 상태를 더 빨리 잡기 위해서다.
 
 ## 한계 / 알아둘 것
 

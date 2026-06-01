@@ -8,6 +8,7 @@ GET  /              -> 프론트엔드 index.html
 GET  /api/catalog   -> 카탈로그 크기 + 사용 중인 특성 컬럼
 POST /api/analyze   -> 멀티파트 업로드 후 유사도 순위 반환
 GET  /api/health    -> 라이브니스 프로브
+GET  /api/ready     -> readiness 프로브 (strict health)
 GET  /sitemap.xml   -> SEO용 사이트맵
 GET  /robots.txt    -> 검색 봇 정책
 """
@@ -825,6 +826,24 @@ def health(strict: bool = Query(False, description="True 면 librosa/sklearn 임
         "analyze_latency_p50_seconds": round(_latency_percentile(0.50), 3),
         "catalog_updated_at": _dataset_mtime_iso(),
     }
+
+
+@app.get(
+    "/api/ready",
+    response_model=HealthResponse,
+    summary="Readiness / strict health",
+    tags=["system"],
+    operation_id="ready",
+)
+@app.head("/api/ready", include_in_schema=False)
+def ready():
+    """운영 readiness probe.
+
+    Render/Fly/Docker healthcheck 는 query string 없이 path 만 받는 설정이
+    다루기 쉽다. 기존 `/api/health?strict=true` 와 같은 검사를 path-only
+    엔드포인트로 노출해 배포 설정을 단순하게 맞춘다.
+    """
+    return health(strict=True)
 
 
 @app.post(
