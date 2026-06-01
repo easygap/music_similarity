@@ -5,4 +5,4 @@ CLI(`cli.ENGINE_VERSION`) 가 모두 이 값을 참조하므로, 릴리즈를 cu
 이 한 줄만 바꾸면 서버 응답 · CLI 출력 · User-Agent 가 한꺼번에 맞춰진다.
 """
 
-__version__ = "1.8.5"
+__version__ = "1.8.6"
