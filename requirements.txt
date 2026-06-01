@@ -4,10 +4,7 @@ python-multipart==0.0.9
 numpy==1.26.4
 pandas==2.2.0
 scikit-learn==1.4.0
-librosa==0.10.1
-soundfile==0.12.1
-audioread==3.0.1
-# librosa imports `pkg_resources`, which Python 3.12 no longer ships and
-# setuptools 81+ removed. Pin to the last release that still ships the
-# module so librosa keeps loading on every supported Python.
-setuptools>=68,<81
+librosa==0.11.0
+soundfile==0.13.1
+audioread==3.1.0
+setuptools>=82.0.1,<83
