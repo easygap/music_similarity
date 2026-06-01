@@ -350,13 +350,23 @@ def test_i18n_has_favorites_import_export_strings():
 
 
 def test_service_worker_shell_includes_subpages():
-    """SW SHELL 에 /catalog, /compare, /favorites.js 가 모두 들어가야 한다.
+    """SW SHELL 에 주요 정적 페이지와 JS 자산이 모두 들어가야 한다.
 
-    안 들어가면 오프라인 첫 진입 시 그 페이지가 안 뜬다.
+    안 들어가면 오프라인 첫 진입 시 그 페이지가 안 뜬다. /404 는 404 응답이라
+    cache.addAll() 에 넣으면 install 이 실패하므로 제외해야 한다.
     """
     text = _read("sw.js")
-    for asset in ("/catalog", "/compare", "/favorites.js", "/catalog.js", "/compare.js"):
+    for asset in (
+        "/catalog",
+        "/compare",
+        "/privacy",
+        "/terms",
+        "/favorites.js",
+        "/catalog.js",
+        "/compare.js",
+    ):
         assert f'"{asset}"' in text, f"sw.js SHELL 에 '{asset}' 가 누락되었습니다."
+    assert '"/404"' not in text, "404 응답은 SW install cache.addAll 대상이면 안 됩니다."
 
 
 def test_service_worker_version_string():
@@ -367,8 +377,8 @@ def test_service_worker_version_string():
     match = re.search(r'VERSION\s*=\s*"soundmatch-v(\d+)"', text)
     assert match, "sw.js 에서 VERSION 상수를 찾을 수 없습니다."
     version_num = int(match.group(1))
-    # app.js 의 새 기능 배너 로직이 바뀌었으므로 기존 캐시를 확실히 밀어내야 한다.
-    assert version_num >= 8, "SW VERSION 이 새 app.js 배포에 맞춰 bump 되지 않았습니다."
+    # 법적 고지 페이지가 shell 에 추가됐으므로 기존 캐시를 확실히 밀어내야 한다.
+    assert version_num >= 9, "SW VERSION 이 새 PWA shell 배포에 맞춰 bump 되지 않았습니다."
 
 
 def test_render_mini_metrics_uses_i18n_labels():
