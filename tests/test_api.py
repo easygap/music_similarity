@@ -606,13 +606,20 @@ def test_client_error_beacon_accepts_malformed_payload(fastapi_client):
 
 
 def test_client_error_beacon_truncates_oversize_payload(fastapi_client):
-    """500바이트보다 긴 message / source 도 잘려서 로그 폭주 없이 받아진다."""
+    """큰 오류 비콘 본문은 서버에서 먼저 cap 해서 메모리 / 로그 비용을 줄인다."""
     huge_msg = "x" * 5000
     r = fastapi_client.post(
         "/api/client-error",
         json={"kind": "error", "message": huge_msg, "source": huge_msg},
     )
     assert r.status_code == 204
+    metrics = fastapi_client.get("/metrics").text
+    assert "soundmatch_client_error_payloads_capped_total" in metrics
+    capped_line = next(
+        line for line in metrics.splitlines()
+        if line.startswith("soundmatch_client_error_payloads_capped_total ")
+    )
+    assert float(capped_line.split()[1]) >= 1
 
 
 def test_version_endpoint(fastapi_client):

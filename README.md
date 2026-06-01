@@ -71,7 +71,7 @@ python -m backend.cli status --url https://내-서비스.example --ready
 
 ```bash
 python -m backend.cli version
-# v1.8.9 · 2026-06-01 · <git-sha>
+# v1.8.10 · 2026-06-01 · <git-sha>
 python -m backend.cli version --json    # jq 파이프 친화
 ```
 
@@ -239,6 +239,7 @@ curl -X POST http://localhost:8000/api/analyze \
 | `MUSIC_TRUSTED_PROXIES` | "" | 콤마 구분 프록시 IP. 여기 있는 출발지만 `X-Forwarded-For` 신뢰. 비어 있으면 헤더 무시. PaaS 위에 띄울 때처럼 edge IP 가 자동 발급이면 `*` 을 써서 와일드카드 신뢰 (Fly / Render 기본값) |
 | `MUSIC_CACHE_TTL_SECONDS` | `600` | 결과 캐시 TTL (10분) |
 | `MUSIC_CACHE_MAX_ENTRIES` | `64` | 결과 캐시 최대 항목 수 |
+| `MUSIC_CLIENT_ERROR_MAX_BYTES` | `8192` | `/api/client-error` 오류 비콘 본문 최대 처리 크기. 초과하면 204 로 흘려보내되 본문은 로그에 남기지 않는다. |
 | `MUSIC_SKIP_WARMUP` | "" | `1` 이면 부팅 시 librosa 워밍업 생략 (cold-start 측정 / 테스트용) |
 | `MUSIC_ALLOWED_ORIGINS` | "" (개발은 `*`) | CORS 허용 origin, 콤마 구분 |
 | `MUSIC_LOG_LEVEL` | `INFO` | JSON 로그 레벨 |
