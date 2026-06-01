@@ -1429,15 +1429,19 @@ main {
   padding: 0;
 }
 
-.hit-links { display: flex; gap: 10px; flex-wrap: wrap; }
+.hit-links { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .link-btn {
   display: inline-flex; align-items: center; gap: 8px;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 40px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-strong);
   padding: 8px 14px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
+  line-height: 1.15;
   color: var(--text);
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
@@ -1446,6 +1450,9 @@ main {
   border-color: var(--accent-1);
   transform: translateY(-1px);
   color: var(--text);
+}
+.link-btn:active {
+  transform: translateY(0) scale(0.96);
 }
 .link-btn svg { width: 16px; height: 16px; }
 .link-btn[data-link="yt"] svg { color: #ff0033; }
@@ -1767,6 +1774,28 @@ main {
   .rank-num { font-size: 20px; }
   .rank-label { font-size: 11px; margin-top: 0; }
   .hit-percent { text-align: left; }
+  .hit-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .hit-links .link-btn {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    text-align: center;
+    white-space: normal;
+  }
+  .hit-links .link-btn-seed {
+    grid-column: 1 / -1;
+  }
+  .hit-links .link-btn-fav,
+  .hit-links .link-btn-catalog {
+    grid-column: 1 / -1;
+  }
+  .hit-links .link-btn-external {
+    color: var(--text-mute);
+  }
   .audio-player-head { flex-direction: column; align-items: flex-start; }
 }
 

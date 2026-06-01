@@ -580,31 +580,31 @@
         <ul class="hit-mini-metrics" aria-label="매칭 곡과 업로드 곡의 메트릭 비교"></ul>
         <ul class="hit-groups"></ul>
         <div class="hit-links">
-          <a class="link-btn" target="_blank" rel="noopener" data-link="yt">
+          <button type="button" class="link-btn link-btn-seed" data-action="seed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13l7 7M20 13v7h-7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="results.seedButton">이 곡으로 다시 찾기</span>
+          </button>
+          <button type="button" class="link-btn link-btn-fav" data-action="favorite" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17.3l-6.18 3.7 1.64-7.03L2 9.24l7.19-.62L12 2l2.81 6.62 7.19.62-5.46 4.73L18.18 21z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg>
+            <span class="fav-label" data-i18n="results.favoriteAdd">즐겨찾기</span>
+          </button>
+          <a class="link-btn link-btn-catalog" data-link="catalog" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+            <span data-i18n="results.openInCatalog">카탈로그에서 보기</span>
+          </a>
+          <a class="link-btn link-btn-external" target="_blank" rel="noopener" data-link="yt">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M21.6 7.2a3 3 0 0 0-2.1-2.1C17.6 4.5 12 4.5 12 4.5s-5.6 0-7.5.6A3 3 0 0 0 2.4 7.2 31 31 0 0 0 1.8 12c0 1.6.2 3.2.6 4.8a3 3 0 0 0 2.1 2.1c1.9.6 7.5.6 7.5.6s5.6 0 7.5-.6a3 3 0 0 0 2.1-2.1c.4-1.6.6-3.2.6-4.8 0-1.6-.2-3.2-.6-4.8z" fill="currentColor"/><path d="M10 15l5-3-5-3v6z" fill="white"/>
             </svg>
             YouTube
           </a>
-          <a class="link-btn" target="_blank" rel="noopener" data-link="sp">
+          <a class="link-btn link-btn-external" target="_blank" rel="noopener" data-link="sp">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="10" fill="currentColor"/>
               <path d="M7 10c3-1 7-1 10 1M7 13c2-.6 6-.5 8 .8M8 16c2-.5 4-.4 6 .7" stroke="white" stroke-width="1.6" stroke-linecap="round" fill="none"/>
             </svg>
             Spotify
           </a>
-          <button type="button" class="link-btn link-btn-seed" data-action="seed">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13l7 7M20 13v7h-7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span data-i18n="results.seedButton">이 곡으로 다시 찾기</span>
-          </button>
-          <a class="link-btn link-btn-catalog" data-link="catalog" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
-            <span data-i18n="results.openInCatalog">카탈로그에서 보기</span>
-          </a>
-          <button type="button" class="link-btn link-btn-fav" data-action="favorite" aria-pressed="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17.3l-6.18 3.7 1.64-7.03L2 9.24l7.19-.62L12 2l2.81 6.62 7.19.62-5.46 4.73L18.18 21z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg>
-            <span class="fav-label" data-i18n="results.favoriteAdd">즐겨찾기</span>
-          </button>
         </div>
         </div>
         </div>
