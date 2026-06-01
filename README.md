@@ -237,7 +237,7 @@ curl -X POST http://localhost:8000/api/analyze \
 | `MUSIC_LOG_LEVEL` | `INFO` | JSON 로그 레벨 |
 | `PORT` | `8000` | 리스닝 포트 (Fly.io 등 PaaS 호환) |
 | `WEB_CONCURRENCY` | `1` | uvicorn worker 수. Docker / Render / Fly 기본값은 단일 worker. rate limit / 결과 캐시 / metrics 가 in-memory 라 다중 워커면 한도가 워커 수만큼 곱해진다. 트래픽이 커져 여러 worker 를 쓰려면 Redis 같은 외부 상태 저장소를 먼저 붙여야 한다. |
-| `MUSIC_GIT_COMMIT` | "" | 빌드 시 inject 하는 짧은 git SHA. `/api/version` · `/api/health` 응답에 노출. 비어 있으면 `.git/HEAD` 파일에서 자동 감지 (개발 환경). Dockerfile 의 `ARG GIT_COMMIT` 도 같은 변수를 채운다. |
+| `MUSIC_GIT_COMMIT` | "" | 빌드 시 inject 하는 짧은 git SHA. `/api/version` · `/api/health` 응답에 노출. 비어 있으면 `.git/HEAD` 파일에서 자동 감지 (개발 환경). Dockerfile 의 `ARG GIT_COMMIT` 도 같은 변수를 채운다. 수동 Docker 빌드는 `--build-arg GIT_COMMIT=$(git rev-parse --short HEAD)` 로 넘긴다. |
 
 ## 릴리즈
 
@@ -280,7 +280,9 @@ ruff check backend tests scripts
 ```
 
 CI 는 Python 3.11 / 3.12 / 3.14 매트릭스로 같은 검사를 매 PR 마다 돌린다. 통과 후
-Docker 이미지 빌드까지 캐시 적용해서 한 번 더 확인.
+Docker 이미지 빌드까지 캐시 적용해서 한 번 더 확인한다. 이 빌드는
+`GIT_COMMIT=${{ github.sha }}` build-arg 를 넘겨 `/api/version.git_commit` 으로
+이미지 출처를 확인할 수 있게 한다.
 
 ## 한계 / 알아둘 것
 

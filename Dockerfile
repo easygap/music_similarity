@@ -34,7 +34,7 @@ COPY CHANGELOG.md /app/CHANGELOG.md
 # 빌드 타임에 git SHA 를 주입 — `/api/version.git_commit` 으로 노출된다.
 # 같은 version 으로 여러 빌드가 떠 있을 때 운영자가 어느 빌드인지 식별하기 위한 정보.
 # 빌드 시 `docker build --build-arg GIT_COMMIT=$(git rev-parse --short HEAD)` 로 전달하거나,
-# 빌드 시스템 (Render, fly.io, GitHub Actions) 이 자동으로 채워줄 수도 있다.
+# GitHub Actions 처럼 빌드 시스템에서 현재 SHA 를 명시적으로 넘긴다.
 ARG GIT_COMMIT=""
 ENV MUSIC_GIT_COMMIT=${GIT_COMMIT}
 

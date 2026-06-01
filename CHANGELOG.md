@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+### Fixed
+- CI Docker 이미지 빌드에 `GIT_COMMIT=${{ github.sha }}` build-arg 를 전달해,
+  `.git` 이 제외된 이미지에서도 `/api/version.git_commit` 이 배포 커밋을
+  가리키도록 했다.
+
 ## [1.8.2] — 2026-06-01
 
 v1.8.1 이후 바로 확인된 사용성/운영 기본값 보정 패치. 비교 페이지 첫 방문
