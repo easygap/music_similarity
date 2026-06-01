@@ -1918,6 +1918,26 @@ if FRONTEND_DIR.exists():
     def favicon():
         return _cached_file_response(FRONTEND_DIR / "assets" / "favicon.svg", immutable=True)
 
+    @app.get("/app-icon-192.png", include_in_schema=False)
+    def app_icon_192():
+        """PWA 설치용 192px PNG 아이콘."""
+        return _cached_file_response(FRONTEND_DIR / "assets" / "app-icon-192.png", immutable=True)
+
+    @app.get("/app-icon-512.png", include_in_schema=False)
+    def app_icon_512():
+        """PWA 설치용 512px PNG 아이콘."""
+        return _cached_file_response(FRONTEND_DIR / "assets" / "app-icon-512.png", immutable=True)
+
+    @app.get("/maskable-icon-512.png", include_in_schema=False)
+    def maskable_icon_512():
+        """OS 런처 마스크 크롭에 대응하는 512px PNG 아이콘."""
+        return _cached_file_response(FRONTEND_DIR / "assets" / "maskable-icon-512.png", immutable=True)
+
+    @app.get("/apple-touch-icon.png", include_in_schema=False)
+    def apple_touch_icon():
+        """iOS 홈 화면 추가용 180px PNG 아이콘."""
+        return _cached_file_response(FRONTEND_DIR / "assets" / "apple-touch-icon.png", immutable=True)
+
     @app.get("/og-image.svg", include_in_schema=False)
     def og_image():
         """SNS 공유용 OpenGraph 이미지 (SVG)."""

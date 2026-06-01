@@ -213,6 +213,33 @@ def test_pwa_manifest(fastapi_client):
     assert data["name"]
     assert data["start_url"] == "/"
     assert isinstance(data["icons"], list)
+    icons = {(icon["src"], icon.get("sizes"), icon.get("purpose")) for icon in data["icons"]}
+    assert ("/app-icon-192.png", "192x192", "any") in icons
+    assert ("/app-icon-512.png", "512x512", "any") in icons
+    assert ("/maskable-icon-512.png", "512x512", "maskable") in icons
+    shortcut_icon = data["shortcuts"][0]["icons"][0]
+    assert shortcut_icon["src"] == "/app-icon-192.png"
+    assert shortcut_icon["type"] == "image/png"
+
+
+def test_pwa_png_icons_served(fastapi_client):
+    """PWA / iOS 설치 아이콘 PNG 자산이 루트 경로에서 바로 서빙되어야 한다."""
+    import struct
+
+    expected_sizes = {
+        "/app-icon-192.png": (192, 192),
+        "/app-icon-512.png": (512, 512),
+        "/maskable-icon-512.png": (512, 512),
+        "/apple-touch-icon.png": (180, 180),
+    }
+    for path, expected_size in expected_sizes.items():
+        r = fastapi_client.get(path)
+        assert r.status_code == 200, path
+        assert "image/png" in r.headers.get("content-type", "")
+        assert "immutable" in r.headers.get("cache-control", "")
+        assert r.content.startswith(b"\x89PNG\r\n\x1a\n")
+        width, height = struct.unpack(">II", r.content[16:24])
+        assert (width, height) == expected_size
 
 
 def test_service_worker(fastapi_client):

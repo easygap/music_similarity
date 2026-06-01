@@ -71,7 +71,7 @@ python -m backend.cli status --url https://내-서비스.example --ready
 
 ```bash
 python -m backend.cli version
-# v1.8.12 · 2026-06-01 · <git-sha>
+# v1.8.13 · 2026-06-01 · <git-sha>
 python -m backend.cli version --json    # jq 파이프 친화
 ```
 
@@ -173,6 +173,8 @@ python preview_server.py 8765
 - 한국어 / 영어 토글, 다크 / 라이트 테마, PWA(오프라인 폴백).
   PWA shell 에 메인 / 카탈로그 / 비교 / 개인정보 처리방침 / 이용약관을 포함해
   설치 후 오프라인 재방문에서도 핵심 화면과 법적 고지에 접근할 수 있다.
+  설치 아이콘은 SVG favicon 뿐 아니라 192/512px PNG, maskable 512px, iOS
+  apple-touch-icon 까지 제공한다.
   메인 / 카탈로그 / 비교 페이지 전부 i18n 적용 — Language 토글 한 번이면 모든
   서브 페이지의 정적·동적 텍스트가 같이 바뀐다.
 - 백엔드: threadpool 으로 librosa 분리, IP별 rate limit, magic-byte 검증,

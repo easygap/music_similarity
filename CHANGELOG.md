@@ -6,6 +6,27 @@
 
 ## [Unreleased]
 
+## [1.8.13] — 2026-06-01
+
+v1.8.12 이후 PWA 설치 품질을 보강한 패치 릴리즈. 홈 화면에 추가했을 때
+브라우저/OS 별 아이콘 처리 차이가 덜 나도록 SVG favicon 만 의존하던 구성을
+PNG 앱 아이콘 세트로 확장했다.
+
+### Added
+- 192px / 512px PNG 앱 아이콘, maskable 512px 아이콘, iOS 용
+  `apple-touch-icon.png` 를 추가했다.
+- manifest 의 `icons` 와 shortcut 아이콘이 PNG 자산을 함께 가리키도록 정리했다.
+- 카탈로그 / 비교 / 개인정보 / 이용약관 / 오프라인 / 404 페이지 head 에도
+  manifest, theme color, apple touch icon 메타를 노출했다.
+
+### Changed
+- 새 PWA 아이콘 자산이 오프라인 shell 에 포함되도록 서비스워커 캐시 버전을
+  `soundmatch-v12` 로 올렸다.
+
+### Tests
+- manifest PNG/maskable 아이콘, 루트 PNG 아이콘 서빙, shell 페이지의 PWA head
+  메타, SW shell 아이콘 포함 여부를 검증하는 회귀 테스트를 추가/갱신했다.
+
 ## [1.8.12] — 2026-06-01
 
 v1.8.11 이후 배포된 홈 화면을 메신저나 SNS 에 공유할 때 카드 메타데이터가
