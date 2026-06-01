@@ -13,6 +13,9 @@
 - 업로드 카드의 파일 크기 안내와 브라우저 사전 검증이 `/api/version.max_upload_bytes`
   값을 따르도록 했다. 운영에서 `MUSIC_MAX_UPLOAD_BYTES` 를 바꿔도 화면은 25MB 로
   고정되어 보이던 불일치를 줄였다.
+- CORS 응답의 `Access-Control-Expose-Headers` 에 rate limit 헤더와 `Retry-After`
+  를 포함했다. 다른 도메인에서 붙는 SDK / 프론트도 브라우저에서 남은 요청 수와
+  재시도 시점을 읽을 수 있게 했다.
 
 ## [1.8.2] — 2026-06-01
 

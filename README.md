@@ -208,7 +208,8 @@ GET  /catalog /compare /privacy /terms /sw.js /manifest.webmanifest /offline.htm
 ```
 
 응답에는 `X-Request-ID` 가 항상 붙는다. 분석 응답에는 `X-RateLimit-Limit /
-Remaining / Reset` 도 같이 내려간다. 429 응답은 표준 `Retry-After` 헤더 +
+Remaining / Reset` 도 같이 내려간다. CORS 환경에서도 이 헤더들과 `Retry-After` 는
+브라우저 JS 에서 읽을 수 있도록 노출한다. 429 응답은 표준 `Retry-After` 헤더 +
 JSON body 안에도 `retry_after_seconds` / `limit` / `reset_at` 머신-친화 필드.
 
 ```bash

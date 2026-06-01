@@ -887,11 +887,25 @@ def test_rate_limit_headers_exposed(fastapi_client, tiny_wav):
         r = fastapi_client.post(
             "/api/analyze",
             files={"file": ("tone.wav", f.read(), "audio/wav")},
+            headers={"Origin": "https://client.example"},
         )
     assert r.status_code == 200
     assert r.headers.get("X-RateLimit-Limit")
     assert r.headers.get("X-RateLimit-Remaining") is not None
     assert r.headers.get("X-RateLimit-Reset")
+    exposed = {
+        h.strip().lower()
+        for h in r.headers.get("Access-Control-Expose-Headers", "").split(",")
+        if h.strip()
+    }
+    for header in (
+        "x-request-id",
+        "x-ratelimit-limit",
+        "x-ratelimit-remaining",
+        "x-ratelimit-reset",
+        "retry-after",
+    ):
+        assert header in exposed
 
 
 def test_metrics_endpoint(fastapi_client):
