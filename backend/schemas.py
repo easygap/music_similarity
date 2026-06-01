@@ -12,7 +12,7 @@ class HealthResponse(BaseModel):
     status: str = Field(..., examples=["ok"])
     catalog_size: int = Field(..., examples=[781])
     env: str = Field("development", examples=["production"])
-    version: str = Field(..., examples=["1.8.3"])
+    version: str = Field(..., examples=["1.8.4"])
     # 빌드 식별용 메타 — /api/version 과 같은 값. 운영자가 health 만 봐도 빌드 확인 가능.
     release_date: str | None = Field(
         None,
@@ -102,5 +102,5 @@ class AnalyzeResponse(BaseModel):
     spectrogram_svg: str = ""
     # 분석 메타데이터 — 결과 JSON 을 나중에 다시 봐도 재현 가능한 정보들.
     analyzed_at: str = Field(..., description="ISO-8601 UTC 분석 완료 시각")
-    engine_version: str = Field(..., examples=["1.8.3"])
+    engine_version: str = Field(..., examples=["1.8.4"])
     cached: bool = Field(False, description="결과 캐시에서 즉시 응답된 경우 True")

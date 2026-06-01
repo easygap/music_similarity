@@ -408,7 +408,7 @@ def test_cli_status_ready_uses_readiness_endpoint(monkeypatch, capsys):
         status = 200
 
         def read(self):
-            return b'{"status": "ok", "catalog_size": 781, "env": "production", "version": "1.8.3"}'
+            return b'{"status": "ok", "catalog_size": 781, "env": "production", "version": "1.8.4"}'
 
     @contextmanager
     def fake_urlopen(req, timeout=5.0):
