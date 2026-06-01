@@ -16,6 +16,24 @@
       "type": "image/svg+xml",
       "sizes": "any",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
@@ -24,7 +42,7 @@
       "short_name": "업로드",
       "description": "메인 화면의 업로드 카드로 바로 이동",
       "url": "/#main",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/app-icon-192.png", "type": "image/png", "sizes": "192x192" }]
     }
   ],
   "screenshots": [

@@ -407,6 +407,10 @@ def test_service_worker_shell_includes_subpages():
         "/favorites.js",
         "/catalog.js",
         "/compare.js",
+        "/app-icon-192.png",
+        "/app-icon-512.png",
+        "/maskable-icon-512.png",
+        "/apple-touch-icon.png",
     ):
         assert f'"{asset}"' in text, f"sw.js SHELL 에 '{asset}' 가 누락되었습니다."
     assert '"/404"' not in text, "404 응답은 SW install cache.addAll 대상이면 안 됩니다."
@@ -461,8 +465,16 @@ def test_service_worker_version_string():
     match = re.search(r'VERSION\s*=\s*"soundmatch-v(\d+)"', text)
     assert match, "sw.js 에서 VERSION 상수를 찾을 수 없습니다."
     version_num = int(match.group(1))
-    # 캐시된 terms.html 내용이 바뀌었으므로 기존 shell 캐시를 확실히 밀어내야 한다.
-    assert version_num >= 11, "SW VERSION 이 약관 고지 갱신에 맞춰 bump 되지 않았습니다."
+    # PWA shell 에 설치 아이콘이 추가됐으므로 기존 shell 캐시를 확실히 밀어내야 한다.
+    assert version_num >= 12, "SW VERSION 이 PWA 아이콘 추가에 맞춰 bump 되지 않았습니다."
+
+
+@pytest.mark.parametrize("page", ["index.html", "catalog.html", "compare.html", "privacy.html", "terms.html"])
+def test_shell_pages_expose_pwa_manifest_and_touch_icon(page: str):
+    """주요 진입 페이지는 manifest 와 iOS touch icon 을 head 에 노출해야 한다."""
+    text = _read(page)
+    assert '<link rel="manifest" href="/manifest.webmanifest" />' in text
+    assert '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />' in text
 
 
 def test_render_mini_metrics_uses_i18n_labels():
