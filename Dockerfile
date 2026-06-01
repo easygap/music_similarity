@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libsndfile1 \
     ffmpeg \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -48,6 +47,6 @@ USER app
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS "http://localhost:${PORT}/api/health" || exit 1
+  CMD ["python", "-c", "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/api/health' % os.environ.get('PORT', '8000'), timeout=3).read()"]
 
 CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-1}"]
