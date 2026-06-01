@@ -144,9 +144,9 @@
   </div>
 
   <!-- "새 기능" 알림 배너.
-       /api/version.release_date 가 사용자의 localStorage `soundmatch.lastSeenRelease`
-       와 다를 때만 노출. 닫거나 보기 누르면 현재 release_date 가 localStorage 에
-       저장되어 다음 릴리즈 cut 까지 다시 안 나타난다. -->
+       /api/version 의 version + release_date 조합이 사용자의 localStorage
+       `soundmatch.lastSeenRelease` 와 다를 때만 노출. 닫거나 보기 누르면 현재
+       조합이 저장되어 다음 릴리즈 cut 까지 다시 안 나타난다. -->
   <div class="whatsnew-banner hidden" id="whatsnew-banner" role="status" aria-live="polite">
     <span class="whatsnew-banner-text">
       <strong data-i18n="whatsNew.bannerTitle">새 버전이 배포됐어요</strong>
