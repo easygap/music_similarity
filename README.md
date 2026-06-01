@@ -209,7 +209,7 @@ GET  /api/catalog/export.csv   # 같은 필터 조건으로 전체를 한 장의
 POST /api/client-error         # 프론트엔드 글로벌 에러 비콘 (sendBeacon)
 GET  /docs                     # FastAPI 자동 Swagger UI
 GET  /metrics                  # Prometheus exposition (uptime, latency P50/P95 포함)
-GET  /sitemap.xml /robots.txt  # 검색 엔진 색인 보조
+GET  /sitemap.xml /robots.txt  # 검색 엔진 색인 보조 (Host / 신뢰 프록시 기준 절대 URL)
 GET  /catalog /compare /privacy /terms /sw.js /manifest.webmanifest /offline.html /404
 ```
 
