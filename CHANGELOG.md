@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [1.8.5] — 2026-06-01
+
+v1.8.4 이후 사용자에게 보이는 릴리즈 안내, 법적 고지, PWA 오프라인 접근,
+검색 엔진 색인 표면을 정리한 패치 릴리즈. 기능 추가보다는 배포 후 신뢰와
+운영/SEO 정확도를 맞추는 데 집중했다.
+
 ### Changed
 - `/sitemap.xml` 의 `<loc>` 와 `/robots.txt` 의 `Sitemap:` 값을 요청 Host /
   신뢰 프록시의 `X-Forwarded-Proto`, `X-Forwarded-Host` 기준 절대 URL 로
