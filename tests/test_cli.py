@@ -391,10 +391,59 @@ def test_cli_status_pretty_output(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert code == 0
     assert "OK" in out
+    assert "http://example.test/api/health" in out
     assert "catalog_size" in out and "781" in out
     assert "1.3.0" in out
     # ISO 시각의 처음 부분이 들어가야 한다 (운영자가 보면 알 수 있는 형태).
     assert "2026-05-15" in out
+
+
+def test_cli_status_ready_uses_readiness_endpoint(monkeypatch, capsys):
+    """--ready 는 배포 healthcheck 와 같은 /api/ready 경로를 확인해야 한다."""
+    from contextlib import contextmanager
+
+    seen: list[str] = []
+
+    class FakeResp:
+        status = 200
+
+        def read(self):
+            return b'{"status": "ok", "catalog_size": 781, "env": "production", "version": "1.8.3"}'
+
+    @contextmanager
+    def fake_urlopen(req, timeout=5.0):
+        seen.append(req.full_url)
+        yield FakeResp()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    code = main(["status", "--url", "http://example.test/", "--ready"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert seen == ["http://example.test/api/ready"]
+    assert "http://example.test/api/ready" in out
+
+
+def test_cli_status_strict_uses_health_query(monkeypatch):
+    """기존 --strict 는 호환성을 위해 /api/health?strict=true 를 계속 사용한다."""
+    from contextlib import contextmanager
+
+    seen: list[str] = []
+
+    class FakeResp:
+        status = 200
+
+        def read(self):
+            return b'{"status": "ok", "catalog_size": 781}'
+
+    @contextmanager
+    def fake_urlopen(req, timeout=5.0):
+        seen.append(req.full_url)
+        yield FakeResp()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    code = main(["status", "--url", "http://example.test", "--strict", "--json"])
+    assert code == 0
+    assert seen == ["http://example.test/api/health?strict=true"]
 
 
 def test_cli_status_degraded_returns_3(monkeypatch, capsys):

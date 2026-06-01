@@ -63,6 +63,7 @@ python -m backend.cli compare a.wav b.wav
 
 ```bash
 python -m backend.cli status --url http://localhost:8000
+python -m backend.cli status --url https://내-서비스.example --ready
 # CI / 모니터링 친화 — JSON 만 흘리고 싶으면 --json. 503 / 접속 실패면 0 이 아닌 exit code.
 ```
 
