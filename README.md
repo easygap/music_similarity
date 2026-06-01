@@ -70,7 +70,7 @@ python -m backend.cli status --url http://localhost:8000
 
 ```bash
 python -m backend.cli version
-# v1.8.0 · 2026-05-29 · 2fe9b84
+# v1.8.1 · 2026-06-01 · 55d7879
 python -m backend.cli version --json    # jq 파이프 친화
 ```
 
