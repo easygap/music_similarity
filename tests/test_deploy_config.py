@@ -38,6 +38,17 @@ def test_docker_healthcheck_uses_python_runtime_only():
     assert "os.environ.get('PORT', '8000')" in text
 
 
+def test_container_healthchecks_use_strict_probe():
+    """컨테이너 healthcheck 는 업로드 디렉토리 쓰기까지 확인하는 strict 모드여야 한다."""
+    dockerfile = _read("Dockerfile")
+    compose = _read("docker-compose.yml")
+
+    assert "/api/health?strict=true" in dockerfile
+    assert "/api/health?strict=true" in compose
+    assert "timeout=3" in dockerfile
+    assert "timeout=3" in compose
+
+
 def test_ci_docker_build_injects_github_sha():
     """CI Docker 빌드는 /api/version 에 노출할 커밋 SHA 를 같이 넘겨야 한다."""
     text = _read(".github/workflows/ci.yml")
