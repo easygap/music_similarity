@@ -19,6 +19,23 @@ def test_docker_image_defaults_to_single_worker():
     assert "--workers ${WEB_CONCURRENCY:-2}" not in text
 
 
+def test_docker_image_accepts_git_commit_build_arg():
+    """이미지 안에 .git 이 없어도 빌드 SHA 를 주입할 수 있어야 한다."""
+    text = _read("Dockerfile")
+
+    assert 'ARG GIT_COMMIT=""' in text
+    assert "ENV MUSIC_GIT_COMMIT=${GIT_COMMIT}" in text
+
+
+def test_ci_docker_build_injects_github_sha():
+    """CI Docker 빌드는 /api/version 에 노출할 커밋 SHA 를 같이 넘겨야 한다."""
+    text = _read(".github/workflows/ci.yml")
+
+    assert "docker/build-push-action@v7" in text
+    assert "build-args: |" in text
+    assert "GIT_COMMIT=${{ github.sha }}" in text
+
+
 def test_compose_and_paas_configs_pin_single_worker():
     """compose / Render / Fly 모두 단일 worker 운영 모델을 명시해야 한다."""
     compose = _read("docker-compose.yml")

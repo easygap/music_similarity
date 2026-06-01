@@ -70,5 +70,7 @@ jobs:
           context: .
           push: false
           tags: music-similarity:ci-${{ github.sha }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
