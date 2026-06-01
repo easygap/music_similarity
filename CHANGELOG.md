@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [1.8.4] — 2026-06-01
+
+v1.8.3 이후 배포 healthcheck 와 운영 smoke test 를 같은 readiness 기준으로
+맞춘 패치 릴리즈. 컨테이너 이미지 의존성을 줄이고, Docker / compose / Render /
+Fly 에서 실제 분석 가능 상태를 더 일찍 검출하도록 정리했다.
+
 ### Changed
 - Docker 이미지 healthcheck 를 `curl` 대신 Python 표준 라이브러리로 실행하도록
   바꿨다. 런타임에 이미 있는 Python 만 사용해 불필요한 OS 패키지 설치를 줄였다.
