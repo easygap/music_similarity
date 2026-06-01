@@ -10,6 +10,9 @@
 - CI Docker 이미지 빌드에 `GIT_COMMIT=${{ github.sha }}` build-arg 를 전달해,
   `.git` 이 제외된 이미지에서도 `/api/version.git_commit` 이 배포 커밋을
   가리키도록 했다.
+- 업로드 카드의 파일 크기 안내와 브라우저 사전 검증이 `/api/version.max_upload_bytes`
+  값을 따르도록 했다. 운영에서 `MUSIC_MAX_UPLOAD_BYTES` 를 바꿔도 화면은 25MB 로
+  고정되어 보이던 불일치를 줄였다.
 
 ## [1.8.2] — 2026-06-01
 
