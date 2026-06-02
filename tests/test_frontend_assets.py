@@ -879,6 +879,16 @@ def test_mobile_nav_hamburger_wired():
     assert "is-open" in app
 
 
+@pytest.mark.parametrize("page", ["index.html", "catalog.html", "compare.html", "privacy.html", "terms.html"])
+def test_shell_navigation_landmark_label_is_localized(page: str):
+    """주요 shell 페이지의 nav landmark 이름은 현재 언어를 따라가야 한다."""
+    text = _read(page)
+
+    assert 'aria-label="Primary"' not in text
+    assert 'aria-label="주요 메뉴"' in text
+    assert 'data-i18n-attr="aria-label:nav.primary"' in text
+
+
 def test_confidence_note_wired_in_index_and_app():
     """1위 유사도가 낮을 때 뜨는 신뢰도 안내 배너가 마크업 + JS + i18n 에 모두 있어야 한다."""
     html = _read("index.html")
