@@ -135,6 +135,7 @@ def test_i18n_has_critical_keys():
     text = js.read_text(encoding="utf-8")
     ko = _walk_keys(_extract_block(text, "ko"))
     must_have = {
+        "nav.primary",
         "hero.title",
         "upload.submit",
         "results.title",

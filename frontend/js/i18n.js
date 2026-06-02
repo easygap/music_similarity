@@ -9,7 +9,7 @@
 
   const dict = {
     ko: {
-      nav: { how: "사용법", features: "기능", compare: "비교", catalog: "카탈로그", github: "GitHub", menuToggle: "메뉴 열기", menuClose: "메뉴 닫기" },
+      nav: { primary: "주요 메뉴", how: "사용법", features: "기능", compare: "비교", catalog: "카탈로그", github: "GitHub", menuToggle: "메뉴 열기", menuClose: "메뉴 닫기" },
       hero: {
         eyebrow: "Sklearn · librosa · FastAPI · WebAudio",
         title: "업로드한 음악과<br/><span class=\"grad\">가장 닮은 곡을</span><br/>AI가 찾아드립니다.",
@@ -303,7 +303,7 @@
       },
     },
     en: {
-      nav: { how: "How it works", features: "Features", compare: "Compare", catalog: "Catalog", github: "GitHub", menuToggle: "Open menu", menuClose: "Close menu" },
+      nav: { primary: "Primary navigation", how: "How it works", features: "Features", compare: "Compare", catalog: "Catalog", github: "GitHub", menuToggle: "Open menu", menuClose: "Close menu" },
       hero: {
         eyebrow: "Sklearn · librosa · FastAPI · WebAudio",
         title: "Find the songs<br/><span class=\"grad\">most similar to yours</span><br/>powered by AI.",
