@@ -889,6 +889,16 @@ def test_shell_navigation_landmark_label_is_localized(page: str):
     assert 'data-i18n-attr="aria-label:nav.primary"' in text
 
 
+@pytest.mark.parametrize("page", ["index.html", "catalog.html", "compare.html", "privacy.html", "terms.html"])
+def test_shell_theme_toggle_label_has_korean_default_and_i18n(page: str):
+    """테마 토글은 i18n 로드 전에도 한국어 기본 라벨을 가져야 한다."""
+    text = _read(page)
+
+    assert 'aria-label="Toggle theme"' not in text
+    assert 'aria-label="테마 전환"' in text
+    assert 'data-i18n-attr="aria-label:controls.themeToggle"' in text
+
+
 def test_confidence_note_wired_in_index_and_app():
     """1위 유사도가 낮을 때 뜨는 신뢰도 안내 배너가 마크업 + JS + i18n 에 모두 있어야 한다."""
     html = _read("index.html")
