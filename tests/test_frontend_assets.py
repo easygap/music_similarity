@@ -899,6 +899,20 @@ def test_shell_theme_toggle_label_has_korean_default_and_i18n(page: str):
     assert 'data-i18n-attr="aria-label:controls.themeToggle"' in text
 
 
+def test_result_audio_controls_and_tags_have_localized_aria_labels():
+    """결과 영역의 재생 버튼/태그 그룹도 i18n 로드 전후 라벨이 맞아야 한다."""
+    html = _read("index.html")
+    i18n = _read("js/i18n.js")
+
+    assert 'aria-label="Play / pause"' not in html
+    assert 'aria-label="업로드 음원 재생 / 일시정지"' in html
+    assert 'data-i18n-attr="aria-label:shortcuts.playPause"' in html
+    assert 'aria-label="이 곡의 특성 태그"' in html
+    assert 'data-i18n-attr="aria-label:results.tagsLabel"' in html
+    assert "tagsLabel" in i18n
+    assert "Tags describing this track" in i18n
+
+
 def test_confidence_note_wired_in_index_and_app():
     """1위 유사도가 낮을 때 뜨는 신뢰도 안내 배너가 마크업 + JS + i18n 에 모두 있어야 한다."""
     html = _read("index.html")

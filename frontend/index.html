@@ -370,7 +370,9 @@
             </div>
           </div>
           <div class="audio-player-controls">
-            <button type="button" class="play-btn" id="play-btn" aria-label="Play / pause">
+            <button type="button" class="play-btn" id="play-btn"
+                    aria-label="업로드 음원 재생 / 일시정지"
+                    data-i18n-attr="aria-label:shortcuts.playPause">
               <svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
               <svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/></svg>
             </button>
@@ -387,7 +389,9 @@
       </div>
 
       <!-- 휴리스틱 태그 (예: 빠른 템포 / 에너지 폭발 / 밝은 톤) -->
-      <div class="result-tags hidden" id="result-tags" aria-label="이 곡의 특성 태그"></div>
+      <div class="result-tags hidden" id="result-tags"
+           aria-label="이 곡의 특성 태그"
+           data-i18n-attr="aria-label:results.tagsLabel"></div>
 
       <!-- 1위 매칭 유사도가 낮을 때만 노출되는 신뢰도 안내. 사용자에게 솔직하게
            "카탈로그에 잘 맞는 곡이 없었다" 는 점을 알려서 결과 해석에 도움. -->
