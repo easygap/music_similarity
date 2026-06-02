@@ -6,6 +6,22 @@
 
 ## [Unreleased]
 
+## [1.8.14] — 2026-06-01
+
+v1.8.13 이후 디자인 프리뷰 서버의 PWA 자산 drift 를 없앤 패치 릴리즈.
+운영 FastAPI 와 프리뷰 서버가 같은 루트 정적 자산 경로를 제공하도록 맞췄다.
+
+### Fixed
+- `preview_server.py` 가 `/og-image.svg`, `/app-icon-192.png`,
+  `/app-icon-512.png`, `/maskable-icon-512.png`, `/apple-touch-icon.png` 를
+  `frontend/assets/` 아래 실제 파일로 alias 하도록 했다. 이제 프리뷰에서
+  manifest, 서비스워커 shell, apple touch icon 링크가 같은 경로로 동작한다.
+
+### Tests
+- 프리뷰 서버가 favicon, OG 이미지, PWA PNG 아이콘 루트 경로를 200 으로
+  서빙하고 파일 시그니처와 Content-Type 이 맞는지 확인하는 회귀 테스트를
+  추가했다.
+
 ## [1.8.13] — 2026-06-01
 
 v1.8.12 이후 PWA 설치 품질을 보강한 패치 릴리즈. 홈 화면에 추가했을 때

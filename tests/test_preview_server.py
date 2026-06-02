@@ -46,6 +46,11 @@ def _get(url: str):
         return resp.status, resp.read().decode("utf-8")
 
 
+def _get_bytes(url: str):
+    with urllib.request.urlopen(url, timeout=5) as resp:  # noqa: S310 - 로컬 테스트 서버
+        return resp.status, resp.headers, resp.read()
+
+
 def test_preview_dummy_catalog_is_well_formed():
     """PREVIEW_CATALOG 의 각 항목이 프론트가 기대하는 형태여야 한다."""
     assert len(preview_server.PREVIEW_CATALOG) >= 20
@@ -137,6 +142,28 @@ def test_preview_serves_root_style_css(preview_url):
     """/style.css 도 frontend/css/ 에서 서빙되어야 한다."""
     status, _ = _get(preview_url + "/style.css")
     assert status == 200
+
+
+@pytest.mark.parametrize(
+    ("path", "signature"),
+    [
+        ("/favicon.svg", b"<svg"),
+        ("/og-image.svg", b"<svg"),
+        ("/app-icon-192.png", b"\x89PNG\r\n\x1a\n"),
+        ("/app-icon-512.png", b"\x89PNG\r\n\x1a\n"),
+        ("/maskable-icon-512.png", b"\x89PNG\r\n\x1a\n"),
+        ("/apple-touch-icon.png", b"\x89PNG\r\n\x1a\n"),
+    ],
+)
+def test_preview_serves_root_asset_aliases(preview_url, path, signature):
+    """FastAPI 와 같은 루트 정적 자산 경로가 프리뷰 서버에서도 200 이어야 한다."""
+    status, headers, body = _get_bytes(preview_url + path)
+    assert status == 200, f"{path} 가 200 이 아닙니다."
+    assert body.startswith(signature), f"{path} 의 파일 시그니처가 예상과 다릅니다."
+    if path.endswith(".png"):
+        assert "image/png" in headers.get("Content-Type", "")
+    if path.endswith(".svg"):
+        assert "image/svg+xml" in headers.get("Content-Type", "")
 
 
 def test_sw_register_refreshes_once_on_new_controller():

@@ -220,6 +220,11 @@ class PreviewHandler(SimpleHTTPRequestHandler):
     # 빠뜨리므로, 확장자 기준으로 하위 디렉토리를 자동 탐색한다.
     STATIC_ALIASES = {
         "/favicon.svg": "/assets/favicon.svg",
+        "/og-image.svg": "/assets/og-image.svg",
+        "/app-icon-192.png": "/assets/app-icon-192.png",
+        "/app-icon-512.png": "/assets/app-icon-512.png",
+        "/maskable-icon-512.png": "/assets/maskable-icon-512.png",
+        "/apple-touch-icon.png": "/assets/apple-touch-icon.png",
     }
 
     # FastAPI 앱이 확장자 없이 노출하는 페이지 라우트 (/catalog → catalog.html 등).
