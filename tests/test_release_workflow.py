@@ -1,6 +1,7 @@
 """릴리즈 자동화가 잘못된 태그를 막는지 확인하는 정적 회귀 테스트."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -8,6 +9,13 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def _read(rel: str) -> str:
     return (ROOT / rel).read_text(encoding="utf-8")
+
+
+def _top_release_from_changelog() -> tuple[str, str]:
+    text = _read("CHANGELOG.md")
+    match = re.search(r"^## \[(\d+\.\d+\.\d+)\] — (\d{4}-\d{2}-\d{2})", text, re.MULTILINE)
+    assert match is not None, "CHANGELOG 최상단 published 릴리즈 섹션을 찾을 수 없습니다."
+    return match.group(1), match.group(2)
 
 
 def test_release_workflow_checks_version_consistency_before_release():
@@ -35,3 +43,21 @@ def test_readme_documents_release_order_and_guard():
     assert "backend/__init__.py" in text
     assert "git tag vx.y.z && git push origin vx.y.z" in text
     assert "릴리즈 생성을 중단" in text
+
+
+def test_top_changelog_release_matches_package_and_readme_example():
+    """운영에 노출되는 버전/릴리즈 날짜가 README 예시와 같이 움직여야 한다."""
+    from backend import __version__
+
+    version, release_date = _top_release_from_changelog()
+    readme = _read("README.md")
+
+    assert version == __version__
+    assert f"# v{version} · {release_date} · <git-sha>" in readme
+
+
+def test_changelog_keeps_v1814_actual_release_date():
+    """v1.8.14 는 실제 GitHub Release publish 일자인 2026-06-02 로 기록한다."""
+    text = _read("CHANGELOG.md")
+
+    assert "## [1.8.14] — 2026-06-02" in text
