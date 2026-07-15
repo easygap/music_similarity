@@ -131,6 +131,42 @@ Docker 가 편하면 `docker compose up --build` 한 줄이면 된다.
 
 <br>
 
+## 운영 메모
+
+배포된 서버가 기대한 버전인지 확인할 때는 CLI 를 바로 쓴다.
+
+```bash
+python -m backend.cli version
+# v1.8.19 · 2026-07-15 · <git-sha>
+
+python -m backend.cli status --url https://your-soundmatch.example --ready
+```
+
+핵심 설정만 추리면 아래 정도다. 전체 값은 `backend/main.py` 의 `MUSIC_*` 기본값을 따른다.
+
+| 이름 | 기본 | 설명 |
+| --- | --- | --- |
+| `MUSIC_ENV` | `development` | `production` 이면 HSTS 와 엄격한 CORS 설정을 사용한다. |
+| `MUSIC_DATASET_PATH` | `data/dataset.csv` | 비교에 사용할 카탈로그 CSV 경로. |
+| `MUSIC_MAX_UPLOAD_BYTES` | `26214400` | 업로드 파일 크기 제한. 기본은 25MB. |
+| `MUSIC_RATE_LIMIT_PER_MIN` | `12` | IP 기준 분당 분석 요청 한도. |
+| `MUSIC_GIT_COMMIT` | "" | `/api/version` 과 `/api/health` 에 노출할 짧은 배포 SHA. |
+| `WEB_CONCURRENCY` | `1` | Docker / Render / Fly 기본값은 단일 worker. rate limit, 캐시, metrics 가 메모리 기반이라 여러 worker 를 쓰려면 Redis 같은 외부 상태 저장소를 먼저 붙여야 한다. |
+
+<br>
+
+## 릴리즈
+
+1. `CHANGELOG.md` 의 `[Unreleased]` 내용을 `## [x.y.z] — YYYY-MM-DD` 섹션으로 옮긴다.
+2. `backend/__init__.py` 의 `__version__` 을 같은 `x.y.z` 로 올린다.
+3. README 의 `python -m backend.cli version` 출력 예시와 OpenAPI 스키마 예시도 같은 버전으로 맞춘다.
+4. main CI 가 초록인지 확인한 뒤 `git tag vx.y.z && git push origin vx.y.z`.
+
+태그가 푸시되면 GitHub Release 워크플로가 CHANGELOG 섹션을 그대로 릴리즈 노트로 사용한다.
+태그 버전, `backend.__version__`, `CHANGELOG.md` 의 릴리즈 섹션이 하나라도 다르면 릴리즈 생성을 중단한다.
+
+<br>
+
 ## 알아둘 것
 
 - 분석은 곡의 **앞 30초**만 본다. 가장 특징적인 후렴구가 안 잡힐 수 있다.
