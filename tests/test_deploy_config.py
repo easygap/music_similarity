@@ -90,3 +90,4 @@ def test_requirements_keep_merged_dependabot_versions():
     assert "uvicorn[standard]==0.49.0" in runtime
     assert "python-multipart==0.0.32" in runtime
     assert "pytest==9.0.3" in dev
+    assert "pytest-asyncio==1.3.0" in dev
