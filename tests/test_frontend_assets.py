@@ -1,7 +1,7 @@
 """프론트엔드 자산이 갖춰야 할 정적 조건들을 잡아두는 회귀 테스트.
 
 브라우저 JS 를 파이썬 쪽에서 실제로 실행하긴 어려우니, 의도한 동작이 코드에
-남아 있는지 텍스트 레벨로 확인한다. 라우드 19 에서 추가한 카탈로그 URL
+남아 있는지 텍스트 레벨로 확인한다. 릴리즈 19 에서 추가한 카탈로그 URL
 영구화와 즐겨찾기 내보내기/가져오기 같은 기능이 회귀로 사라지지 않도록.
 """
 from __future__ import annotations
@@ -55,6 +55,50 @@ def test_results_focus_management_is_wired():
     assert "function renderResults(data, preserveFile = false, options = {})" in app
     # 언어/정렬 같은 내부 재렌더에서는 포커스를 훔치지 않는다.
     assert "{ focus: false, scroll: false }" in app
+
+
+def test_radar_chart_measures_visible_width_and_keeps_labels_in_viewbox():
+    """레이더 차트는 실제 너비로 그려지고 축 라벨까지 SVG 경계에 포함해야 한다."""
+    app = _read("js/app.js")
+    block_start = app.index("// 1위 매칭과의 6축 레이더 차트.")
+    block_end = app.index('hitList.innerHTML = "";', block_start)
+    block = app[block_start:block_end]
+
+    show_index = block.index('radarCard.classList.remove("hidden")')
+    render_index = block.index("renderRadarChart")
+    assert show_index < render_index, "숨긴 카드의 clientWidth 를 측정하면 모바일 좌표가 틀어집니다."
+
+    visualizers = _read("js/visualizers.js")
+    for marker in (
+        "measureRadarLabels",
+        "ctx.measureText",
+        "horizontalGutter",
+        "verticalGutter",
+        'viewBox="${-horizontalGutter}',
+    ):
+        assert marker in visualizers, f"레이더 라벨 경계 계산에 '{marker}' 가 없습니다."
+
+
+def test_radar_chart_axis_labels_and_alt_text_follow_locale():
+    """레이더 차트의 보이는 축과 대체 텍스트가 ko/en 전환을 따라야 한다."""
+    app = _read("js/app.js")
+    i18n = _read("js/i18n.js")
+    keys = (
+        "radarAria",
+        "radarAxisTempo",
+        "radarAxisEnergy",
+        "radarAxisBrightness",
+        "radarAxisRoughness",
+        "radarAxisHarmony",
+        "radarAxisChroma",
+    )
+    for key in keys:
+        assert f'results.{key}' in app, f"app.js 가 results.{key} 를 사용하지 않습니다."
+        assert i18n.count(f"{key}:") == 2, f"i18n.js 의 {key} ko/en 쌍이 맞지 않습니다."
+
+    visualizers = _read("js/visualizers.js")
+    assert "options.labels" in visualizers
+    assert "options.ariaLabel" in visualizers
 
 
 def test_mobile_touch_targets_have_minimum_hit_area():
@@ -465,8 +509,18 @@ def test_service_worker_version_string():
     match = re.search(r'VERSION\s*=\s*"soundmatch-v(\d+)"', text)
     assert match, "sw.js 에서 VERSION 상수를 찾을 수 없습니다."
     version_num = int(match.group(1))
-    # PWA shell 에 설치 아이콘이 추가됐으므로 기존 shell 캐시를 확실히 밀어내야 한다.
-    assert version_num >= 12, "SW VERSION 이 PWA 아이콘 추가에 맞춰 bump 되지 않았습니다."
+    # 기존 워커의 stale 응답을 우회하는 프리캐시 변경까지 담은 v14 이상이어야 한다.
+    assert version_num >= 14, "SW VERSION 이 프리캐시 갱신 방식 변경에 맞춰 bump 되지 않았습니다."
+
+
+def test_service_worker_precache_bypasses_previous_worker_cache():
+    """새 워커 설치 요청은 이전 워커의 stale 셸 자산에 다시 걸리면 안 된다."""
+    text = _read("sw.js")
+
+    assert 'url.searchParams.set("__sw", VERSION)' in text
+    assert 'fetch(url, { cache: "no-store" })' in text
+    assert "cache.put(path, response)" in text
+    assert "cache.addAll(SHELL)" not in text
 
 
 @pytest.mark.parametrize("page", ["index.html", "catalog.html", "compare.html", "privacy.html", "terms.html"])
