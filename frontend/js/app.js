@@ -1112,13 +1112,27 @@
     // 1위 매칭과의 6축 레이더 차트.
     const top = data.results[0];
     if (top && top.match_summary && window.SoundMatchVisualizers) {
+      // 숨긴 카드 안에서는 clientWidth 가 0이라 시각화가 폴백 너비로 그려진다.
+      // 같은 프레임 안에서 먼저 표시한 뒤 실제 반응형 너비를 측정한다.
+      radarCard.classList.remove("hidden");
       const radarData = window.SoundMatchVisualizers.radarFromSummaries(
         data.summary,
         top.match_summary,
+        {
+          ariaLabel: t("results.radarAria"),
+          labels: {
+            tempo_bpm: t("results.radarAxisTempo"),
+            energy_rms: t("results.radarAxisEnergy"),
+            brightness: t("results.radarAxisBrightness"),
+            noisiness: t("results.radarAxisRoughness"),
+            harmony_ratio: t("results.radarAxisHarmony"),
+            chroma: t("results.radarAxisChroma"),
+          },
+        },
       );
       window.SoundMatchVisualizers.renderRadarChart(radarHost, radarData);
-      radarCard.classList.remove("hidden");
     } else {
+      radarHost.innerHTML = "";
       radarCard.classList.add("hidden");
     }
 

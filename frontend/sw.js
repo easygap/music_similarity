@@ -6,7 +6,7 @@
 
 // 캐시 키는 빌드별로 바뀌어야 한다 — 새 자산을 추가하거나 기존 자산을 고치면
 // 이 문자열을 한 칸 올려서 옛 캐시를 강제로 무효화한다.
-const VERSION = "soundmatch-v12";
+const VERSION = "soundmatch-v14";
 const SHELL = [
   "/",
   "/catalog",
@@ -34,13 +34,23 @@ const SHELL = [
   "/manifest.webmanifest",
 ];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(VERSION)
-      .then((cache) => cache.addAll(SHELL))
-      .then(() => self.skipWaiting()),
+async function precacheShell() {
+  const cache = await caches.open(VERSION);
+  await Promise.all(
+    SHELL.map(async (path) => {
+      // 설치 중인 새 워커의 요청을 이전 워커가 가로채더라도, 버전 쿼리가 붙으면
+      // 옛 캐시에 히트하지 않는다. 받은 최신 응답은 실제 요청 경로로 저장한다.
+      const url = new URL(path, self.location.origin);
+      url.searchParams.set("__sw", VERSION);
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`precache failed: ${path} (${response.status})`);
+      await cache.put(path, response);
+    }),
   );
+}
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(precacheShell().then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
