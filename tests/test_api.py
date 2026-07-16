@@ -214,6 +214,7 @@ def test_pwa_manifest(fastapi_client):
     assert data["start_url"] == "/"
     assert isinstance(data["icons"], list)
     icons = {(icon["src"], icon.get("sizes"), icon.get("purpose")) for icon in data["icons"]}
+    assert ("/favicon.svg", "any", "any") in icons
     assert ("/app-icon-192.png", "192x192", "any") in icons
     assert ("/app-icon-512.png", "512x512", "any") in icons
     assert ("/maskable-icon-512.png", "512x512", "maskable") in icons
@@ -227,6 +228,7 @@ def test_pwa_png_icons_served(fastapi_client):
     import struct
 
     expected_sizes = {
+        "/favicon-32.png": (32, 32),
         "/app-icon-192.png": (192, 192),
         "/app-icon-512.png": (512, 512),
         "/maskable-icon-512.png": (512, 512),
@@ -240,6 +242,15 @@ def test_pwa_png_icons_served(fastapi_client):
         assert r.content.startswith(b"\x89PNG\r\n\x1a\n")
         width, height = struct.unpack(">II", r.content[16:24])
         assert (width, height) == expected_size
+
+
+def test_legacy_favicon_served(fastapi_client):
+    """레거시 브라우저용 ICO 파비콘도 루트 경로에서 서빙되어야 한다."""
+    r = fastapi_client.get("/favicon.ico")
+    assert r.status_code == 200
+    assert "image/" in r.headers.get("content-type", "")
+    assert "immutable" in r.headers.get("cache-control", "")
+    assert r.content.startswith(b"\x00\x00\x01\x00")
 
 
 def test_service_worker(fastapi_client):

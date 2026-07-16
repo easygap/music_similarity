@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>카탈로그 둘러보기 · SoundMatch</title>
   <meta name="description" content="SoundMatch 분석의 비교 대상이 되는 곡 카탈로그를 검색해볼 수 있습니다." />
-  <meta name="theme-color" content="#0b0b18" />
+  <meta name="theme-color" content="#101010" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="stylesheet" href="/style.css" />
@@ -62,14 +64,14 @@
       transition: background 0.15s;
     }
     .cat-search-clear:hover, .cat-search-clear:focus-visible {
-      background: rgba(124, 92, 255, 0.35);
+      background: rgba(185, 238, 132, 0.28);
       outline: none;
     }
     :root[data-theme="light"] .cat-search-clear {
       background: rgba(0, 0, 0, 0.08);
     }
     :root[data-theme="light"] .cat-search-clear:hover {
-      background: rgba(124, 92, 255, 0.2);
+      background: rgba(185, 238, 132, 0.16);
     }
     .cat-meta { color: var(--text-mute); font-size: 13px; }
     .cat-grid {
@@ -180,13 +182,13 @@
     .cat-metrics .sep { opacity: 0.4; }
     /* 검색어 매칭 부분 강조 — 기본 <mark> 노란색 대신 accent 계열 톤. */
     .cat-highlight {
-      background: rgba(124, 92, 255, 0.28);
+      background: rgba(185, 238, 132, 0.22);
       color: inherit;
       padding: 0 1px;
       border-radius: 3px;
     }
     :root[data-theme="light"] .cat-highlight {
-      background: rgba(124, 92, 255, 0.22);
+      background: rgba(185, 238, 132, 0.18);
     }
     .cat-filter-row {
       display: flex;
@@ -202,7 +204,7 @@
       min-width: 18px;
       padding: 0 6px;
       border-radius: 999px;
-      background: rgba(124, 92, 255, 0.25);
+      background: rgba(185, 238, 132, 0.2);
       color: var(--text);
       font-family: "JetBrains Mono", monospace;
       font-size: 11px;
@@ -269,8 +271,8 @@
     .cat-recent-clear:hover { color: var(--accent-1); }
     .cat-recent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .cat-recent-chip {
-      background: rgba(124, 92, 255, 0.12);
-      border: 1px solid rgba(124, 92, 255, 0.32);
+      background: rgba(185, 238, 132, 0.1);
+      border: 1px solid rgba(185, 238, 132, 0.3);
       color: var(--text);
       min-height: 40px;
       padding: 8px 12px;
@@ -285,7 +287,7 @@
     }
     .cat-recent-chip:hover, .cat-recent-chip:focus-visible {
       border-color: var(--accent-1);
-      background: rgba(124, 92, 255, 0.2);
+      background: rgba(185, 238, 132, 0.16);
     }
     .cat-recent-chip .chip-artist { color: var(--text-mute); }
     .cat-hist-head {
@@ -419,7 +421,7 @@
     .modal-copy-link.is-copied {
       color: var(--accent-2);
       border-color: var(--accent-2);
-      background: rgba(34, 211, 238, 0.08);
+      background: rgba(185, 224, 253, 0.09);
     }
     /* 우상단 떠 있는 작은 토스트 */
     .cat-toast {
@@ -446,14 +448,13 @@
     }
     .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
     .modal-tag {
-      background: rgba(124, 92, 255, 0.18);
-      border: 1px solid rgba(124, 92, 255, 0.4);
-      color: #d3c8ff;
+      background: rgba(185, 238, 132, 0.13);
+      border: 1px solid rgba(185, 238, 132, 0.34);
+      color: var(--accent-1);
       padding: 4px 10px;
       border-radius: 999px;
       font-size: 12px;
     }
-    :root[data-theme="light"] .modal-tag { color: #4c2bd6; }
     .modal-hits { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
     .modal-hits li {
       display: grid;
@@ -598,27 +599,16 @@
   </noscript>
 
   <div class="bg-canvas" aria-hidden="true">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
     <div class="noise"></div>
   </div>
 
   <header class="site-nav">
-    <a class="brand" href="/">
-      <svg viewBox="0 0 32 32" class="brand-mark" aria-hidden="true">
-        <defs>
-          <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stop-color="#7c5cff" />
-            <stop offset="1" stop-color="#22d3ee" />
-          </linearGradient>
-        </defs>
-        <rect x="2" y="2" width="28" height="28" rx="9" fill="url(#g1)" />
-        <path d="M11 22V11l10-2v11" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
-        <circle cx="11" cy="22" r="2.4" fill="white" />
-        <circle cx="21" cy="20" r="2.4" fill="white" />
+    <a class="brand" href="/" aria-label="SoundMatch 홈">
+      <svg class="brand-mark" viewBox="0 0 56 48" width="36" height="32" aria-hidden="true">
+        <path class="brand-mark-upper" d="M1 11C10 3 19 4 29 10s17 5 26-3v11c-9 8-18 9-28 3-9-6-16-6-26 2Z" />
+        <path class="brand-mark-lower" d="M1 30c9-7 18-6 27 0 11 7 18 6 27-2v11c-9 8-19 9-29 2-9-6-16-5-25 2Z" />
       </svg>
-      <span>SoundMatch</span>
+      <span class="brand-wordmark">soundmatch</span>
     </a>
     <nav class="site-nav-links" aria-label="주요 메뉴" data-i18n-attr="aria-label:nav.primary">
       <div class="nav-links-group" id="nav-links-group">

@@ -31,7 +31,7 @@
         submit: "유사한 곡 찾기",
         privacy:
           "업로드된 음원은 분석이 끝나는 즉시 서버에서 자동 삭제됩니다. 학습이나 카탈로그에 사용되지 않습니다.",
-        sampleButton: "🎧 샘플로 분석해보기",
+        sampleButton: "샘플로 분석해보기",
         sampleHint: "업로드 없이 카탈로그에서 무작위로 한 곡을 골라 결과를 체험해보세요.",
         sampleLoading: "샘플 준비 중…",
         or: "또는",
@@ -333,7 +333,7 @@
         submit: "Find similar tracks",
         privacy:
           "Uploads are deleted from the server immediately after analysis. We never train models or extend the catalog with your audio.",
-        sampleButton: "🎧 Try a sample track",
+        sampleButton: "Try a sample track",
         sampleHint: "Skip the upload — pick a random catalog track to see the result flow.",
         sampleLoading: "Preparing a sample…",
         or: "or",

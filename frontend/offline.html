@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>오프라인 · SoundMatch</title>
   <meta name="robots" content="noindex" />
-  <meta name="theme-color" content="#0b0b18" />
+  <meta name="theme-color" content="#101010" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="stylesheet" href="/style.css" />
@@ -22,8 +24,8 @@
       padding: 32px;
       gap: 18px;
     }
-    .off-emoji { font-size: 56px; }
-    .off-title { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+    .off-mark { width: 64px; height: 64px; }
+    .off-title { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0; }
     .off-sub { margin: 0; max-width: 460px; color: var(--text-dim); }
     .off-retry {
       display: inline-flex;
@@ -32,7 +34,7 @@
       padding: 12px 22px;
       border-radius: 12px;
       background: var(--grad-primary);
-      color: white;
+      color: var(--brand-black);
       font-weight: 600;
       border: none;
       cursor: pointer;
@@ -42,14 +44,11 @@
 </head>
 <body>
   <div class="bg-canvas" aria-hidden="true">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
     <div class="noise"></div>
   </div>
 
   <main class="offline-wrap">
-    <p class="off-emoji" aria-hidden="true">📡</p>
+    <img class="off-mark" src="/favicon.svg" width="64" height="64" alt="" />
     <h1 class="off-title" data-i18n="offline.title">지금은 오프라인 상태입니다</h1>
     <p class="off-sub" data-i18n="offline.sub">
       네트워크가 끊겨 분석을 진행할 수 없어요. 연결 상태를 확인하고

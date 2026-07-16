@@ -148,6 +148,8 @@ def test_preview_serves_root_style_css(preview_url):
     ("path", "signature"),
     [
         ("/favicon.svg", b"<svg"),
+        ("/favicon-32.png", b"\x89PNG\r\n\x1a\n"),
+        ("/favicon.ico", b"\x00\x00\x01\x00"),
         ("/og-image.svg", b"<svg"),
         ("/app-icon-192.png", b"\x89PNG\r\n\x1a\n"),
         ("/app-icon-512.png", b"\x89PNG\r\n\x1a\n"),
@@ -164,6 +166,8 @@ def test_preview_serves_root_asset_aliases(preview_url, path, signature):
         assert "image/png" in headers.get("Content-Type", "")
     if path.endswith(".svg"):
         assert "image/svg+xml" in headers.get("Content-Type", "")
+    if path.endswith(".ico"):
+        assert "image/" in headers.get("Content-Type", "")
 
 
 def test_sw_register_refreshes_once_on_new_controller():

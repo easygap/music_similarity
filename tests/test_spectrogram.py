@@ -70,14 +70,14 @@ def test_color_for_clamps_below_zero():
 
 
 def test_color_for_clamps_above_one():
-    """1 이상도 가장 밝은 시안으로 매핑."""
+    """1 이상도 가장 밝은 Compare Sky로 매핑."""
     c = _color_for(5.0)
     assert c.startswith("#")
     assert len(c) == 7
 
 
 def test_color_for_endpoints():
-    """양 끝점은 기대 색상(어두운 보라 / 시안) 근처."""
+    """양 끝점은 서로 다른 Black / Compare Sky 계열이어야 한다."""
     dark = _color_for(0.0)
     bright = _color_for(1.0)
     # 두 색이 같으면 안 된다.

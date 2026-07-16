@@ -1,12 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <defs>
-    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#7c5cff"/>
-      <stop offset="1" stop-color="#22d3ee"/>
-    </linearGradient>
-  </defs>
-  <rect x="2" y="2" width="28" height="28" rx="9" fill="url(#g)"/>
-  <path d="M11 22V11l10-2v11" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="11" cy="22" r="2.4" fill="white"/>
-  <circle cx="21" cy="20" r="2.4" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>SoundMatch</title>
+  <rect x="2" y="2" width="60" height="60" rx="11" fill="#efefef"/>
+  <path fill="#101010" d="M9 18c8-7 15-6 23-1 8 5 14 5 23-3v10c-9 8-17 8-25 3-8-5-13-5-21 2Z"/>
+  <path fill="#b9ee84" d="M9 40c7-6 14-5 22 0 9 6 15 6 24-2v10c-9 8-17 8-26 2-7-5-13-5-20 1Z"/>
 </svg>
