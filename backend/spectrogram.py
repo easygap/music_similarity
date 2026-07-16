@@ -68,20 +68,20 @@ def _downsample_2d(arr: np.ndarray, h: int, w: int) -> np.ndarray:
 
 
 def _color_for(value: float) -> str:
-    """0..1 정규화된 에너지를 보라색→시안 그라데이션 색상으로 매핑."""
+    """0..1 정규화된 에너지를 브랜드의 업로드 곡 색상으로 매핑."""
     v = max(0.0, min(1.0, float(value)))
     # 두 색 사이 선형 보간.
-    # 어두운 보라(#1a1430) → 보라(#7c5cff) → 시안(#22d3ee).
+    # Black(#101010) → muted sky(#3d7694) → Compare Sky(#b9e0fd).
     if v < 0.5:
         t = v * 2
-        r = int(0x1a + (0x7c - 0x1a) * t)
-        g = int(0x14 + (0x5c - 0x14) * t)
-        b = int(0x30 + (0xff - 0x30) * t)
+        r = int(0x10 + (0x3D - 0x10) * t)
+        g = int(0x10 + (0x76 - 0x10) * t)
+        b = int(0x10 + (0x94 - 0x10) * t)
     else:
         t = (v - 0.5) * 2
-        r = int(0x7c + (0x22 - 0x7c) * t)
-        g = int(0x5c + (0xd3 - 0x5c) * t)
-        b = int(0xff + (0xee - 0xff) * t)
+        r = int(0x3D + (0xB9 - 0x3D) * t)
+        g = int(0x76 + (0xE0 - 0x76) * t)
+        b = int(0x94 + (0xFD - 0x94) * t)
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
@@ -96,7 +96,7 @@ def _render_svg(grid: np.ndarray) -> str:
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {_PIXEL_W} {_PIXEL_H}" '
         f'role="img" aria-label="업로드한 곡의 멜 스펙트로그램">',
         # 배경
-        f'<rect width="{_PIXEL_W}" height="{_PIXEL_H}" fill="#0b0b18"/>',
+        f'<rect width="{_PIXEL_W}" height="{_PIXEL_H}" fill="#101010"/>',
     ]
 
     # 윗줄(높은 주파수)을 위로, 아랫줄(낮은 주파수)을 아래로 그리고 싶으므로 뒤집어 그린다.

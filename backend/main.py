@@ -1918,6 +1918,16 @@ if FRONTEND_DIR.exists():
     def favicon():
         return _cached_file_response(FRONTEND_DIR / "assets" / "favicon.svg", immutable=True)
 
+    @app.get("/favicon-32.png", include_in_schema=False)
+    def favicon_png():
+        """32px PNG 파비콘 폴백."""
+        return _cached_file_response(FRONTEND_DIR / "assets" / "favicon-32.png", immutable=True)
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon_ico():
+        """레거시 브라우저용 멀티사이즈 ICO 파비콘."""
+        return _cached_file_response(FRONTEND_DIR / "assets" / "favicon.ico", immutable=True)
+
     @app.get("/app-icon-192.png", include_in_schema=False)
     def app_icon_192():
         """PWA 설치용 192px PNG 아이콘."""

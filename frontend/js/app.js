@@ -1529,8 +1529,9 @@
     sampleBtn.addEventListener("click", async () => {
       // 중복 클릭 방어 — 첫 클릭 후 fetch 끝날 때까지 비활성.
       sampleBtn.disabled = true;
-      const originalText = sampleBtn.textContent;
-      sampleBtn.textContent = t("upload.sampleLoading");
+      const sampleLabel = sampleBtn.querySelector("[data-sample-label]");
+      const originalText = sampleLabel.textContent;
+      sampleLabel.textContent = t("upload.sampleLoading");
       try {
         const res = await fetch("/api/catalog/random?n=1");
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1543,7 +1544,7 @@
         showError(err.message || String(err));
       } finally {
         sampleBtn.disabled = false;
-        sampleBtn.textContent = originalText;
+        sampleLabel.textContent = originalText;
       }
     });
   }
@@ -1859,8 +1860,8 @@
         const x = padding + i * 150;
         return (
           `<g transform="translate(${x}, ${headerH - 16})">` +
-          `<rect rx="999" ry="999" width="140" height="32" fill="#3a2470"/>` +
-          `<text x="70" y="20" text-anchor="middle" fill="#d3c8ff" ` +
+          `<rect rx="8" ry="8" width="140" height="32" fill="#27331d"/>` +
+          `<text x="70" y="20" text-anchor="middle" fill="#b9ee84" ` +
           `font-size="14" font-weight="500">${esc(tag)}</text>` +
           `</g>`
         );
@@ -1870,18 +1871,18 @@
     const rowsXml = top
       .map((r, i) => {
         const y = headerH + tagsH + i * rowH;
-        const rankColor = "#7c5cff";
+        const rankColor = "#b9ee84";
         const pct = (r.similarity_percent || 0).toFixed(1);
         const barW = Math.max(2, Math.min(100, r.similarity_percent || 0)) * (w - padding * 2 - 220) / 100;
         return (
           `<g transform="translate(${padding}, ${y})">` +
           `<text x="0" y="34" font-size="40" font-weight="800" fill="${rankColor}">${r.rank}</text>` +
-          `<text x="60" y="22" font-size="22" font-weight="700" fill="#f4f4ff">${esc(r.title)}</text>` +
-          `<text x="60" y="46" font-size="14" fill="rgba(244,244,255,0.7)">${esc(r.artist)}</text>` +
+          `<text x="60" y="22" font-size="22" font-weight="700" fill="#efefef">${esc(r.title)}</text>` +
+          `<text x="60" y="46" font-size="14" fill="rgba(239,239,239,0.7)">${esc(r.artist)}</text>` +
           `<text x="${w - padding * 2}" y="34" text-anchor="end" font-size="28" ` +
-          `font-weight="800" fill="#22d3ee">${pct}%</text>` +
-          `<rect x="60" y="58" width="${w - padding * 2 - 220}" height="6" rx="3" fill="rgba(255,255,255,0.08)"/>` +
-          `<rect x="60" y="58" width="${barW}" height="6" rx="3" fill="url(#gradBar)"/>` +
+          `font-weight="800" fill="#b9e0fd">${pct}%</text>` +
+          `<rect x="60" y="58" width="${w - padding * 2 - 220}" height="6" rx="3" fill="rgba(239,239,239,0.1)"/>` +
+          `<rect x="60" y="58" width="${barW}" height="6" rx="3" fill="#b9ee84"/>` +
           `</g>`
         );
       })
@@ -1890,24 +1891,17 @@
     return (
       `<?xml version="1.0" encoding="UTF-8"?>` +
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" font-family="Pretendard, Inter, sans-serif">` +
-      `<defs>` +
-      `<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">` +
-      `<stop offset="0" stop-color="#0b0b18"/><stop offset="1" stop-color="#1a1430"/>` +
-      `</linearGradient>` +
-      `<linearGradient id="gradBar" x1="0" y1="0" x2="1" y2="0">` +
-      `<stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#22d3ee"/>` +
-      `</linearGradient>` +
-      `<linearGradient id="gradTitle" x1="0" y1="0" x2="1" y2="0">` +
-      `<stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#22d3ee"/>` +
-      `</linearGradient>` +
-      `</defs>` +
-      `<rect width="${w}" height="${h}" fill="url(#bg)"/>` +
-      `<text x="${padding}" y="80" font-size="40" font-weight="800" fill="#f4f4ff">SoundMatch · 분석 결과</text>` +
-      `<text x="${padding}" y="118" font-size="22" font-weight="600" fill="url(#gradTitle)">${filename}</text>` +
-      `<text x="${padding}" y="148" font-size="14" fill="rgba(244,244,255,0.6)">${subtitle}</text>` +
+      `<rect width="${w}" height="${h}" fill="#101010"/>` +
+      `<g transform="translate(${padding}, 28) scale(0.62)">` +
+      `<path fill="#efefef" d="M9 18c8-7 15-6 23-1 8 5 14 5 23-3v10c-9 8-17 8-25 3-8-5-13-5-21 2Z"/>` +
+      `<path fill="#b9ee84" d="M9 40c7-6 14-5 22 0 9 6 15 6 24-2v10c-9 8-17 8-26 2-7-5-13-5-20 1Z"/>` +
+      `</g>` +
+      `<text x="${padding + 48}" y="68" font-size="30" font-weight="700" fill="#efefef">soundmatch</text>` +
+      `<text x="${padding}" y="118" font-size="22" font-weight="600" fill="#b9ee84">${filename}</text>` +
+      `<text x="${padding}" y="148" font-size="14" fill="rgba(239,239,239,0.62)">${subtitle}</text>` +
       tagsXml +
       rowsXml +
-      `<text x="${w - padding}" y="${h - 16}" text-anchor="end" font-size="12" fill="rgba(244,244,255,0.4)">soundmatch · easygap/music_similarity</text>` +
+      `<text x="${w - padding}" y="${h - 16}" text-anchor="end" font-size="12" fill="rgba(239,239,239,0.42)">soundmatch · easygap/music_similarity</text>` +
       `</svg>`
     );
   }

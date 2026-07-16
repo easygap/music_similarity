@@ -220,6 +220,8 @@ class PreviewHandler(SimpleHTTPRequestHandler):
     # 빠뜨리므로, 확장자 기준으로 하위 디렉토리를 자동 탐색한다.
     STATIC_ALIASES = {
         "/favicon.svg": "/assets/favicon.svg",
+        "/favicon-32.png": "/assets/favicon-32.png",
+        "/favicon.ico": "/assets/favicon.ico",
         "/og-image.svg": "/assets/og-image.svg",
         "/app-icon-192.png": "/assets/app-icon-192.png",
         "/app-icon-512.png": "/assets/app-icon-512.png",

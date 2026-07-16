@@ -451,6 +451,8 @@ def test_service_worker_shell_includes_subpages():
         "/favorites.js",
         "/catalog.js",
         "/compare.js",
+        "/favicon-32.png",
+        "/favicon.ico",
         "/app-icon-192.png",
         "/app-icon-512.png",
         "/maskable-icon-512.png",
@@ -509,8 +511,8 @@ def test_service_worker_version_string():
     match = re.search(r'VERSION\s*=\s*"soundmatch-v(\d+)"', text)
     assert match, "sw.js 에서 VERSION 상수를 찾을 수 없습니다."
     version_num = int(match.group(1))
-    # 기존 워커의 stale 응답을 우회하는 프리캐시 변경까지 담은 v14 이상이어야 한다.
-    assert version_num >= 14, "SW VERSION 이 프리캐시 갱신 방식 변경에 맞춰 bump 되지 않았습니다."
+    # 최종 BI 자산 묶음이 추가된 v16 이상이어야 설치 환경에서 중간본 아이콘이 남지 않는다.
+    assert version_num >= 16, "SW VERSION 이 BI 자산 변경에 맞춰 bump 되지 않았습니다."
 
 
 def test_service_worker_precache_bypasses_previous_worker_cache():
@@ -529,6 +531,52 @@ def test_shell_pages_expose_pwa_manifest_and_touch_icon(page: str):
     text = _read(page)
     assert '<link rel="manifest" href="/manifest.webmanifest" />' in text
     assert '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />' in text
+
+
+@pytest.mark.parametrize(
+    "page",
+    ["index.html", "catalog.html", "compare.html", "privacy.html", "terms.html", "offline.html", "404.html"],
+)
+def test_shell_pages_expose_complete_favicon_set(page: str):
+    """모든 진입 페이지가 SVG, PNG, ICO 파비콘 폴백을 함께 노출해야 한다."""
+    text = _read(page)
+    assert '<link rel="icon" type="image/svg+xml" href="/favicon.svg" />' in text
+    assert '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />' in text
+    assert '<link rel="shortcut icon" href="/favicon.ico" />' in text
+
+
+def test_brand_identity_uses_nearly_equal_mark_and_flat_palette():
+    """BI가 예전 음표 그라데이션으로 되돌아가지 않도록 핵심 규칙을 고정한다."""
+    favicon = _read("assets/favicon.svg")
+    css = _read("css/style.css")
+    index = _read("index.html")
+    subpages = _read("catalog.html") + _read("compare.html")
+
+    for color in ("#101010", "#efefef", "#b9ee84"):
+        assert color in favicon
+        assert color in css
+    assert "linearGradient" not in favicon
+    assert "<circle" not in favicon
+    assert favicon.count("<path") == 2
+    for legacy_color in ("#7c5cff", "#22d3ee", "#d3c8ff", "#4c2bd6", "#6a4ce0"):
+        assert legacy_color not in css + subpages
+    assert ".orb-1" not in css
+    assert '<svg class="brand-mark" viewBox="0 0 56 48"' in index
+    assert 'class="brand-mark-upper"' in index
+    assert 'class="brand-mark-lower"' in index
+    assert ".brand-mark-upper { fill: var(--text); }" in css
+    assert ".brand-mark-lower { fill: var(--brand-green); }" in css
+    assert '<span class="brand-wordmark">soundmatch</span>' in index
+
+
+def test_sample_action_uses_vector_icon_instead_of_emoji():
+    """샘플 CTA는 플랫폼마다 달라지는 이모지 대신 고정된 벡터 아이콘을 사용한다."""
+    index = _read("index.html")
+    i18n = _read("js/i18n.js")
+
+    assert 'class="upload-sample-icon"' in index
+    assert "🎧" not in index
+    assert "🎧" not in i18n
 
 
 def test_render_mini_metrics_uses_i18n_labels():

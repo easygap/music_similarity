@@ -1,12 +1,16 @@
 <div align="center">
 
-# 🎵 SoundMatch
+<img src="frontend/assets/favicon.svg" width="72" height="72" alt="SoundMatch 로고">
+
+# SoundMatch
 
 **음악을 올리면 가장 닮은 곡을 찾아주고, "왜 닮았는지"까지 설명해주는 오디오 유사도 분석 서비스**
 
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.14-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
+
+[BI 가이드](docs/brand/README.md)
 
 </div>
 
@@ -23,7 +27,7 @@
 미리 계산해둔 **781곡 카탈로그**와 **코사인 유사도**로 비교해서 — 가장 닮은 곡과 그 이유를 돌려준다.
 원작의 분석 알고리즘은 그대로 두고, 그 위에 FastAPI 서버 · SPA 프론트 · Docker · CI 를 새로 얹었다.
 
-> 🔒 업로드한 음원은 분석이 끝나는 즉시 지운다. 어디에도 저장하거나 학습에 쓰지 않는다.
+> **개인정보 보호:** 업로드한 음원은 분석이 끝나는 즉시 지운다. 어디에도 저장하거나 학습에 쓰지 않는다.
 
 <br>
 
@@ -34,7 +38,7 @@
 가장 공들인 부분이다. 순위만 툭 던지는 대신, 업로드한 곡과 1위 매칭의 오디오 지문을 레이더 차트로 겹쳐 보여주고 —
 "템포·리듬이 96% 닮았다"는 식으로 **어디가 왜 닮았는지**를 한국어 문장으로 풀어준다.
 
-준비된 음원이 없어도 괜찮다. 메인 화면의 **🎧 샘플로 분석해보기** 한 번이면 결과 화면을 그대로 둘러볼 수 있다.
+준비된 음원이 없어도 괜찮다. 메인 화면의 **샘플로 분석해보기** 한 번이면 결과 화면을 그대로 둘러볼 수 있다.
 
 <br>
 
@@ -74,9 +78,9 @@
 
 <table>
 <tr>
-<td align="center" width="33%"><h3>1️⃣ 특성 추출</h3></td>
-<td align="center" width="33%"><h3>2️⃣ 유사도 계산</h3></td>
-<td align="center" width="33%"><h3>3️⃣ 이유 설명</h3></td>
+<td align="center" width="33%"><h3>1. 특성 추출</h3></td>
+<td align="center" width="33%"><h3>2. 유사도 계산</h3></td>
+<td align="center" width="33%"><h3>3. 이유 설명</h3></td>
 </tr>
 <tr>
 <td valign="top">
@@ -137,7 +141,7 @@ Docker 가 편하면 `docker compose up --build` 한 줄이면 된다.
 
 ```bash
 python -m backend.cli version
-# v1.8.20 · 2026-07-15 · <git-sha>
+# v1.8.21 · 2026-07-16 · <git-sha>
 
 python -m backend.cli status --url https://your-soundmatch.example --ready
 ```
