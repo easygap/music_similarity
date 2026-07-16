@@ -82,12 +82,30 @@ def test_readme_documents_single_worker_default():
     assert "외부 상태 저장소" in text
 
 
-def test_requirements_keep_merged_dependabot_versions():
-    """Dependabot PR 병합 충돌로 이미 올린 핀이 되돌아가지 않아야 한다."""
+def test_requirements_keep_validated_release_versions():
+    """검증을 마친 출시 의존성 묶음이 병합 과정에서 되돌아가지 않아야 한다."""
     runtime = _read("requirements.txt")
     dev = _read("requirements-dev.txt")
 
-    assert "uvicorn[standard]==0.49.0" in runtime
-    assert "python-multipart==0.0.32" in runtime
-    assert "pytest==9.0.3" in dev
-    assert "pytest-asyncio==1.3.0" in dev
+    for requirement in (
+        "fastapi==0.139.0",
+        "starlette==1.3.1",
+        "uvicorn[standard]==0.51.0",
+        "python-multipart==0.0.32",
+        "numpy==2.4.6",
+        "scikit-learn==1.9.0",
+        "soundfile==0.14.0",
+        "setuptools==83.0.0",
+    ):
+        assert requirement in runtime
+
+    for requirement in (
+        "pytest==9.1.1",
+        "pytest-asyncio==1.4.0",
+        "pytest-cov==7.1.0",
+        "httpx2==2.7.0",
+        "ruff==0.15.21",
+    ):
+        assert requirement in dev
+
+    assert "\nhttpx==" not in dev
