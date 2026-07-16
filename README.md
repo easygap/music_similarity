@@ -141,7 +141,7 @@ Docker 가 편하면 `docker compose up --build` 한 줄이면 된다.
 
 ```bash
 python -m backend.cli version
-# v1.8.21 · 2026-07-16 · <git-sha>
+# v1.8.22 · 2026-07-16 · <git-sha>
 
 python -m backend.cli status --url https://your-soundmatch.example --ready
 ```
