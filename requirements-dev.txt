@@ -4,4 +4,4 @@ pytest-asyncio==1.4.0
 pytest-cov==7.1.0
 # Starlette 1.x TestClient가 우선 사용하는 유지보수 중인 HTTP 클라이언트다.
 httpx2==2.7.0
-ruff==0.15.21
+ruff==0.15.22
