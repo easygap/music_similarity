@@ -1,33 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
-  <rect width="1200" height="630" fill="#101010"/>
+  <rect width="1200" height="630" fill="#F3F1EC"/>
 
-  <g transform="translate(76 58)">
-    <g transform="scale(.7)">
-      <path fill="#efefef" d="M9 18c8-7 15-6 23-1 8 5 14 5 23-3v10c-9 8-17 8-25 3-8-5-13-5-21 2Z"/>
-      <path fill="#b9ee84" d="M9 40c7-6 14-5 22 0 9 6 15 6 24-2v10c-9 8-17 8-26 2-7-5-13-5-20 1Z"/>
+  <!-- 상단 괘선 + 워드마크 -->
+  <line x1="72" y1="88" x2="1128" y2="88" stroke="#121110" stroke-opacity=".3"/>
+  <g transform="translate(72 44)">
+    <g transform="scale(.5)" fill="none" stroke="#E8452B" stroke-width="6" stroke-linecap="round">
+      <path d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8"/>
+      <path d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6"/>
     </g>
-    <text x="56" y="33" fill="#efefef" font-family="Pretendard, Inter, sans-serif" font-size="30" font-weight="700">soundmatch</text>
+    <text x="42" y="19" fill="#121110" font-family="Pretendard Variable, Pretendard, Apple SD Gothic Neo, sans-serif" font-size="17" font-weight="600" letter-spacing="-.2">soundmatch</text>
+  </g>
+  <text x="1128" y="63" text-anchor="end" fill="#121110" fill-opacity=".54" font-family="IBM Plex Mono, Menlo, monospace" font-size="14">음악 유사도 분석 · 카탈로그 781곡</text>
+
+  <!-- 헤드라인 -->
+  <g transform="translate(72 200)" font-family="Pretendard Variable, Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="500" letter-spacing="-3">
+    <text x="0" y="0" fill="#121110" font-size="78">이 노래와 닮은 곡,</text>
+    <text x="0" y="92" fill="#BD3419" font-size="78">소리로 찾아드려요.</text>
+  </g>
+  <text x="72" y="372" fill="#121110" fill-opacity=".68" font-family="Pretendard Variable, Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24">음악 파일 하나로 58가지 소리 특성을 뽑아 가장 닮은 곡과 그 이유를 찾아 드립니다.</text>
+
+  <!-- 소리 지도 축약판 — 점 구름과 기준 곡, 닮은 곡 -->
+  <g transform="translate(840 120)">
+    <rect x="0" y="0" width="288" height="288" rx="18" fill="#F3F1EC" stroke="#121110" stroke-opacity=".3"/>
+    <line x1="144" y1="0" x2="144" y2="288" stroke="#121110" stroke-opacity=".14"/>
+    <line x1="0" y1="144" x2="288" y2="144" stroke="#121110" stroke-opacity=".14"/>
+    <g fill="#121110" fill-opacity=".26">
+      <circle cx="42" cy="66" r="3"/><circle cx="70" cy="48" r="3"/><circle cx="96" cy="84" r="3"/><circle cx="58" cy="110" r="3"/>
+      <circle cx="120" cy="40" r="3"/><circle cx="150" cy="70" r="3"/><circle cx="180" cy="52" r="3"/><circle cx="210" cy="90" r="3"/>
+      <circle cx="240" cy="64" r="3"/><circle cx="256" cy="118" r="3"/><circle cx="232" cy="150" r="3"/><circle cx="196" cy="130" r="3"/>
+      <circle cx="84" cy="150" r="3"/><circle cx="40" cy="170" r="3"/><circle cx="66" cy="204" r="3"/><circle cx="104" cy="230" r="3"/>
+      <circle cx="140" cy="250" r="3"/><circle cx="176" cy="236" r="3"/><circle cx="212" cy="212" r="3"/><circle cx="248" cy="240" r="3"/>
+      <circle cx="30" cy="240" r="3"/><circle cx="130" cy="190" r="3"/><circle cx="160" cy="110" r="3"/><circle cx="222" cy="176" r="3"/>
+      <circle cx="112" cy="122" r="3"/><circle cx="188" cy="168" r="3"/><circle cx="56" cy="30" r="3"/><circle cx="262" cy="34" r="3"/>
+    </g>
+    <g stroke="#E8452B" stroke-opacity=".75">
+      <line x1="150" y1="158" x2="132" y2="132"/><line x1="150" y1="158" x2="178" y2="146"/><line x1="150" y1="158" x2="166" y2="190"/>
+    </g>
+    <g fill="#E8452B" stroke="#F3F1EC" stroke-width="2">
+      <circle cx="132" cy="132" r="5.5"/><circle cx="178" cy="146" r="5.5"/><circle cx="166" cy="190" r="5.5"/>
+    </g>
+    <circle cx="150" cy="158" r="7" fill="#121110" stroke="#F3F1EC" stroke-width="2"/>
+    <text x="16" y="24" fill="#121110" font-family="IBM Plex Mono, Menlo, monospace" font-size="12" font-weight="500">소리 지도</text>
+    <text x="16" y="42" fill="#121110" fill-opacity=".54" font-family="IBM Plex Mono, Menlo, monospace" font-size="11">781곡 · 특성 57개 → PCA 3축</text>
   </g>
 
-  <g transform="translate(76 210)" font-family="Pretendard, Inter, sans-serif">
-    <text x="0" y="0" fill="#efefef" font-size="68" font-weight="800">같지는 않아도</text>
-    <text x="0" y="84" fill="#b9ee84" font-size="68" font-weight="800">닮은 소리는 있다.</text>
-    <text x="0" y="154" fill="#efefef" fill-opacity=".68" font-size="23" font-weight="500">음원을 올리면 가장 닮은 곡과 그 이유를 보여줍니다.</text>
-  </g>
-
-  <g transform="translate(76 520)" font-family="JetBrains Mono, monospace" font-size="15" font-weight="500">
-    <text x="0" y="0" fill="#b9e0fd">MUSIC SIMILARITY</text>
-    <text x="192" y="0" fill="#efefef" fill-opacity=".46">58 FEATURES</text>
-    <text x="334" y="0" fill="#efefef" fill-opacity=".46">WHY IT MATCHES</text>
-  </g>
-
-  <g transform="translate(760 74)">
-    <rect width="364" height="482" rx="18" fill="#efefef"/>
-    <path fill="#101010" d="M44 156c70-61 132-52 202-9 70 44 123 44 202-26v88c-79 70-149 70-219 26-70-44-114-44-185 17Z" transform="scale(.72) translate(22 25)"/>
-    <path fill="#b9ee84" d="M44 326c61-53 123-44 193 0 79 53 132 53 211-18v88c-79 70-149 70-228 18-61-44-114-44-176 9Z" transform="scale(.72) translate(22 25)"/>
-    <line x1="34" y1="390" x2="330" y2="390" stroke="#101010" stroke-opacity=".14"/>
-    <text x="34" y="430" fill="#101010" font-family="JetBrains Mono, monospace" font-size="13" font-weight="600">NOT THE SAME.</text>
-    <text x="34" y="452" fill="#101010" font-family="JetBrains Mono, monospace" font-size="13" font-weight="600">CLOSE ENOUGH.</text>
-    <circle cx="324" cy="438" r="8" fill="#b9ee84"/>
+  <!-- 하단 스펙 라인 -->
+  <line x1="72" y1="540" x2="1128" y2="540" stroke="#121110" stroke-opacity=".3"/>
+  <g transform="translate(72 574)" font-family="IBM Plex Mono, Menlo, monospace" font-size="15" fill="#121110" fill-opacity=".54">
+    <text x="0" y="0">58가지 특성</text>
+    <text x="180" y="0">StandardScaler → cosine similarity</text>
+    <text x="560" y="0">닮은 이유까지 설명</text>
+    <text x="1056" y="0" text-anchor="end">업로드 즉시 삭제</text>
   </g>
 </svg>

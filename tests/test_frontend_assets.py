@@ -121,13 +121,91 @@ def test_mobile_touch_targets_have_minimum_hit_area():
 
 
 def test_hero_title_keeps_key_phrase_together():
-    """히어로 핵심 문구가 '곡' 한 글자만 따로 떨어지지 않게 묶여 있어야 한다."""
+    """히어로의 실제 제안인 '소리로 찾아드려요'가 한 덩어리로 읽혀야 한다."""
     html = _read("index.html")
     i18n = _read("js/i18n.js")
-    assert '<span class="grad">가장 닮은 곡을</span>' in html
-    assert '<span class=\\"grad\\">가장 닮은 곡을</span>' in i18n
-    assert '<span class=\\"grad\\">most similar to yours</span>' in i18n
+    assert '<span class="grad">소리로 찾아드려요.</span>' in html
+    assert '<span class=\\"grad\\">소리로 찾아드려요.</span>' in i18n
+    assert '<span class=\\"grad\\">sound like this one.</span>' in i18n
     assert "white-space: nowrap;" in _read("css/style.css")
+
+
+def test_home_content_structure_prioritizes_discovery_over_technical_charts():
+    """결과 곡과 재탐색 흐름이 기술 차트·구현 설명보다 먼저 보여야 한다."""
+    html = _read("index.html")
+
+    hit_list = html.index('id="hit-list"')
+    spectrogram = html.index('id="spectrogram-card"')
+    radar = html.index('id="radar-card"')
+    assert hit_list < spectrogram < radar
+
+    how = html.index('id="how"')
+    showcase = html.index('id="showcase"')
+    catalog = html.index('id="catalog-preview"')
+    method = html.index('id="features"')
+    assert how < showcase < catalog < method
+    assert html.count('id="how"') == 1
+    assert 'id="experience"' not in html
+    assert '<details class="method-note">' in html
+
+
+def test_home_catalog_preview_is_an_actionable_seed_flow():
+    """메인 카탈로그 카드는 구경용 div가 아니라 즉시 재탐색하는 버튼이어야 한다."""
+    app = _read("js/app.js")
+
+    assert '<button type="button" class="catalog-chip" data-catalog-seed' in app
+    assert 'catalogPreviewHost.addEventListener("click"' in app
+    assert 'event.target.closest("[data-catalog-seed]")' in app
+    assert "seedFromHit({ title, artist }).finally(" in app
+    assert 'trigger.setAttribute("aria-busy", "true")' in app
+    assert 'trigger.setAttribute("aria-busy", "false")' in app
+    assert 't("info.catalogSeedAria"' in app
+    assert "catalogPreviewRequestId" in app
+
+
+def test_catalog_preview_keeps_the_same_tracks_when_language_changes():
+    """언어만 바꿨을 때 추천 출발곡을 다시 요청해 사용 맥락을 끊으면 안 된다."""
+    app = _read("js/app.js")
+
+    assert "let catalogPreviewItems = null" in app
+    assert "function renderCatalogPreview(" in app
+    assert 'window.addEventListener("i18n:change", () => renderCatalogPreview())' in app
+    assert 'window.addEventListener("i18n:change", () => loadCatalogPreview())' not in app
+
+
+def test_open_results_are_fully_relocalized_without_refetching():
+    """열린 결과의 시드·태그·이유·접근성 문구가 선택 언어로 다시 그려져야 한다."""
+    html = _read("index.html")
+    app = _read("js/app.js")
+    i18n = _read("js/i18n.js")
+
+    for helper in (
+        "localizeResultTag",
+        "localizeReasonSummary",
+        "localizeReasonGroupLabel",
+        "localizeReasonGroupSummary",
+        "localizeReasonDetail",
+        "resultSourceLabel",
+    ):
+        assert f"function {helper}(" in app
+
+    assert 'window.i18n.apply(li)' in app
+    assert 't("results.subtitle",' in app
+    assert 'source: "catalog"' in app
+    assert 'filename: data.name || `${data.title} - ${data.artist}`' in app
+    assert 'filename: t("results.seedHeader"' not in app
+    assert 'data-i18n-attr="aria-label:results.miniMetricsAria"' in html
+    assert 'data-i18n-attr="aria-label:results.share"' in html
+
+    for marker in (
+        "reasonGroups",
+        "reasonFeatures",
+        "reasonTopSummary",
+        "reasonDetailCompare",
+        "miniMetricsAria",
+        "Compared against ${catalogSize} tracks",
+    ):
+        assert marker in i18n
 
 
 def test_index_share_meta_is_runtime_rewritable():
@@ -451,6 +529,8 @@ def test_service_worker_shell_includes_subpages():
         "/favorites.js",
         "/catalog.js",
         "/compare.js",
+        "/landing.js",
+        "/landing-data.js",
         "/favicon-32.png",
         "/favicon.ico",
         "/app-icon-192.png",
@@ -511,8 +591,8 @@ def test_service_worker_version_string():
     match = re.search(r'VERSION\s*=\s*"soundmatch-v(\d+)"', text)
     assert match, "sw.js 에서 VERSION 상수를 찾을 수 없습니다."
     version_num = int(match.group(1))
-    # 최종 BI 자산 묶음이 추가된 v16 이상이어야 설치 환경에서 중간본 아이콘이 남지 않는다.
-    assert version_num >= 16, "SW VERSION 이 BI 자산 변경에 맞춰 bump 되지 않았습니다."
+    # 단색 공명 BI 자산이 추가된 v17 이상이어야 설치 환경에 이전 아이콘이 남지 않는다.
+    assert version_num >= 17, "SW VERSION 이 BI 자산 변경에 맞춰 bump 되지 않았습니다."
 
 
 def test_service_worker_precache_bypasses_previous_worker_cache():
@@ -545,28 +625,87 @@ def test_shell_pages_expose_complete_favicon_set(page: str):
     assert '<link rel="shortcut icon" href="/favicon.ico" />' in text
 
 
-def test_brand_identity_uses_nearly_equal_mark_and_flat_palette():
-    """BI가 예전 음표 그라데이션으로 되돌아가지 않도록 핵심 규칙을 고정한다."""
+def test_brand_identity_uses_paper_ink_coral_system():
+    """BI가 종이·잉크·코랄 세 색 체계와 단색 공명 마크를 유지하는지 확인한다.
+
+    이전 팔레트(플럼/페리윙클/보라 그라데이션)나 유리 효과가 슬쩍 되살아나면
+    디자인 전체가 다시 흔들리므로 정적으로 못 박아 둔다.
+    """
     favicon = _read("assets/favicon.svg")
     css = _read("css/style.css")
     index = _read("index.html")
     subpages = _read("catalog.html") + _read("compare.html")
+    og_image = _read("assets/og-image.svg")
+    brand_source = (REPO_ROOT / "docs" / "brand" / "brand-mark.svg").read_text(encoding="utf-8")
 
-    for color in ("#101010", "#efefef", "#b9ee84"):
-        assert color in favicon
-        assert color in css
+    # 파비콘/마크 원본은 시그널 코랄 단색 두 궤적.
+    assert "#ff665a" in favicon.lower()
+    assert "#f7f3ee" in favicon.lower()
     assert "linearGradient" not in favicon
     assert "<circle" not in favicon
+    assert 'fill="none"' in favicon
+    assert 'stroke-linecap="round"' in favicon
     assert favicon.count("<path") == 2
-    for legacy_color in ("#7c5cff", "#22d3ee", "#d3c8ff", "#4c2bd6", "#6a4ce0"):
-        assert legacy_color not in css + subpages
+    assert brand_source.count("<path") == 2
+
+    # 화면 토큰: 종이 #f3f1ec · 잉크 #121110 · 눌린 코랄 #e8452b (라이트) / 시그널 코랄 #ff665a (다크).
+    for color in ("#f3f1ec", "#121110", "#e8452b", "#ff665a"):
+        assert color in css.lower(), f"style.css 에 {color} 토큰이 없습니다."
+    assert "--series-query" in css and "--series-match" in css and "--series-other" in css
+    assert "backdrop-filter" not in css, "유리 효과(backdrop-filter)는 쓰지 않는다."
+    assert "linear-gradient" not in css.split("@media print")[0], "화면 스타일에 그라데이션을 쓰지 않는다."
+
+    corpus = (
+        favicon
+        + css
+        + subpages
+        + og_image
+        + index
+        + _read("privacy.html")
+        + _read("terms.html")
+        + _read("offline.html")
+        + _read("404.html")
+        + _read("js/app.js")
+        + _read("js/landing.js")
+        + _read("js/visualizers.js")
+        + _read("manifest.webmanifest")
+    ).lower()
+    for legacy_color in (
+        "#241a24",
+        "#7479d8",
+        "#a8adff",
+        "#e6a532",
+        "#101010",
+        "#efefef",
+        "#b9ee84",
+        "#b9e0fd",
+        "#faed27",
+        "#7c5cff",
+        "#22d3ee",
+        "#d3c8ff",
+        "#4c2bd6",
+        "#6a4ce0",
+    ):
+        assert legacy_color not in corpus, f"이전 팔레트 {legacy_color} 가 남아 있습니다."
     assert ".orb-1" not in css
-    assert '<svg class="brand-mark" viewBox="0 0 56 48"' in index
-    assert 'class="brand-mark-upper"' in index
-    assert 'class="brand-mark-lower"' in index
-    assert ".brand-mark-upper { fill: var(--text); }" in css
-    assert ".brand-mark-lower { fill: var(--brand-green); }" in css
+    assert '<svg class="brand-mark" viewBox="0 0 64 48"' in index
+    assert index.count('class="brand-mark-trace"') == 2
+    assert ".brand-mark-trace" in css
+    assert "stroke: var(--brand-coral);" in css
     assert '<span class="brand-wordmark">soundmatch</span>' in index
+
+
+@pytest.mark.parametrize(
+    "page",
+    ["index.html", "catalog.html", "compare.html", "privacy.html", "terms.html"],
+)
+def test_shell_pages_use_current_resonance_mark(page: str):
+    """주요 진입 페이지는 모두 같은 공명 마크와 브라우저 테마 색을 사용한다."""
+    text = _read(page)
+
+    assert '<meta name="theme-color" content="#F3F1EC" />' in text
+    assert '<svg class="brand-mark" viewBox="0 0 64 48"' in text
+    assert text.count('class="brand-mark-trace"') == 2
 
 
 def test_sample_action_uses_vector_icon_instead_of_emoji():
@@ -850,11 +989,26 @@ def test_favorites_emits_storage_full_event_on_quota_failure():
 
 
 def test_seed_from_hit_failure_restores_previous_results():
-    """seedFromHit 가 실패해도 이전 결과 화면이 그대로 남아야 한다."""
+    """시드 탐색 실패·뒤로가기에서 이전 결과와 업로드 음원을 함께 복원한다."""
     text = _read("js/app.js")
-    # catch 블록이 _seedPrev 가 있을 때 renderResults 로 복원하고 토스트만 띄움.
-    assert "renderResults(_seedPrev" in text
+    assert "async function restoreSeedPrevious()" in text
+    assert "const prevFile = _seedPrevFile" in text
+    assert "await setAudioPreview(prevFile)" in text
+    assert "await restoreSeedPrevious()" in text
     assert 't("results.seedFailedToast")' in text
+
+
+def test_seed_flows_share_abort_and_shortcut_safety_guards():
+    """여러 분석 진입점의 응답 경쟁과 native 버튼 키 충돌을 막아야 한다."""
+    text = _read("js/app.js")
+
+    assert 'fetch(\n        `/api/analyze/by-catalog?top_n=${topN}&name=${encodeURIComponent(name)}`,' in text
+    assert "{ signal: controller.signal }" in text
+    assert "if (_analysisAbortController !== controller) return" in text
+    assert "spectrogramHost.innerHTML = \"\"" in text
+    assert "resultTagsEl.classList.add(\"hidden\")" in text
+    assert 'target.closest("button, a, summary, [role=\'button\']")' in text
+    assert '[" ", "Enter", "ArrowDown", "ArrowUp"].includes(e.key)' in text
 
 
 def test_app_js_wires_favorites_export_button():
@@ -1112,3 +1266,84 @@ def test_compare_empty_state_has_next_step_links():
     assert 'href="/"' in text
     assert 'href="/catalog"' in text
     assert "compare-empty-action primary" in text
+
+
+# --- 2026-09 랜딩 개편: 소리 지도 · 실제 결과 예시 -----------------------------
+
+def _landing_data() -> dict:
+    import json
+
+    text = _read("js/landing-data.js")
+    assert text.startswith("//"), "landing-data.js 는 생성 파일 안내 주석으로 시작해야 한다."
+    payload = text.split("window.SoundMatchLanding = ", 1)[1].rstrip().rstrip(";")
+    return json.loads(payload)
+
+
+def test_landing_data_matches_catalog_and_has_real_showcase():
+    """소리 지도 좌표와 예시 3쌍이 실제 카탈로그와 같은 규모·형식이어야 한다."""
+    data = _landing_data()
+    assert data["catalogSize"] == len(data["names"]) == len(data["points"]) == 781
+    assert data["featureCount"] == 57
+    assert all(len(p) == 3 and all(isinstance(v, int) and -1000 <= v <= 1000 for v in p) for p in data["points"])
+    assert len(data["showcase"]) == 3
+    for entry in data["showcase"]:
+        assert data["names"][entry["index"]] == f"{entry['title']} - {entry['artist']}"
+        assert len(entry["hits"]) == 3
+        top = entry["hits"][0]
+        # 동일 음원(100%)이나 너무 먼 곡은 예시로 쓰지 않는다.
+        assert 80.0 <= top["similarity_percent"] <= 99.0
+        assert top["reason"]["groups"], "1위 곡에는 닮은 이유 그룹이 있어야 한다."
+        assert set(top["match_summary"]) == {
+            "tempo_bpm", "energy_rms", "brightness", "noisiness", "harmony_ratio", "chroma",
+        }
+
+
+def test_index_wires_sound_map_and_showcase():
+    """메인 화면은 소리 지도 캔버스와 예시 목록을 갖고, 스크립트 순서가 맞아야 한다."""
+    html = _read("index.html")
+    for marker in (
+        'id="sound-map"',
+        'id="map-frame"',
+        'id="map-label"',
+        'id="showcase-list"',
+        'id="story-strip"',
+        'id="story-reasons"',
+        'data-story-step="1"',
+        'data-story-step="3"',
+        'class="stage-visual"',
+        '<i class="meter" id="meter"',
+    ):
+        assert marker in html, f"index.html 에 '{marker}' 가 없습니다."
+    data_pos = html.index('src="/landing-data.js"')
+    app_pos = html.index('src="/app.js"')
+    landing_pos = html.index('src="/landing.js"')
+    assert data_pos < app_pos < landing_pos, "landing-data → app → landing 순서로 로드해야 훅이 잡힌다."
+
+    app = _read("js/app.js")
+    assert "window.SoundMatchApp = {" in app
+    assert 'new CustomEvent("soundmatch:results"' in app
+    landing = _read("js/landing.js")
+    for marker in (
+        'window.addEventListener("soundmatch:results"',
+        "requestAnimationFrame",
+        "IntersectionObserver",
+        "prefers-reduced-motion",
+        "data-showcase-seed",
+    ):
+        assert marker in landing, f"landing.js 에 '{marker}' 가 없습니다."
+
+
+def test_landing_copy_is_written_in_natural_korean():
+    """대표 문구를 고정해 번역투 문안이 되돌아오지 않게 한다."""
+    i18n = _read("js/i18n.js")
+    for phrase in (
+        "이 노래와 닮은 곡,",
+        "소리로 찾아드려요.",
+        "파일을 여기에 끌어다 놓거나 눌러서 고르세요",
+        "소리를 숫자로 바꾸면 닮음도 잴 수 있어요",
+        "카탈로그 안에서 실제로 찾아낸 닮은 곡",
+    ):
+        assert phrase in i18n, f"i18n.js 에 '{phrase}' 가 없습니다."
+    for stale in ("소리로 이어지는 음악 탐색", "발견은 결과에서 시작됩니다", "Language: English"):
+        assert stale not in i18n, f"예전 문구 '{stale}' 가 남아 있습니다."
+

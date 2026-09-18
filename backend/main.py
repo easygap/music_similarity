@@ -1903,6 +1903,15 @@ if FRONTEND_DIR.exists():
         # 서브페이지(카탈로그/비교 등) 공용 네비게이션 배선. HTML 은 루트 경로로
         # 부르지만 실제 파일은 js/ 아래에 있어 다른 스크립트들과 같은 방식으로 매핑.
         return _cached_file_response(FRONTEND_DIR / "js" / "site-nav.js")
+    # 메인 화면 전용: 소리 지도·실제 결과 예시. landing-data.js 는
+    # scripts/build_landing_data.py 가 만든 정적 데이터라 오래 캐시해도 된다.
+    @app.get("/landing.js", include_in_schema=False)
+    def landing_js():
+        return _cached_file_response(FRONTEND_DIR / "js" / "landing.js")
+
+    @app.get("/landing-data.js", include_in_schema=False)
+    def landing_data_js():
+        return _cached_file_response(FRONTEND_DIR / "js" / "landing-data.js")
 
     @app.get("/catalog.js", include_in_schema=False)
     def catalog_js():

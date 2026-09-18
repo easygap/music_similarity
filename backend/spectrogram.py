@@ -68,20 +68,23 @@ def _downsample_2d(arr: np.ndarray, h: int, w: int) -> np.ndarray:
 
 
 def _color_for(value: float) -> str:
-    """0..1 정규화된 에너지를 브랜드의 업로드 곡 색상으로 매핑."""
+    """0..1 정규화된 에너지를 종이 → 코랄 → 잉크 순서로 매핑한다.
+
+    화면의 다른 차트와 같은 세 색만 쓴다. 에너지가 약한 곳은 종이색에 가깝게
+    물러나고, 센 곳일수록 코랄을 지나 잉크로 짙어진다.
+    """
     v = max(0.0, min(1.0, float(value)))
-    # 두 색 사이 선형 보간.
-    # Black(#101010) → muted sky(#3d7694) → Compare Sky(#b9e0fd).
+    # Paper(#f3f1ec) → Coral(#e8452b) → Ink(#121110). 두 구간 선형 보간.
     if v < 0.5:
         t = v * 2
-        r = int(0x10 + (0x3D - 0x10) * t)
-        g = int(0x10 + (0x76 - 0x10) * t)
-        b = int(0x10 + (0x94 - 0x10) * t)
+        r = int(0xF3 + (0xE8 - 0xF3) * t)
+        g = int(0xF1 + (0x45 - 0xF1) * t)
+        b = int(0xEC + (0x2B - 0xEC) * t)
     else:
         t = (v - 0.5) * 2
-        r = int(0x3D + (0xB9 - 0x3D) * t)
-        g = int(0x76 + (0xE0 - 0x76) * t)
-        b = int(0x94 + (0xFD - 0x94) * t)
+        r = int(0xE8 + (0x12 - 0xE8) * t)
+        g = int(0x45 + (0x11 - 0x45) * t)
+        b = int(0x2B + (0x10 - 0x2B) * t)
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
@@ -96,7 +99,7 @@ def _render_svg(grid: np.ndarray) -> str:
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {_PIXEL_W} {_PIXEL_H}" '
         f'role="img" aria-label="업로드한 곡의 멜 스펙트로그램">',
         # 배경
-        f'<rect width="{_PIXEL_W}" height="{_PIXEL_H}" fill="#101010"/>',
+        f'<rect width="{_PIXEL_W}" height="{_PIXEL_H}" fill="#f3f1ec"/>',
     ]
 
     # 윗줄(높은 주파수)을 위로, 아랫줄(낮은 주파수)을 아래로 그리고 싶으므로 뒤집어 그린다.

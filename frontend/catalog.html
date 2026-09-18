@@ -1,22 +1,27 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="dark">
+<html lang="ko" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>카탈로그 둘러보기 · SoundMatch</title>
   <meta name="description" content="SoundMatch 분석의 비교 대상이 되는 곡 카탈로그를 검색해볼 수 있습니다." />
-  <meta name="theme-color" content="#101010" />
+  <meta name="theme-color" content="#F3F1EC" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" />
   <link rel="stylesheet" href="/style.css" />
   <script src="/theme-init.js"></script>
   <style>
     .cat-wrap { max-width: 1100px; margin: 0 auto; padding: 36px 24px 72px; }
     .cat-head { margin-bottom: 24px; }
-    .cat-head h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.02em; }
+    .cat-head h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.03em; }
     .cat-head p { margin: 0; color: var(--text-mute); }
     .cat-search-row {
       display: flex;
@@ -32,7 +37,7 @@
     }
     .cat-search {
       width: 100%;
-      background: rgba(0, 0, 0, 0.4);
+      background: var(--paper-2);
       border: 1px solid var(--border-strong);
       color: var(--text);
       padding: 12px 48px 12px 16px;
@@ -41,7 +46,7 @@
     }
     /* WebKit 의 기본 type=search clear (×) 아이콘 제거 — 우리 커스텀 버튼 사용. */
     .cat-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
-    :root[data-theme="light"] .cat-search { background: white; }
+    :root[data-theme="light"] .cat-search { background: var(--paper); }
     .cat-search:focus {
       outline: 2px solid var(--accent-2);
       outline-offset: 2px;
@@ -53,7 +58,7 @@
       height: 40px;
       border: none;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--paper-3);
       color: var(--text);
       font-size: 16px;
       line-height: 1;
@@ -64,14 +69,14 @@
       transition: background 0.15s;
     }
     .cat-search-clear:hover, .cat-search-clear:focus-visible {
-      background: rgba(185, 238, 132, 0.28);
+      background: rgba(255, 102, 90, 0.28);
       outline: none;
     }
     :root[data-theme="light"] .cat-search-clear {
-      background: rgba(0, 0, 0, 0.08);
+      background: var(--paper-3);
     }
     :root[data-theme="light"] .cat-search-clear:hover {
-      background: rgba(185, 238, 132, 0.16);
+      background: rgba(255, 102, 90, 0.16);
     }
     .cat-meta { color: var(--text-mute); font-size: 13px; }
     .cat-grid {
@@ -170,7 +175,7 @@
     .cat-card-skel .skel-line.a { height: 11px; width: 45%; }
     .cat-card-skel .skel-line.m { height: 10px; width: 88%; margin-top: 4px; }
     .cat-metrics {
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--font-mono);
       font-size: 10.5px;
       color: var(--text-dim);
       margin-top: 4px;
@@ -182,13 +187,13 @@
     .cat-metrics .sep { opacity: 0.4; }
     /* 검색어 매칭 부분 강조 — 기본 <mark> 노란색 대신 accent 계열 톤. */
     .cat-highlight {
-      background: rgba(185, 238, 132, 0.22);
+      background: rgba(255, 102, 90, 0.22);
       color: inherit;
       padding: 0 1px;
       border-radius: 3px;
     }
     :root[data-theme="light"] .cat-highlight {
-      background: rgba(185, 238, 132, 0.18);
+      background: rgba(255, 102, 90, 0.18);
     }
     .cat-filter-row {
       display: flex;
@@ -204,9 +209,9 @@
       min-width: 18px;
       padding: 0 6px;
       border-radius: 999px;
-      background: rgba(185, 238, 132, 0.2);
+      background: rgba(255, 102, 90, 0.2);
       color: var(--text);
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--font-mono);
       font-size: 11px;
       font-weight: 600;
       text-align: center;
@@ -219,7 +224,7 @@
     #cat-favorites-only-label.is-empty input { cursor: not-allowed; }
     .cat-filter-range input[type="number"],
     .cat-filter-range select {
-      background: rgba(0, 0, 0, 0.4);
+      background: var(--paper-2);
       border: 1px solid var(--border-strong);
       color: var(--text);
       padding: 8px 10px;
@@ -231,7 +236,7 @@
     .cat-filter-range select { width: auto; padding-right: 20px; }
     :root[data-theme="light"] .cat-filter-range input[type="number"],
     :root[data-theme="light"] .cat-filter-range select {
-      background: white;
+      background: var(--paper);
     }
     .cat-filter-row { flex-wrap: wrap; }
 
@@ -271,8 +276,8 @@
     .cat-recent-clear:hover { color: var(--accent-1); }
     .cat-recent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .cat-recent-chip {
-      background: rgba(185, 238, 132, 0.1);
-      border: 1px solid rgba(185, 238, 132, 0.3);
+      background: rgba(255, 102, 90, 0.1);
+      border: 1px solid rgba(255, 102, 90, 0.3);
       color: var(--text);
       min-height: 40px;
       padding: 8px 12px;
@@ -287,7 +292,7 @@
     }
     .cat-recent-chip:hover, .cat-recent-chip:focus-visible {
       border-color: var(--accent-1);
-      background: rgba(185, 238, 132, 0.16);
+      background: rgba(255, 102, 90, 0.16);
     }
     .cat-recent-chip .chip-artist { color: var(--text-mute); }
     .cat-hist-head {
@@ -298,7 +303,7 @@
       color: var(--text-mute);
       margin-bottom: 8px;
     }
-    .cat-hist-sub { font-family: "JetBrains Mono", monospace; }
+    .cat-hist-sub { font-family: var(--font-mono); }
     .cat-hist-bars {
       display: flex;
       align-items: flex-end;
@@ -331,8 +336,7 @@
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(7, 7, 15, 0.75);
-      backdrop-filter: blur(6px);
+      background: rgba(18, 17, 16, 0.55);
       display: none;
       align-items: flex-start;
       justify-content: center;
@@ -376,7 +380,7 @@
     .modal-head-text { min-width: 0; flex: 1; }
     /* 모달 헤더 안의 시드 곡 메트릭 mini-row — 카드의 cat-metrics 와 같은 톤. */
     .modal-seed-metrics {
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--font-mono);
       font-size: 11px;
       color: var(--text-dim);
       margin-top: 6px;
@@ -421,7 +425,7 @@
     .modal-copy-link.is-copied {
       color: var(--accent-2);
       border-color: var(--accent-2);
-      background: rgba(185, 224, 253, 0.09);
+      background: rgba(116, 121, 216, 0.09);
     }
     /* 우상단 떠 있는 작은 토스트 */
     .cat-toast {
@@ -431,7 +435,7 @@
       transform: translateX(-50%) translateY(8px);
       padding: 10px 18px;
       border-radius: 999px;
-      background: rgba(20, 30, 48, 0.92);
+      background: var(--ink); color: var(--paper);
       border: 1px solid var(--border-strong);
       color: var(--text);
       font-size: 13px;
@@ -443,13 +447,13 @@
     }
     .cat-toast.is-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
     :root[data-theme="light"] .cat-toast {
-      background: rgba(255, 255, 255, 0.95);
-      color: var(--text);
+      background: var(--ink);
+      color: var(--paper);
     }
     .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
     .modal-tag {
-      background: rgba(185, 238, 132, 0.13);
-      border: 1px solid rgba(185, 238, 132, 0.34);
+      background: rgba(255, 102, 90, 0.13);
+      border: 1px solid rgba(255, 102, 90, 0.34);
       color: var(--accent-1);
       padding: 4px 10px;
       border-radius: 999px;
@@ -462,7 +466,7 @@
       gap: 12px;
       align-items: center;
       padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.04);
+      background: transparent;
       border: 1px solid var(--border);
       border-radius: 10px;
     }
@@ -480,7 +484,7 @@
     .modal-fav:hover, .modal-seed:hover { color: var(--text); border-color: var(--accent-1); }
     .modal-fav[data-active="true"] { color: var(--accent-warn); border-color: var(--accent-warn); }
     .modal-rank {
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--font-mono);
       font-weight: 700;
       color: var(--accent-2);
       text-align: center;
@@ -490,7 +494,7 @@
     /* 카탈로그 카드의 .cat-metrics 헬퍼를 모달 안에서도 재사용 — 줄바꿈만 강제. */
     .modal-hits .cat-metrics { display: flex; margin-top: 2px; }
     .modal-percent {
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--font-mono);
       font-size: 13px;
       color: var(--text);
     }
@@ -538,13 +542,13 @@
     }
     .cat-pager button:disabled { opacity: 0.4; cursor: not-allowed; }
     .cat-pager .cat-page-jump {
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--font-mono);
       font-size: 14px;
       padding: 9px 12px;
       min-width: 40px;
     }
     .cat-pager .cat-page-label {
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--font-mono);
       color: var(--text-mute);
       font-size: 13px;
     }
@@ -584,9 +588,9 @@
   <noscript>
     <div class="noscript-banner" role="alert" style="
       max-width: 760px; margin: 24px auto; padding: 18px 22px;
-      border: 1px solid #ff6b6b; border-radius: 14px;
-      background: rgba(255, 107, 107, 0.1); color: #fff;
-      font-family: 'Pretendard', system-ui, sans-serif; line-height: 1.6;
+      border: 1px solid #121110; border-radius: 12px;
+      background: #F3F1EC; color: #121110;
+      font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif; line-height: 1.6;
     ">
       <strong style="display: block; font-size: 15px; margin-bottom: 6px;">
         이 사이트는 JavaScript 가 켜져 있어야 동작합니다.
@@ -598,22 +602,21 @@
     </div>
   </noscript>
 
-  <div class="bg-canvas" aria-hidden="true">
-    <div class="noise"></div>
-  </div>
+  <div class="grain" aria-hidden="true"></div>
 
   <header class="site-nav">
     <a class="brand" href="/" aria-label="SoundMatch 홈">
-      <svg class="brand-mark" viewBox="0 0 56 48" width="36" height="32" aria-hidden="true">
-        <path class="brand-mark-upper" d="M1 11C10 3 19 4 29 10s17 5 26-3v11c-9 8-18 9-28 3-9-6-16-6-26 2Z" />
-        <path class="brand-mark-lower" d="M1 30c9-7 18-6 27 0 11 7 18 6 27-2v11c-9 8-19 9-29 2-9-6-16-5-25 2Z" />
+      <svg class="brand-mark" viewBox="0 0 64 48" width="32" height="24" aria-hidden="true">
+        <path class="brand-mark-trace" d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8" />
+        <path class="brand-mark-trace" d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6" />
       </svg>
       <span class="brand-wordmark">soundmatch</span>
     </a>
     <nav class="site-nav-links" aria-label="주요 메뉴" data-i18n-attr="aria-label:nav.primary">
       <div class="nav-links-group" id="nav-links-group">
         <a href="/catalog" data-i18n="nav.catalog" aria-current="page">카탈로그</a>
-        <a href="/#how" data-i18n="nav.how">사용법</a>
+        <a href="/#how" data-i18n="nav.how">원리</a>
+        <a href="/#showcase" data-i18n="nav.showcase">예시</a>
         <a href="/compare" data-i18n="nav.compare">비교</a>
         <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="nav.github">GitHub</a>
       </div>
@@ -784,14 +787,14 @@
   <div class="cat-toast" id="cat-toast" role="status" aria-live="polite" hidden></div>
 
   <footer class="site-foot">
-    <p data-i18n="footer.tagline">졸업작품에서 출발해, 시중 서비스급으로 끝까지 다듬은 프로젝트</p>
+    <p data-i18n="footer.tagline">소리의 특징으로 다음 곡을 찾는 음악 탐색 도구. 졸업작품에서 출발해 혼자 끝까지 다듬었습니다.</p>
     <p class="muted">
       © <span id="year"></span> SoundMatch ·
       <a href="/privacy" data-i18n="footer.privacy">개인정보 처리방침</a> ·
       <a href="/terms" data-i18n="footer.terms">이용약관</a> ·
       <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="footer.repoLink">GitHub</a>
     </p>
-    <p class="muted" data-i18n="footer.notice">서버에 음원을 영구 저장하지 않습니다.</p>
+    <p class="muted" data-i18n="footer.notice">음원은 분석 직후 삭제되고, 결과는 취향 탐색을 위한 참고 정보예요.</p>
   </footer>
 
   <script src="/i18n.js"></script>

@@ -63,27 +63,28 @@ def test_downsample_avg_pooling_values():
 # --- _color_for ---------------------------------------------------------
 
 def test_color_for_clamps_below_zero():
-    """음수 값도 가장 어두운 색으로 안정적으로 매핑."""
+    """음수 값도 가장 옅은 종이색으로 안정적으로 매핑."""
     c = _color_for(-1.0)
     assert c.startswith("#")
     assert len(c) == 7
 
 
 def test_color_for_clamps_above_one():
-    """1 이상도 가장 밝은 Compare Sky로 매핑."""
+    """1 이상도 가장 짙은 잉크색으로 매핑."""
     c = _color_for(5.0)
     assert c.startswith("#")
     assert len(c) == 7
 
 
 def test_color_for_endpoints():
-    """양 끝점은 서로 다른 Black / Compare Sky 계열이어야 한다."""
-    dark = _color_for(0.0)
-    bright = _color_for(1.0)
-    # 두 색이 같으면 안 된다.
-    assert dark != bright
-    # 어두운 끝: 첫 채널(R) 값이 작다.
-    assert int(dark[1:3], 16) < int(bright[1:3], 16)
+    """양 끝점은 종이(#f3f1ec) 와 잉크(#121110) 여야 한다 — 에너지가 셀수록 짙어진다."""
+    low = _color_for(0.0)
+    high = _color_for(1.0)
+    assert low != high
+    assert low == "#f3f1ec"
+    assert high == "#121110"
+    # 중간값은 코랄을 지난다.
+    assert _color_for(0.5) == "#e8452b"
 
 
 def test_color_for_returns_hex_format():

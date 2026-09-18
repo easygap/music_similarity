@@ -1,16 +1,21 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="dark">
+<html lang="ko" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>찾을 수 없는 페이지 · SoundMatch</title>
   <meta name="robots" content="noindex" />
-  <meta name="theme-color" content="#101010" />
+  <meta name="theme-color" content="#F3F1EC" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" />
   <link rel="stylesheet" href="/style.css" />
   <script src="/theme-init.js"></script>
   <style>
@@ -25,11 +30,11 @@
       gap: 20px;
     }
     .nf-code {
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--font-mono);
       font-size: 96px;
       font-weight: 800;
       letter-spacing: 0;
-      color: var(--brand-green);
+      color: var(--accent-1);
       line-height: 1;
     }
     .nf-mark { width: 56px; height: 56px; }
@@ -42,7 +47,7 @@
       padding: 12px 22px;
       border-radius: 12px;
       background: var(--grad-primary);
-      color: var(--brand-black);
+      color: var(--brand-ink);
       font-weight: 600;
       text-decoration: none;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
@@ -50,9 +55,7 @@
   </style>
 </head>
 <body>
-  <div class="bg-canvas" aria-hidden="true">
-    <div class="noise"></div>
-  </div>
+  <div class="grain" aria-hidden="true"></div>
 
   <main class="not-found-wrap">
     <img class="nf-mark" src="/favicon.svg" width="56" height="56" alt="" />

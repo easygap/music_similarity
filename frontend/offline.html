@@ -1,16 +1,21 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="dark">
+<html lang="ko" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>오프라인 · SoundMatch</title>
   <meta name="robots" content="noindex" />
-  <meta name="theme-color" content="#101010" />
+  <meta name="theme-color" content="#F3F1EC" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" />
   <link rel="stylesheet" href="/style.css" />
   <script src="/theme-init.js"></script>
   <style>
@@ -34,7 +39,7 @@
       padding: 12px 22px;
       border-radius: 12px;
       background: var(--grad-primary);
-      color: var(--brand-black);
+      color: var(--brand-ink);
       font-weight: 600;
       border: none;
       cursor: pointer;
@@ -43,9 +48,7 @@
   </style>
 </head>
 <body>
-  <div class="bg-canvas" aria-hidden="true">
-    <div class="noise"></div>
-  </div>
+  <div class="grain" aria-hidden="true"></div>
 
   <main class="offline-wrap">
     <img class="off-mark" src="/favicon.svg" width="64" height="64" alt="" />

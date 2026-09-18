@@ -24,6 +24,7 @@
   const form = $("#upload-form");
   const topNSelect = $("#top-n");
   const sampleBtn = $("#sample-btn");
+  const experienceSampleBtn = $("#experience-sample-btn");
 
   const loadingSection = $("#loading");
   const loadingStep = $("#loading-step");
@@ -213,7 +214,7 @@
       if (el) {
         el.textContent =
           window.i18n && window.i18n.lang() === "en"
-            ? data.catalog_size.toLocaleString("en-US")
+            ? `${data.catalog_size.toLocaleString("en-US")} tracks`
             : `${data.catalog_size.toLocaleString("ko-KR")}곡`;
       }
     } catch {
@@ -444,38 +445,92 @@
   syncUploadLimitText();
   if (langToggleBtn) langToggleBtn.textContent = t("controls.langToggle");
 
-  // 카탈로그 일부 미리보기 — 메인 페이지 하단 정보용.
-  // 첫 로드만 /sample 로 정렬된 12곡, 그 후 "다른 곡 보기" 누르면 /random 으로 무작위.
-  async function loadCatalogPreview({ randomize = false } = {}) {
+  // 카탈로그 일부 미리보기 — 구경용 목록이 아니라 곧바로 탐색을 시작하는 버튼이다.
+  // 첫 로드는 /sample 6곡, 이후 "다른 출발점"을 누르면 /random 으로 교체한다.
+  let catalogPreviewRequestId = 0;
+  let catalogPreviewItems = null;
+
+  function renderCatalogPreview(items = catalogPreviewItems) {
     const host = document.getElementById("catalog-list");
     if (!host) return;
+    if (items === null) {
+      host.innerHTML = `<p class="catalog-loading">${escapeHtml(t("info.catalogPreviewLoading"))}</p>`;
+      return;
+    }
+    if (!Array.isArray(items) || !items.length) {
+      host.innerHTML = `<p class="catalog-loading">${escapeHtml(t("info.catalogPreviewFail"))}</p>`;
+      return;
+    }
+    host.innerHTML = items
+      .map(
+        (it) => `
+          <button type="button" class="catalog-chip" data-catalog-seed
+                  data-title="${escapeHtml(it.title)}" data-artist="${escapeHtml(it.artist)}"
+                  aria-label="${escapeHtml(t("info.catalogSeedAria", it.title, it.artist))}">
+            <span class="catalog-chip-mark" aria-hidden="true">
+              <svg viewBox="0 0 64 48"><path d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8"/><path d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6"/></svg>
+            </span>
+            <span class="catalog-chip-copy">
+              <span class="catalog-title">${escapeHtml(it.title)}</span>
+              <span class="catalog-artist">${escapeHtml(it.artist)}</span>
+            </span>
+            <span class="catalog-chip-action">
+              ${escapeHtml(t("info.catalogSeed"))}
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m0 0-5-5m5 5-5 5"/></svg>
+            </span>
+          </button>`,
+      )
+      .join("");
+  }
+
+  async function loadCatalogPreview({ randomize = false } = {}) {
+    if (!document.getElementById("catalog-list")) return;
+    const requestId = ++catalogPreviewRequestId;
     try {
-      const url = randomize ? "/api/catalog/random?n=12" : "/api/catalog/sample?limit=12";
+      const url = randomize ? "/api/catalog/random?n=6" : "/api/catalog/sample?limit=6";
       const res = await fetch(url);
       if (!res.ok) throw new Error("fail");
       const data = await res.json();
+      if (requestId !== catalogPreviewRequestId) return;
       if (!Array.isArray(data.items) || !data.items.length) {
-        host.innerHTML = `<p class="catalog-loading">${escapeHtml(t("info.catalogPreviewFail"))}</p>`;
+        catalogPreviewItems = [];
+        renderCatalogPreview();
         return;
       }
-      host.innerHTML = data.items
-        .map(
-          (it) => `
-            <div class="catalog-chip" title="${escapeHtml(it.title)} – ${escapeHtml(it.artist)}">
-              <span class="catalog-title">${escapeHtml(it.title)}</span>
-              <span class="catalog-artist">${escapeHtml(it.artist)}</span>
-            </div>`,
-        )
-        .join("");
+      catalogPreviewItems = data.items.map((it) => ({
+        title: String(it.title || ""),
+        artist: String(it.artist || ""),
+      }));
+      renderCatalogPreview();
     } catch {
-      host.innerHTML = `<p class="catalog-loading">${escapeHtml(t("info.catalogPreviewFail"))}</p>`;
+      if (requestId !== catalogPreviewRequestId) return;
+      catalogPreviewItems = [];
+      renderCatalogPreview();
     }
   }
   loadCatalogPreview();
-  window.addEventListener("i18n:change", () => loadCatalogPreview());
+  // 언어만 바꿨을 때 출발곡까지 새로 뽑히면 사용자의 맥락이 끊긴다.
+  window.addEventListener("i18n:change", () => renderCatalogPreview());
   const catalogReloadBtn = document.getElementById("catalog-reload");
   if (catalogReloadBtn) {
     catalogReloadBtn.addEventListener("click", () => loadCatalogPreview({ randomize: true }));
+  }
+  const catalogPreviewHost = document.getElementById("catalog-list");
+  if (catalogPreviewHost) {
+    catalogPreviewHost.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-catalog-seed]");
+      if (!trigger || !catalogPreviewHost.contains(trigger)) return;
+      const title = trigger.dataset.title || "";
+      const artist = trigger.dataset.artist || "";
+      if (!title) return;
+      trigger.disabled = true;
+      trigger.setAttribute("aria-busy", "true");
+      seedFromHit({ title, artist }).finally(() => {
+        if (!trigger.isConnected) return;
+        trigger.disabled = false;
+        trigger.setAttribute("aria-busy", "false");
+      });
+    });
   }
 
   // 즐겨찾기 섹션 — 저장된 곡이 있을 때만 노출.
@@ -733,6 +788,7 @@
   // ----------------------------------------------------------------------
   let _lastResults = null;
   let _lastFile = null;
+  let _lastSeedHit = null;
   let _analysisInFlight = false;
   // 분석 요청을 도중에 취소할 때 쓰는 AbortController. 사용자가 분석 중
   // 다른 파일을 새로 올리거나 "새 분석" 으로 돌아가면 이전 fetch 는 취소되어
@@ -747,6 +803,7 @@
 
   errorRetryBtn.addEventListener("click", () => {
     if (_lastFile) runAnalysis(_lastFile);
+    else if (_lastSeedHit) seedFromHit(_lastSeedHit);
     else form.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
@@ -766,6 +823,8 @@
     _analysisInFlight = true;
     // 새 분석 시작 시 시드 백 스택은 초기화.
     _seedPrev = null;
+    _seedPrevFile = null;
+    _lastSeedHit = null;
     if (seedBackBtn) seedBackBtn.classList.add("hidden");
 
     const formData = new FormData();
@@ -822,8 +881,24 @@
     // 실제 결과가 도착하기 전에 같은 자리에 스켈레톤 카드 3장을 깔아둔다.
     // 결과가 도착하면 그대로 교체되므로 레이아웃이 튀지 않는다.
     resultsSection.classList.remove("hidden");
+    seedBackBtn.classList.add("hidden");
     audioSummary.innerHTML = "";
     radarCard.classList.add("hidden");
+    radarHost.innerHTML = "";
+    spectrogramCard.classList.add("hidden");
+    spectrogramHost.innerHTML = "";
+    resultTagsEl.innerHTML = "";
+    resultTagsEl.classList.add("hidden");
+    const confidenceNote = document.getElementById("confidence-note");
+    if (confidenceNote) {
+      confidenceNote.innerHTML = "";
+      confidenceNote.classList.add("hidden");
+    }
+    const resultMeta = document.getElementById("result-meta");
+    if (resultMeta) {
+      resultMeta.innerHTML = "";
+      resultMeta.classList.add("hidden");
+    }
     audioPlayer.classList.add("hidden");
     resultsSubtitle.textContent = "";
     hitList.innerHTML = "";
@@ -1054,6 +1129,131 @@
     }
   }
 
+  const RESULT_TAG_KEYS = Object.freeze({
+    "매우 느림": "results.tags.verySlow",
+    느림: "results.tags.slow",
+    "미디엄 템포": "results.tags.mediumTempo",
+    "빠른 템포": "results.tags.fastTempo",
+    "매우 빠름": "results.tags.veryFast",
+    잔잔: "results.tags.calm",
+    다이내믹: "results.tags.dynamic",
+    "에너지 폭발": "results.tags.explosiveEnergy",
+    "어두운 톤": "results.tags.darkTone",
+    "미드 톤": "results.tags.midTone",
+    "밝은 톤": "results.tags.brightTone",
+    "부드러운 질감": "results.tags.smoothTexture",
+    "거친 질감": "results.tags.roughTexture",
+    "멜로디 위주": "results.tags.melodyLed",
+    "비트 위주": "results.tags.beatLed",
+  });
+
+  const REASON_GROUP_KEYS = Object.freeze({
+    "템포 & 리듬": "results.reasonGroups.tempo",
+    "음색 (밝기)": "results.reasonGroups.timbre",
+    "거친 질감 & 노이즈": "results.reasonGroups.texture",
+    "화성 vs 타악기 균형": "results.reasonGroups.balance",
+    "음정 분포 (크로마)": "results.reasonGroups.chroma",
+    "음색 디테일 (MFCC)": "results.reasonGroups.mfcc",
+  });
+
+  const REASON_FEATURE_KEYS = Object.freeze({
+    템포: "results.reasonFeatures.tempo",
+    "평균 음량(에너지)": "results.reasonFeatures.loudness",
+    "음량 변화": "results.reasonFeatures.loudnessVariation",
+    "음색의 밝기": "results.reasonFeatures.brightness",
+    "음색의 밝기 변화": "results.reasonFeatures.brightnessVariation",
+    "주파수 대역폭": "results.reasonFeatures.bandwidth",
+    "주파수 대역폭 변화": "results.reasonFeatures.bandwidthVariation",
+    "고주파 분포": "results.reasonFeatures.highFrequency",
+    "고주파 분포 변화": "results.reasonFeatures.highFrequencyVariation",
+    "거친 정도(노이즈성)": "results.reasonFeatures.roughness",
+    "거친 정도 변화": "results.reasonFeatures.roughnessVariation",
+    "화성 성분": "results.reasonFeatures.harmony",
+    "화성 성분 변화": "results.reasonFeatures.harmonyVariation",
+    "타악기 성분": "results.reasonFeatures.percussion",
+    "타악기 성분 변화": "results.reasonFeatures.percussionVariation",
+    "음정 색채(크로마)": "results.reasonFeatures.chroma",
+    "음정 색채 변화": "results.reasonFeatures.chromaVariation",
+  });
+
+  function resultsUseEnglish() {
+    return Boolean(window.i18n && window.i18n.lang() === "en");
+  }
+
+  function localizeResultTag(tag) {
+    if (!resultsUseEnglish()) return String(tag || "");
+    const key = RESULT_TAG_KEYS[tag];
+    return key ? t(key) : String(tag || "");
+  }
+
+  function localizeReasonGroupLabel(label) {
+    if (!resultsUseEnglish()) return String(label || "");
+    const key = REASON_GROUP_KEYS[label] || "results.reasonGroups.other";
+    return t(key);
+  }
+
+  function localizeReasonFeatureLabel(label) {
+    const key = REASON_FEATURE_KEYS[label] || "results.reasonFeatures.other";
+    return t(key);
+  }
+
+  function localizeReasonSummary(reason) {
+    if (!resultsUseEnglish()) return String((reason && reason.summary) || "");
+    const first = reason && Array.isArray(reason.groups) ? reason.groups[0] : null;
+    if (!first) return t("results.reasonFallback");
+    return t("results.reasonTopSummary", localizeReasonGroupLabel(first.label));
+  }
+
+  function localizeReasonGroupSummary(group) {
+    if (!resultsUseEnglish()) return String((group && group.summary) || "");
+    const score = Number(group && group.match_score) || 0;
+    const label = localizeReasonGroupLabel(group && group.label);
+    if (score > 0.9) return t("results.reasonGroupAlmost", label);
+    if (score > 0.75) return t("results.reasonGroupVeryClose", label);
+    if (score > 0.55) return t("results.reasonGroupClose", label);
+    if (score > 0.35) return t("results.reasonGroupSomewhat", label);
+    return t("results.reasonGroupDifferent", label);
+  }
+
+  function localizeReasonDetail(detail) {
+    const source = String(detail || "");
+    if (!resultsUseEnglish()) return source;
+
+    const mfcc = source.match(/^MFCC 20차원 평균 거리 ([0-9.]+) \(낮을수록 음색 디테일이 유사\)$/);
+    if (mfcc) return t("results.reasonMfccDetail", mfcc[1]);
+
+    const equal = source.match(/^(.+?)(?:이|가) 거의 동일합니다 \((.+)\)\.$/);
+    if (equal) {
+      return t("results.reasonDetailEqual", localizeReasonFeatureLabel(equal[1]), equal[2]);
+    }
+
+    const compared = source.match(
+      /^(.+?): 업로드한 곡 (.+?) · 매칭된 곡 (.+?) \((비슷한|유사한 범위의|어느 정도 떨어진) 값\)$/,
+    );
+    if (compared) {
+      const relationKeys = {
+        비슷한: "results.reasonRelationClose",
+        "유사한 범위의": "results.reasonRelationRange",
+        "어느 정도 떨어진": "results.reasonRelationApart",
+      };
+      return t(
+        "results.reasonDetailCompare",
+        localizeReasonFeatureLabel(compared[1]),
+        compared[2],
+        compared[3],
+        t(relationKeys[compared[4]]),
+      );
+    }
+    return t("results.reasonDetailUnavailable");
+  }
+
+  function resultSourceLabel(data) {
+    if (data && data.source === "catalog" && data.title) {
+      return t("results.seedHeader", data.title, data.artist || "Unknown");
+    }
+    return String((data && data.filename) || "");
+  }
+
   function renderResults(data, preserveFile = false, options = {}) {
     hideAll();
     resultsSection.classList.remove("hidden");
@@ -1063,12 +1263,14 @@
 
     const timing = data.timing || {};
     const total = (timing.feature_extraction_seconds || 0) + (timing.similarity_seconds || 0);
-    const filename = escapeHtml(data.filename || "");
-    resultsSubtitle.innerHTML = `
-      <strong>${filename}</strong> · ${t("results.subtitlePrefix")}
-      ${data.catalog_size.toLocaleString()}${t("results.subtitleSongs")}
-      ${total.toFixed(2)}${t("results.subtitleSeconds")}
-    `;
+    const locale = resultsUseEnglish() ? "en-US" : "ko-KR";
+    const catalogSize = Number(data.catalog_size) || 0;
+    const filename = escapeHtml(resultSourceLabel(data));
+    // 카탈로그 시드 분석은 librosa 를 거치지 않아 걸린 시간이 0 이다. 그땐 곡 수만 보여준다.
+    const subtitleText = total > 0
+      ? t("results.subtitle", catalogSize.toLocaleString(locale), total.toFixed(2))
+      : t("results.subtitleNoTiming", catalogSize.toLocaleString(locale));
+    resultsSubtitle.innerHTML = `<strong>${filename}</strong> · ${escapeHtml(subtitleText)}`;
 
     renderSummary(data.summary || {});
 
@@ -1076,7 +1278,7 @@
     const tags = Array.isArray(data.tags) ? data.tags : [];
     if (tags.length && resultTagsEl) {
       resultTagsEl.innerHTML = tags
-        .map((tag) => `<span class="result-tag">${escapeHtml(tag)}</span>`)
+        .map((tag) => `<span class="result-tag">${escapeHtml(localizeResultTag(tag))}</span>`)
         .join("");
       resultTagsEl.classList.remove("hidden");
     } else if (resultTagsEl) {
@@ -1143,6 +1345,8 @@
     const sorted = sortResults(data.results, data.summary || {}, sortKey);
     sorted.forEach((hit, idx) => {
       const li = tmpl.content.firstElementChild.cloneNode(true);
+      // <template> 내부 노드는 초기 순회 대상이 아니므로 텍스트와 접근성 속성을 함께 맞춘다.
+      if (window.i18n) window.i18n.apply(li);
       li.querySelector(".rank-num").textContent = hit.rank;
       // 순위 단위 라벨(ko "위"). en 처럼 단위가 없는 언어에선 빈 문자열이라
       // 라벨 노드를 숨겨 숫자 밑에 빈 칸이 남지 않게 한다.
@@ -1169,7 +1373,8 @@
         fillEl.style.width = `${Math.max(2, hit.similarity_percent)}%`;
       }, 60 + idx * 80);
 
-      li.querySelector(".hit-summary").innerHTML = renderInlineMarkdown(hit.reason.summary || "");
+      const reason = hit.reason || {};
+      li.querySelector(".hit-summary").innerHTML = renderInlineMarkdown(localizeReasonSummary(reason));
 
       // 매칭 곡과 업로드 곡의 핵심 메트릭을 가로 mini-bar 로 비교 노출.
       const miniEl = li.querySelector(".hit-mini-metrics");
@@ -1179,15 +1384,15 @@
 
       const groupsEl = li.querySelector(".hit-groups");
       groupsEl.innerHTML = "";
-      (hit.reason.groups || []).forEach((g) => {
+      (reason.groups || []).forEach((g) => {
         const gli = document.createElement("li");
         gli.innerHTML = `
           <div class="group-head">
-            <span class="group-label">${escapeHtml(g.label)}</span>
+            <span class="group-label">${escapeHtml(localizeReasonGroupLabel(g.label))}</span>
             <span class="group-score">${t("results.groupMatchPrefix")} ${Math.round((g.match_score || 0) * 100)}%</span>
           </div>
-          <p class="group-summary">${escapeHtml(g.summary || "")}</p>
-          <ul class="group-detail">${(g.detail || []).map((d) => `<li>${escapeHtml(d)}</li>`).join("")}</ul>
+          <p class="group-summary">${escapeHtml(localizeReasonGroupSummary(g))}</p>
+          <ul class="group-detail">${(g.detail || []).map((d) => `<li>${escapeHtml(localizeReasonDetail(d))}</li>`).join("")}</ul>
         `;
         groupsEl.appendChild(gli);
       });
@@ -1257,6 +1462,17 @@
     }
 
     renderResultMeta(data);
+
+    // 소리 지도(landing.js)가 기준 곡과 닮은 곡을 비출 수 있게 알린다.
+    // 업로드한 파일은 카탈로그에 없으니 seed 는 카탈로그 시드일 때만 채운다.
+    try {
+      window.dispatchEvent(new CustomEvent("soundmatch:results", {
+        detail: {
+          seed: data.source === "catalog" ? (data.name || `${data.title} - ${data.artist}`) : "",
+          hits: sorted.map((hit) => `${hit.title} - ${hit.artist}`),
+        },
+      }));
+    } catch (_) { /* CustomEvent 미지원 환경은 조용히 무시 */ }
 
     revealResults(options);
   }
@@ -1468,18 +1684,45 @@
   // 1단계 스택만 유지: 시드로 들어가기 직전 결과 한 건을 보관해두고,
   // "이전 분석으로" 버튼으로 한 번 돌아갈 수 있게 한다.
   let _seedPrev = null;
+  let _seedPrevFile = null;
+
+  async function restoreSeedPrevious() {
+    if (!_seedPrev) return false;
+    const prev = _seedPrev;
+    const prevFile = _seedPrevFile;
+    _seedPrev = null;
+    _seedPrevFile = null;
+    _lastResults = prev;
+    _lastFile = prevFile;
+    _lastSeedHit = null;
+    await setAudioPreview(prevFile);
+    renderResults(prev, /* preserveFile */ true);
+    seedBackBtn.classList.add("hidden");
+    return true;
+  }
 
   async function seedFromHit(hit) {
     const name = `${hit.title} - ${hit.artist}`;
     const topN = parseInt(topNSelect.value, 10) || 5;
+    // 업로드/이전 시드 요청이 진행 중이면 먼저 취소한다. 늦게 온 응답이 최신
+    // 탐색 결과를 덮어쓰지 않도록 모든 분석 진입점이 같은 controller 를 쓴다.
+    if (_analysisAbortController) {
+      try { _analysisAbortController.abort(); } catch (_) {}
+    }
+    const controller = new AbortController();
+    _analysisAbortController = controller;
+    _analysisInFlight = true;
     // 현재 결과를 백 스택에 저장 (직전 한 건만).
     _seedPrev = _lastResults;
+    _seedPrevFile = _lastFile;
+    _lastSeedHit = { title: hit.title, artist: hit.artist };
     hideAll();
     showSkeletonResults();
     startLoadingMessages();
     try {
       const res = await fetch(
         `/api/analyze/by-catalog?top_n=${topN}&name=${encodeURIComponent(name)}`,
+        { signal: controller.signal },
       );
       stopLoadingMessages();
       if (!res.ok) {
@@ -1487,67 +1730,95 @@
         throw new Error(text || `서버 오류 (${res.status})`);
       }
       const data = await res.json();
+      if (_analysisAbortController !== controller) return;
       // by-catalog 응답에는 filename / spectrogram / timing 등이 없다.
       // renderResults 가 기대하는 형태로 살짝 보강해서 그대로 재사용.
       const seedAdapted = Object.assign({}, data, {
-        filename: t("results.seedHeader", data.title, data.artist),
+        source: "catalog",
+        // 표시 문구를 저장하면 언어 전환 뒤에도 이전 언어가 남는다. 원본 이름만 보관한다.
+        filename: data.name || `${data.title} - ${data.artist}`,
         timing: { feature_extraction_seconds: 0, similarity_seconds: 0 },
         spectrogram_svg: "",
       });
       _lastResults = seedAdapted;
       _lastFile = null;
-      audioPlayer.classList.add("hidden");
+      await setAudioPreview(null);
       renderResults(seedAdapted, /* preserveFile */ true);
-      seedBackBtn.classList.remove("hidden");
+      seedBackBtn.classList.toggle("hidden", !_seedPrev);
     } catch (err) {
+      if (err && err.name === "AbortError") return;
+      if (_analysisAbortController !== controller) return;
       stopLoadingMessages();
       // 실패 시: 이전 결과가 있으면 그 화면을 그대로 되돌려주고 토스트로만 알린다.
       // (showError 가 전체 결과 영역을 hide 해버려서 사용자가 직전 분석을 잃어버리던 회귀를 막음.)
       if (_seedPrev) {
-        _lastResults = _seedPrev;
-        renderResults(_seedPrev, /* preserveFile */ true);
+        await restoreSeedPrevious();
         toast(t("results.seedFailedToast") || (err.message || String(err)));
       } else {
         showError(err.message || String(err));
       }
+    } finally {
+      if (_analysisAbortController === controller) {
+        _analysisAbortController = null;
+        _analysisInFlight = false;
+      }
     }
   }
 
-  seedBackBtn.addEventListener("click", () => {
-    if (!_seedPrev) return;
-    const prev = _seedPrev;
-    _seedPrev = null;
-    _lastResults = prev;
-    renderResults(prev, /* preserveFile */ true);
-    seedBackBtn.classList.add("hidden");
+  seedBackBtn.addEventListener("click", async () => {
+    await restoreSeedPrevious();
   });
 
-  // "샘플로 분석해보기" — 업로드 없이 카탈로그에서 랜덤 한 곡을 골라 by-catalog 분석.
-  // 첫 방문자가 음원 준비 단계 없이 결과 페이지/차트/매칭 설명을 바로 체험할 수 있어
-  // conversion 에 큰 도움. 누를 때마다 다른 곡이 뽑힘 (discovery 성).
-  if (sampleBtn) {
-    sampleBtn.addEventListener("click", async () => {
-      // 중복 클릭 방어 — 첫 클릭 후 fetch 끝날 때까지 비활성.
-      sampleBtn.disabled = true;
-      const sampleLabel = sampleBtn.querySelector("[data-sample-label]");
-      const originalText = sampleLabel.textContent;
-      sampleLabel.textContent = t("upload.sampleLoading");
-      try {
-        const res = await fetch("/api/catalog/random?n=1");
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-        const item = (data.items || [])[0];
-        if (!item || !item.title) throw new Error("샘플을 찾지 못했어요.");
-        // seedFromHit 가 by-catalog 분석 + 결과 렌더까지 모두 수행 → 코드 재사용.
-        await seedFromHit({ title: item.title, artist: item.artist });
-      } catch (err) {
-        showError(err.message || String(err));
-      } finally {
-        sampleBtn.disabled = false;
-        sampleLabel.textContent = originalText;
-      }
+  // 업로드 카드와 콘텐츠 흐름 양쪽에서 같은 샘플 분석을 시작한다.
+  // 누를 때마다 카탈로그의 다른 곡을 골라 실제 결과·재탐색 흐름을 그대로 보여준다.
+  let _sampleInFlight = false;
+
+  function setSampleButtonsBusy(busy) {
+    [sampleBtn, experienceSampleBtn].filter(Boolean).forEach((button) => {
+      button.disabled = busy;
+      button.setAttribute("aria-busy", busy ? "true" : "false");
     });
   }
+
+  async function runSampleAnalysis(trigger) {
+    if (!trigger || _sampleInFlight) return;
+    _sampleInFlight = true;
+    setSampleButtonsBusy(true);
+    const sampleLabel = trigger.querySelector("[data-sample-label]") || trigger.querySelector("span");
+    const originalText = sampleLabel ? sampleLabel.textContent : "";
+    if (sampleLabel) sampleLabel.textContent = t("upload.sampleLoading");
+    if (_analysisAbortController) {
+      try { _analysisAbortController.abort(); } catch (_) {}
+    }
+    const pickerController = new AbortController();
+    _analysisAbortController = pickerController;
+    _analysisInFlight = true;
+    try {
+      const res = await fetch("/api/catalog/random?n=1", { signal: pickerController.signal });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (_analysisAbortController !== pickerController) return;
+      const item = (data.items || [])[0];
+      if (!item || !item.title) throw new Error("샘플을 찾지 못했어요.");
+      // seedFromHit 가 by-catalog 분석 + 결과 렌더까지 모두 수행한다.
+      await seedFromHit({ title: item.title, artist: item.artist });
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      showError(err.message || String(err));
+    } finally {
+      if (_analysisAbortController === pickerController) {
+        _analysisAbortController = null;
+        _analysisInFlight = false;
+      }
+      _sampleInFlight = false;
+      setSampleButtonsBusy(false);
+      if (sampleLabel) sampleLabel.textContent = originalText;
+    }
+  }
+
+  [sampleBtn, experienceSampleBtn].filter(Boolean).forEach((trigger) => {
+    trigger.addEventListener("click", () => runSampleAnalysis(trigger));
+  });
 
   // ----------------------------------------------------------------------
   // 초기화
@@ -1564,15 +1835,21 @@
     setAudioPreview(null);
     _lastResults = null;
     _lastFile = null;
+    _lastSeedHit = null;
     _seedPrev = null;
+    _seedPrevFile = null;
+    _sampleInFlight = false;
+    setSampleButtonsBusy(false);
     if (seedBackBtn) seedBackBtn.classList.add("hidden");
     fileInput.value = "";
     hideAll();
+    try { window.dispatchEvent(new CustomEvent("soundmatch:results-cleared")); } catch (_) {}
     // 결과가 박혀있던 hash 를 비워준다.
     try {
       history.replaceState(null, "", `${location.pathname}${location.search}`);
     } catch {}
     form.scrollIntoView({ behavior: "smooth", block: "start" });
+    try { dropzone.focus({ preventScroll: true }); } catch (_) { dropzone.focus(); }
   });
 
   window.addEventListener("beforeunload", (e) => {
@@ -1831,12 +2108,21 @@
   // 외부 라이브러리 없이 직접 SVG 문자열을 짜서 Blob 다운로드한다.
   function buildResultSvg(data) {
     if (!data || !data.results || !data.results.length) return null;
+    // 화면과 같은 종이·잉크·코랄 세 색만 쓴다. 폰트도 화면과 동일.
+    const PAPER = "#f3f1ec";
+    const INK = "#121110";
+    const INK_SOFT = "rgba(18,17,16,0.62)";
+    const INK_FAINT = "rgba(18,17,16,0.4)";
+    const RULE = "rgba(18,17,16,0.18)";
+    const CORAL = "#e8452b";
+    const SANS = "Pretendard Variable, Pretendard, Apple SD Gothic Neo, sans-serif";
+    const MONO = "IBM Plex Mono, Menlo, Consolas, monospace";
     const w = 1200;
     const top = data.results.slice(0, 5);
-    const padding = 56;
-    const rowH = 88;
-    const headerH = 200;
-    const tagsH = data.tags && data.tags.length ? 48 : 0;
+    const padding = 64;
+    const rowH = 92;
+    const headerH = 214;
+    const tagsH = data.tags && data.tags.length ? 52 : 0;
     const h = headerH + tagsH + top.length * rowH + padding;
 
     function esc(s) {
@@ -1848,10 +2134,10 @@
         .replace(/'/g, "&#39;");
     }
 
-    const filename = esc(data.filename || "분석 결과");
+    const filename = esc(resultSourceLabel(data) || "분석 결과");
     const subtitle = data.results.length
-      ? `${data.catalog_size?.toLocaleString?.("ko-KR") || ""}곡과 비교 · ` +
-        `${esc(data.analyzed_at || "")}`
+      ? `${esc(t("results.metaCatalogSize", data.catalog_size?.toLocaleString?.("ko-KR") || ""))}` +
+        (data.analyzed_at ? ` · ${esc(formatLocalTimestamp(data.analyzed_at))}` : "")
       : "";
 
     const tagsXml = (data.tags || [])
@@ -1859,30 +2145,31 @@
       .map((tag, i) => {
         const x = padding + i * 150;
         return (
-          `<g transform="translate(${x}, ${headerH - 16})">` +
-          `<rect rx="8" ry="8" width="140" height="32" fill="#27331d"/>` +
-          `<text x="70" y="20" text-anchor="middle" fill="#b9ee84" ` +
-          `font-size="14" font-weight="500">${esc(tag)}</text>` +
+          `<g transform="translate(${x}, ${headerH - 14})">` +
+          `<rect rx="15" ry="15" width="140" height="30" fill="none" stroke="${RULE}"/>` +
+          `<text x="70" y="19" text-anchor="middle" fill="${INK}" font-family="${SANS}" ` +
+          `font-size="13" font-weight="500">${esc(localizeResultTag(tag))}</text>` +
           `</g>`
         );
       })
       .join("");
 
+    const barW = w - padding * 2 - 260;
     const rowsXml = top
       .map((r, i) => {
         const y = headerH + tagsH + i * rowH;
-        const rankColor = "#b9ee84";
         const pct = (r.similarity_percent || 0).toFixed(1);
-        const barW = Math.max(2, Math.min(100, r.similarity_percent || 0)) * (w - padding * 2 - 220) / 100;
+        const fillW = (Math.max(2, Math.min(100, r.similarity_percent || 0)) * barW) / 100;
         return (
           `<g transform="translate(${padding}, ${y})">` +
-          `<text x="0" y="34" font-size="40" font-weight="800" fill="${rankColor}">${r.rank}</text>` +
-          `<text x="60" y="22" font-size="22" font-weight="700" fill="#efefef">${esc(r.title)}</text>` +
-          `<text x="60" y="46" font-size="14" fill="rgba(239,239,239,0.7)">${esc(r.artist)}</text>` +
-          `<text x="${w - padding * 2}" y="34" text-anchor="end" font-size="28" ` +
-          `font-weight="800" fill="#b9e0fd">${pct}%</text>` +
-          `<rect x="60" y="58" width="${w - padding * 2 - 220}" height="6" rx="3" fill="rgba(239,239,239,0.1)"/>` +
-          `<rect x="60" y="58" width="${barW}" height="6" rx="3" fill="#b9ee84"/>` +
+          `<line x1="0" y1="0" x2="${w - padding * 2}" y2="0" stroke="${RULE}"/>` +
+          `<text x="0" y="36" font-family="${MONO}" font-size="14" fill="${i === 0 ? CORAL : INK_SOFT}">${String(r.rank).padStart(2, "0")}</text>` +
+          `<text x="56" y="34" font-family="${SANS}" font-size="22" font-weight="600" fill="${INK}">${esc(r.title)}</text>` +
+          `<text x="56" y="56" font-family="${SANS}" font-size="14" fill="${INK_SOFT}">${esc(r.artist)}</text>` +
+          `<text x="${w - padding * 2}" y="40" text-anchor="end" font-family="${SANS}" font-size="30" ` +
+          `font-weight="500" letter-spacing="-1" fill="${INK}">${pct}<tspan font-size="14" fill="${INK_SOFT}">%</tspan></text>` +
+          `<rect x="56" y="68" width="${barW}" height="3" rx="1.5" fill="rgba(18,17,16,0.12)"/>` +
+          `<rect x="56" y="68" width="${fillW}" height="3" rx="1.5" fill="${CORAL}"/>` +
           `</g>`
         );
       })
@@ -1890,18 +2177,20 @@
 
     return (
       `<?xml version="1.0" encoding="UTF-8"?>` +
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" font-family="Pretendard, Inter, sans-serif">` +
-      `<rect width="${w}" height="${h}" fill="#101010"/>` +
-      `<g transform="translate(${padding}, 28) scale(0.62)">` +
-      `<path fill="#efefef" d="M9 18c8-7 15-6 23-1 8 5 14 5 23-3v10c-9 8-17 8-25 3-8-5-13-5-21 2Z"/>` +
-      `<path fill="#b9ee84" d="M9 40c7-6 14-5 22 0 9 6 15 6 24-2v10c-9 8-17 8-26 2-7-5-13-5-20 1Z"/>` +
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" font-family="${SANS}">` +
+      `<rect width="${w}" height="${h}" fill="${PAPER}"/>` +
+      `<g transform="translate(${padding}, 34) scale(0.5)" fill="none" stroke="${CORAL}" stroke-width="6" stroke-linecap="round">` +
+      `<path d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8"/>` +
+      `<path d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6"/>` +
       `</g>` +
-      `<text x="${padding + 48}" y="68" font-size="30" font-weight="700" fill="#efefef">soundmatch</text>` +
-      `<text x="${padding}" y="118" font-size="22" font-weight="600" fill="#b9ee84">${filename}</text>` +
-      `<text x="${padding}" y="148" font-size="14" fill="rgba(239,239,239,0.62)">${subtitle}</text>` +
+      `<text x="${padding + 42}" y="53" font-size="17" font-weight="600" fill="${INK}">soundmatch</text>` +
+      `<text x="${w - padding}" y="53" text-anchor="end" font-family="${MONO}" font-size="13" fill="${INK_FAINT}">${esc(t("results.title"))}</text>` +
+      `<line x1="${padding}" y1="76" x2="${w - padding}" y2="76" stroke="${RULE}"/>` +
+      `<text x="${padding}" y="136" font-size="34" font-weight="500" letter-spacing="-1" fill="${INK}">${filename}</text>` +
+      `<text x="${padding}" y="166" font-family="${MONO}" font-size="13" fill="${INK_SOFT}">${subtitle}</text>` +
       tagsXml +
       rowsXml +
-      `<text x="${w - padding}" y="${h - 16}" text-anchor="end" font-size="12" fill="rgba(239,239,239,0.42)">soundmatch · easygap/music_similarity</text>` +
+      `<text x="${w - padding}" y="${h - 20}" text-anchor="end" font-family="${MONO}" font-size="12" fill="${INK_FAINT}">soundmatch · easygap/music_similarity</text>` +
       `</svg>`
     );
   }
@@ -2066,8 +2355,16 @@
         target.tagName === "TEXTAREA" ||
         target.tagName === "SELECT" ||
         target.isContentEditable);
+    const isNativeInteractive =
+      target &&
+      typeof target.closest === "function" &&
+      Boolean(target.closest("button, a, summary, [role='button']"));
     const resultsOpen = !resultsSection.classList.contains("hidden");
     const shortcutsOpen = shortcutsModal && !shortcutsModal.hidden;
+
+    // 버튼/링크/summary 에 포커스가 있으면 Space·Enter·화살표는 해당 컨트롤의
+    // 기본 동작에 맡긴다. 전역 결과 단축키가 새 카탈로그 버튼을 가로채면 안 된다.
+    if (isNativeInteractive && [" ", "Enter", "ArrowDown", "ArrowUp"].includes(e.key)) return;
 
     // 단축키 도움말이 열려 있으면 Esc 가 최우선 — 그 외 단축키는 잡지 않는다.
     if (shortcutsOpen) {
@@ -2275,4 +2572,13 @@
     renderHistory();
   });
   renderHistory();
+
+  // landing.js(소리 지도 · 실제 결과 예시)가 같은 시드 탐색과 문구 현지화를 쓴다.
+  // 결과 화면 로직을 두 벌로 만들지 않으려고 필요한 함수만 밖으로 낸다.
+  window.SoundMatchApp = {
+    seedFromHit,
+    localizeResultTag,
+    localizeReasonGroupLabel,
+    localizeReasonSummary,
+  };
 })();
