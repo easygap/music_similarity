@@ -85,6 +85,8 @@ def test_extracted_js_files_served(fastapi_client):
         "/error-boundary.js",
         "/catalog.js",
         "/compare.js",
+        "/landing.js",
+        "/landing-data.js",
     ):
         r = fastapi_client.get(path)
         assert r.status_code == 200, path

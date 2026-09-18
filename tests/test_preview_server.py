@@ -126,7 +126,7 @@ def test_preview_export_csv(preview_url):
 @pytest.mark.parametrize("js", [
     "/app.js", "/i18n.js", "/theme-init.js", "/favorites.js",
     "/visualizers.js", "/error-boundary.js", "/sw-register.js",
-    "/catalog.js", "/compare.js",
+    "/catalog.js", "/compare.js", "/landing.js", "/landing-data.js",
 ])
 def test_preview_serves_root_js_files(preview_url, js):
     """HTML 이 루트 경로(<script src="/app.js">)로 부르는 JS 가 200 이어야 한다.

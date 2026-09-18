@@ -56,3 +56,7 @@ coverage.xml
 
 # Claude / IDE helpers (preview launch configs etc.)
 .claude/
+
+# 로컬 브라우저 자동화 캐시 (스크린샷 재생성용, 저장소에 넣지 않는다)
+.playwright-cli/
+output/
