@@ -14,9 +14,11 @@ env/
 .gitignore
 .gitattributes
 .github/
+.agents/
 .claude/
 .vscode/
 .idea/
+.playwright-cli/
 
 # 테스트 / 개발 전용 (런타임 이미지엔 불필요)
 tests/
@@ -29,6 +31,8 @@ Dockerfile
 .dockerignore
 
 # 캐시 / 커버리지 / 빌드 산출물
+output/
+.cache/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -43,7 +47,11 @@ uploads/*
 !uploads/.gitkeep
 
 # 문서 — CHANGELOG.md 는 런타임에서 파싱하므로 제외하지 않는다.
+docs/
 README.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
 LICENSE
 
 # OS 잡파일
