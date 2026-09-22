@@ -23,6 +23,18 @@ ruff check backend tests scripts
 node --test tests/frontend/audio.test.cjs
 ```
 
+## README와 언어별 안내
+
+README는 한국어를 기본으로 하며, 영어·일본어·중국어 문서는 `docs/readme/`에 있습니다.
+기능이나 사용 조건이 달라지면 네 문서의 내용과 버튼 이름도 함께 확인해 주세요.
+각 언어의 문장 구조에 맞게 쓰되 곡 수, 파일 제한, 분석 범위 등 사실은 같아야 합니다.
+Star를 요청하는 문구나 홍보성 수식어를 넣지 않습니다.
+
+화면은 실제 앱에서 캡처합니다. `docs/media/`의 GIF는 한국어·영어 화면을 각각 8초간 촬영한 것으로,
+각 파일을 2MB 미만으로 유지하고 움직임 줄이기 설정에서는 정지 이미지를 보여줍니다.
+글을 다듬을 때는 [GitHub의 README 안내](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes)와
+[토스의 문구 작성 사례](https://toss.tech/article/44737)를 참고할 수 있습니다.
+
 ## 작업 흐름
 
 1. 큰 변경은 먼저 이슈로 의도를 공유해 주세요. 작은 버그 픽스는 바로 PR 도 OK.
