@@ -1181,13 +1181,11 @@
   }
 
   function localizeResultTag(tag) {
-    if (!resultsUseEnglish()) return String(tag || "");
     const key = RESULT_TAG_KEYS[tag];
     return key ? t(key) : String(tag || "");
   }
 
   function localizeReasonGroupLabel(label) {
-    if (!resultsUseEnglish()) return String(label || "");
     const key = REASON_GROUP_KEYS[label] || "results.reasonGroups.other";
     return t(key);
   }
@@ -1198,14 +1196,12 @@
   }
 
   function localizeReasonSummary(reason) {
-    if (!resultsUseEnglish()) return String((reason && reason.summary) || "");
     const first = reason && Array.isArray(reason.groups) ? reason.groups[0] : null;
     if (!first) return t("results.reasonFallback");
     return t("results.reasonTopSummary", localizeReasonGroupLabel(first.label));
   }
 
   function localizeReasonGroupSummary(group) {
-    if (!resultsUseEnglish()) return String((group && group.summary) || "");
     const score = Number(group && group.match_score) || 0;
     const label = localizeReasonGroupLabel(group && group.label);
     if (score > 0.9) return t("results.reasonGroupAlmost", label);
@@ -1463,7 +1459,7 @@
 
     renderResultMeta(data);
 
-    // 소리 지도(landing.js)가 기준 곡과 닮은 곡을 비출 수 있게 알린다.
+    // 분석 결과를 사용하는 화면 구성 요소에 갱신을 알린다.
     // 업로드한 파일은 카탈로그에 없으니 seed 는 카탈로그 시드일 때만 채운다.
     try {
       window.dispatchEvent(new CustomEvent("soundmatch:results", {
@@ -1744,6 +1740,8 @@
       _lastFile = null;
       await setAudioPreview(null);
       renderResults(seedAdapted, /* preserveFile */ true);
+      addToHistory(seedAdapted);
+      updateLocationHash(seedAdapted).catch(() => {});
       seedBackBtn.classList.toggle("hidden", !_seedPrev);
     } catch (err) {
       if (err && err.name === "AbortError") return;
@@ -1871,7 +1869,8 @@
   // base64url 은 일반 base64 와 달리 `+/=` 를 `-_` 로 바꿔서 URL 에 안전.
   async function encodeForShare(data) {
     try {
-      const json = JSON.stringify(data);
+      // SVG 스펙트로그램은 수백 KB다. 링크에는 추천 결과와 요약 지표만 담는다.
+      const json = JSON.stringify(Object.assign({}, data, { spectrogram_svg: "" }));
       if (typeof CompressionStream === "undefined") {
         // 구형 브라우저: 압축 없이 base64. 약간 길어지지만 동작은 됨.
         return base64UrlEncode(new TextEncoder().encode(json));
@@ -1887,10 +1886,11 @@
   async function decodeFromShare(token) {
     try {
       const bytes = base64UrlDecode(token);
-      if (typeof DecompressionStream === "undefined") {
-        // 구형 브라우저는 압축 안 한 경로로 직접 디코드.
+      if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) {
+        // 압축 API가 없는 브라우저에서 만든 링크도 새 브라우저에서 읽는다.
         return JSON.parse(new TextDecoder().decode(bytes));
       }
+      if (typeof DecompressionStream === "undefined") return null;
       const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
       const text = await new Response(stream).text();
       return JSON.parse(text);
@@ -1970,7 +1970,7 @@
       if (!_lastResults) return;
       try {
         await navigator.share({
-          title: "SoundMatch · AI 음악 유사도 결과",
+          title: "SoundMatch · 음악 비교 결과",
           text: buildShareText(_lastResults),
           url: location.origin,
         });
@@ -2108,15 +2108,15 @@
   // 외부 라이브러리 없이 직접 SVG 문자열을 짜서 Blob 다운로드한다.
   function buildResultSvg(data) {
     if (!data || !data.results || !data.results.length) return null;
-    // 화면과 같은 종이·잉크·코랄 세 색만 쓴다. 폰트도 화면과 동일.
-    const PAPER = "#f3f1ec";
-    const INK = "#121110";
-    const INK_SOFT = "rgba(18,17,16,0.62)";
-    const INK_FAINT = "rgba(18,17,16,0.4)";
-    const RULE = "rgba(18,17,16,0.18)";
-    const CORAL = "#e8452b";
-    const SANS = "Pretendard Variable, Pretendard, Apple SD Gothic Neo, sans-serif";
-    const MONO = "IBM Plex Mono, Menlo, Consolas, monospace";
+    // 저장한 결과도 밝은 분석 화면과 같은 색상 체계를 따른다.
+    const PAPER = "#ffffff";
+    const INK = "#111216";
+    const INK_SOFT = "#484d5c";
+    const INK_FAINT = "#656b79";
+    const RULE = "#dce0e9";
+    const BLUE = "#004cff";
+    const SANS = "SoundMatch UI, Pretendard Variable, Pretendard, Apple SD Gothic Neo, Malgun Gothic, sans-serif";
+    const MONO = SANS;
     const w = 1200;
     const top = data.results.slice(0, 5);
     const padding = 64;
@@ -2163,13 +2163,13 @@
         return (
           `<g transform="translate(${padding}, ${y})">` +
           `<line x1="0" y1="0" x2="${w - padding * 2}" y2="0" stroke="${RULE}"/>` +
-          `<text x="0" y="36" font-family="${MONO}" font-size="14" fill="${i === 0 ? CORAL : INK_SOFT}">${String(r.rank).padStart(2, "0")}</text>` +
+          `<text x="0" y="36" font-family="${MONO}" font-size="14" fill="${i === 0 ? BLUE : INK_SOFT}">${String(r.rank).padStart(2, "0")}</text>` +
           `<text x="56" y="34" font-family="${SANS}" font-size="22" font-weight="600" fill="${INK}">${esc(r.title)}</text>` +
           `<text x="56" y="56" font-family="${SANS}" font-size="14" fill="${INK_SOFT}">${esc(r.artist)}</text>` +
           `<text x="${w - padding * 2}" y="40" text-anchor="end" font-family="${SANS}" font-size="30" ` +
           `font-weight="500" letter-spacing="-1" fill="${INK}">${pct}<tspan font-size="14" fill="${INK_SOFT}">%</tspan></text>` +
-          `<rect x="56" y="68" width="${barW}" height="3" rx="1.5" fill="rgba(18,17,16,0.12)"/>` +
-          `<rect x="56" y="68" width="${fillW}" height="3" rx="1.5" fill="${CORAL}"/>` +
+          `<rect x="56" y="68" width="${barW}" height="3" rx="1.5" fill="${RULE}"/>` +
+          `<rect x="56" y="68" width="${fillW}" height="3" rx="1.5" fill="${BLUE}"/>` +
           `</g>`
         );
       })
@@ -2179,11 +2179,11 @@
       `<?xml version="1.0" encoding="UTF-8"?>` +
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" font-family="${SANS}">` +
       `<rect width="${w}" height="${h}" fill="${PAPER}"/>` +
-      `<g transform="translate(${padding}, 34) scale(0.5)" fill="none" stroke="${CORAL}" stroke-width="6" stroke-linecap="round">` +
+      `<g transform="translate(${padding}, 34) scale(0.5)" fill="none" stroke="${BLUE}" stroke-width="6" stroke-linecap="round">` +
       `<path d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8"/>` +
       `<path d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6"/>` +
       `</g>` +
-      `<text x="${padding + 42}" y="53" font-size="17" font-weight="600" fill="${INK}">soundmatch</text>` +
+      `<text x="${padding + 42}" y="53" font-size="17" font-weight="600" fill="${INK}">SoundMatch</text>` +
       `<text x="${w - padding}" y="53" text-anchor="end" font-family="${MONO}" font-size="13" fill="${INK_FAINT}">${esc(t("results.title"))}</text>` +
       `<line x1="${padding}" y1="76" x2="${w - padding}" y2="76" stroke="${RULE}"/>` +
       `<text x="${padding}" y="136" font-size="34" font-weight="500" letter-spacing="-1" fill="${INK}">${filename}</text>` +
@@ -2231,12 +2231,13 @@
       const baseName = (_lastResults.filename || "soundmatch").replace(/\.[^.]+$/, "");
 
       try {
-        const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+        // img-src는 self/data만 허용한다. 생성한 SVG는 data URL로 읽어 CSP를 유지한다.
+        const imageSource = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
         const img = await new Promise((resolve, reject) => {
           const im = new Image();
           im.onload = () => resolve(im);
           im.onerror = () => reject(new Error("svg-load-failed"));
-          im.src = url;
+          im.src = imageSource;
         });
         const canvas = document.createElement("canvas");
         canvas.width = baseW * scale;
@@ -2244,7 +2245,6 @@
         const ctx = canvas.getContext("2d");
         ctx.scale(scale, scale);
         ctx.drawImage(img, 0, 0, baseW, baseH);
-        URL.revokeObjectURL(url);
         canvas.toBlob((pngBlob) => {
           if (!pngBlob) {
             toast(t("results.exportPngFailed"));
@@ -2573,9 +2573,13 @@
   });
   renderHistory();
 
-  // landing.js(소리 지도 · 실제 결과 예시)가 같은 시드 탐색과 문구 현지화를 쓴다.
+  // 첫 화면의 실제 추천 예시에서도 같은 탐색과 문구 현지화를 쓴다.
   // 결과 화면 로직을 두 벌로 만들지 않으려고 필요한 함수만 밖으로 낸다.
   window.SoundMatchApp = {
+    analyzeFile(file) {
+      setFile(file);
+      if (!analyzeBtn.disabled) form.requestSubmit();
+    },
     seedFromHit,
     localizeResultTag,
     localizeReasonGroupLabel,

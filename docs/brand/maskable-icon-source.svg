@@ -1,5 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#FF665A"/>
-  <path fill="none" stroke="#F7F3EE" stroke-width="48" stroke-linecap="round" d="M104 188C161 143 218 144 276 182C333 220 377 220 408 185"/>
-  <path fill="none" stroke="#F7F3EE" stroke-width="48" stroke-linecap="round" d="M104 324C162 277 219 280 276 316C332 352 376 354 408 321"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <title>SoundMatch</title>
+  <rect x="0" y="0" width="80" height="80" rx="0" fill="#004CFF" />
+  <path fill="none" stroke="#FFFFFF" stroke-width="6.4" stroke-linecap="round" d="M10 20.5C17.5 14.5 25 14.6 33.5 20.2C42 25.8 49 25.8 55 19.6" transform="translate(8 8)" />
+  <path fill="none" stroke="#FFFFFF" stroke-width="6.4" stroke-linecap="round" d="M10 43.5C17.8 37.1 25 37.5 33.5 42.8C41.8 48.1 48.8 48.4 55 42.4" transform="translate(8 8)" />
 </svg>

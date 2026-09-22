@@ -4,19 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>두 곡 비교 · SoundMatch</title>
-  <meta name="description" content="히스토리에 저장된 두 분석 결과를 나란히 놓고 메트릭과 매칭을 비교합니다." />
+  <meta name="description" content="두 곡의 템포, 음색, 소리의 질감을 그래프로 비교하세요. 분석 기록이 없어도 샘플로 시작할 수 있습니다." />
   <meta name="robots" content="noindex" />
-  <meta name="theme-color" content="#F3F1EC" />
+  <meta name="theme-color" content="#004CFF" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" />
+  <link rel="preload" href="/static/assets/fonts/soundmatch-ui-v1.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/style.css" />
   <script src="/theme-init.js"></script>
   <style>
@@ -24,6 +20,23 @@
     .compare-head { margin-bottom: 24px; }
     .compare-head h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.03em; }
     .compare-head p { margin: 0; color: var(--text-mute); }
+    .compare-demo-button { margin-top: 20px; padding: 12px 18px; border: 0; background: var(--signal-blue); color: #fff; font-size: 14px; font-weight: 600; }
+    .compare-head .compare-demo-note { margin-top: 12px; font-size: 13px; }
+    .compare-chart-panel { margin: 28px 0; padding: 24px 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); }
+    .compare-chart-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; }
+    .compare-chart-heading h2 { font-size: 21px; }
+    .compare-chart-heading > span { letter-spacing: 6px; }
+    .compare-key-a { color: var(--series-query); }
+    .compare-key-b { color: var(--series-match); }
+    .compare-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 48px; margin: 0; }
+    .compare-bars dt { font-size: 13px; margin-bottom: 8px; color: var(--ink-soft); }
+    .compare-bars dd { margin: 0; }
+    .compare-bar { display: grid; grid-template-columns: 12px minmax(0,1fr) 62px; gap: 12px; align-items: center; margin: 6px 0; font-size: 12px; }
+    .compare-bar > span:last-child { text-align: right; }
+    .compare-bar-track { height: 9px; background: var(--paper-2); }
+    .compare-bar-track i { display: block; height: 100%; background: var(--series-query); }
+    .compare-bar-b .compare-bar-track i { background: var(--series-match); }
+    .compare-chart-panel > p { margin-top: 28px; max-width: 580px; color: var(--ink-mute); font-size: 12px; line-height: 1.8; }
     .picker-row {
       display: grid;
       /* 가운데 auto 열이 스왑 버튼 자리. 버튼이 양쪽 셀렉터의 수직 중앙에 오도록 정렬. */
@@ -53,7 +66,7 @@
     .compare-swap:hover {
       color: var(--accent-2);
       border-color: var(--accent-1);
-      background: rgba(255, 102, 90, 0.07);
+      background: rgba(0, 76, 255, 0.07);
     }
     .compare-swap svg {
       width: 20px;
@@ -78,7 +91,7 @@
     .picker {
       background: var(--panel);
       border: 1px solid var(--border-strong);
-      border-radius: 14px;
+      border-radius: 3px;
       padding: 14px 16px;
     }
     .picker label {
@@ -116,14 +129,14 @@
     .compare-card {
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 18px;
+      border-radius: 3px;
       padding: 22px;
     }
     .compare-filename { font-weight: 700; font-size: 18px; margin: 0 0 10px; word-break: break-all; }
     .compare-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
     .compare-tag {
-      background: rgba(255, 102, 90, 0.13);
-      border: 1px solid rgba(255, 102, 90, 0.34);
+      background: rgba(0, 76, 255, 0.13);
+      border: 1px solid rgba(0, 76, 255, 0.34);
       color: var(--accent-1);
       padding: 4px 10px;
       border-radius: 999px;
@@ -194,13 +207,13 @@
     .compare-empty-action:focus-visible {
       transform: translateY(-1px);
       border-color: var(--accent-1);
-      background: rgba(255, 102, 90, 0.1);
+      background: rgba(0, 76, 255, 0.1);
     }
     .compare-empty-action.primary {
       border-color: transparent;
-      color: var(--brand-ink);
-      background: var(--brand-coral);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+      color: #fff;
+      background: var(--signal-blue);
+      box-shadow: none;
     }
     .compare-back {
       display: inline-flex;
@@ -221,6 +234,7 @@
 
     @media (max-width: 760px) {
       .picker-row, .compare-grid { grid-template-columns: 1fr; }
+      .compare-bars { grid-template-columns: 1fr; gap: 20px; }
       /* 세로로 쌓이면 좌우 화살표 의미가 약해지므로 버튼을 90° 돌려 위/아래 스왑으로 보이게.
          아이콘의 클릭 회전(인라인 transform)과 별개 요소라 충돌하지 않는다. */
       .compare-swap { justify-self: center; margin: 2px 0; transform: rotate(90deg); }
@@ -235,8 +249,8 @@
   <noscript>
     <div class="noscript-banner" role="alert" style="
       max-width: 760px; margin: 24px auto; padding: 18px 22px;
-      border: 1px solid #121110; border-radius: 12px;
-      background: #F3F1EC; color: #121110;
+      border: 1px solid #111216; border-radius: 12px;
+      background: #FFFFFF; color: #111216;
       font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif; line-height: 1.6;
     ">
       <strong style="display: block; font-size: 15px; margin-bottom: 6px;">
@@ -257,7 +271,7 @@
         <path class="brand-mark-trace" d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8" />
         <path class="brand-mark-trace" d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6" />
       </svg>
-      <span class="brand-wordmark">soundmatch</span>
+      <span class="brand-wordmark">SoundMatch</span>
     </a>
     <nav class="site-nav-links" aria-label="주요 메뉴" data-i18n-attr="aria-label:nav.primary">
       <div class="nav-links-group" id="nav-links-group">
@@ -284,7 +298,9 @@
   <main class="compare-wrap">
     <header class="compare-head">
       <h1 data-i18n="compare.title">두 곡 나란히 비교하기</h1>
-      <p data-i18n="compare.sub">최근 분석한 곡 중 두 개를 골라서 메트릭과 1위 매칭을 한 눈에 비교해보세요.</p>
+      <p data-i18n="compare.sub">템포부터 음색까지, 두 곡의 차이를 나란히 확인하세요.</p>
+      <button type="button" class="compare-demo-button" id="compare-demo" data-i18n="compare.demo">샘플로 비교해 보기 ↗</button>
+      <p class="compare-demo-note" id="compare-demo-note" role="status" hidden data-i18n="compare.demoNote">직접 만든 샘플의 실제 분석값입니다. 내 분석 기록에는 저장되지 않아요.</p>
     </header>
 
     <div class="picker-row">
@@ -312,10 +328,16 @@
     <p class="compare-same-warn" id="compare-same-warn" role="status" hidden
        data-i18n="compare.sameSongWarn">왼쪽과 오른쪽이 같은 곡입니다. 다른 곡을 골라주세요.</p>
 
+    <section class="compare-chart-panel" id="compare-chart-panel" hidden aria-labelledby="compare-chart-title">
+      <div class="compare-chart-heading"><h2 id="compare-chart-title" data-i18n="compare.chartTitle">어디가 다른지 보세요</h2><span><b class="compare-key-a">A</b> / <b class="compare-key-b">B</b></span></div>
+      <div id="compare-chart"></div>
+      <p data-i18n="compare.chartNote">각 항목에서 더 큰 값을 기준으로 막대 길이를 맞췄습니다. 값이 크다고 더 좋은 음악을 뜻하지는 않아요.</p>
+    </section>
+
     <div class="compare-grid" id="compare-grid">
       <div class="compare-empty" role="status">
-        <strong data-i18n="compare.emptyTitle">히스토리에 분석 결과가 2건 이상 있어야 비교할 수 있어요.</strong>
-        <p data-i18n="compare.emptyBody">메인 화면에서 음원을 두 곡 이상 분석해 주세요.</p>
+        <strong data-i18n="compare.emptyTitle">아직 비교할 곡이 없어요</strong>
+        <p data-i18n="compare.emptyBody">위의 샘플로 먼저 살펴보세요. 직접 분석한 곡이 두 개 이상이면 여기서 골라 비교할 수 있어요.</p>
         <div class="compare-empty-actions">
           <a class="compare-empty-action primary" href="/" data-i18n="compare.emptyCtaAnalyze">메인에서 분석 시작</a>
           <a class="compare-empty-action" href="/catalog" data-i18n="compare.emptyCtaCatalog">카탈로그 먼저 둘러보기</a>
@@ -325,19 +347,19 @@
   </main>
 
   <footer class="site-foot">
-    <p data-i18n="footer.tagline">소리의 특징으로 다음 곡을 찾는 음악 탐색 도구. 졸업작품에서 출발해 혼자 끝까지 다듬었습니다.</p>
+    <p data-i18n="footer.tagline">SoundMatch — 소리의 특징으로 비슷한 음악을 찾습니다.</p>
     <p class="muted">
       © <span id="year"></span> SoundMatch ·
       <a href="/privacy" data-i18n="footer.privacy">개인정보 처리방침</a> ·
       <a href="/terms" data-i18n="footer.terms">이용약관</a> ·
       <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="footer.repoLink">GitHub</a>
     </p>
-    <p class="muted" data-i18n="footer.notice">음원은 분석 직후 삭제되고, 결과는 취향 탐색을 위한 참고 정보예요.</p>
+    <p class="muted" data-i18n="footer.notice">분석 결과는 음악을 탐색하기 위한 참고 정보이며, 표절 여부를 판단하지 않습니다.</p>
   </footer>
 
-  <script src="/i18n.js"></script>
-  <script src="/site-nav.js"></script>
-  <script src="/compare.js"></script>
-  <script src="/sw-register.js"></script>
+  <script defer src="/i18n.js"></script>
+  <script defer src="/site-nav.js"></script>
+  <script defer src="/compare.js"></script>
+  <script defer src="/sw-register.js"></script>
 </body>
 </html>

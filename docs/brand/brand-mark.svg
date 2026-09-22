@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48">
   <title>SoundMatch 공명 마크</title>
-  <path fill="none" stroke="#FF665A" stroke-width="6" stroke-linecap="round" d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8"/>
-  <path fill="none" stroke="#FF665A" stroke-width="6" stroke-linecap="round" d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6"/>
+  <path fill="none" stroke="#004CFF" stroke-width="6" stroke-linecap="round" d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8"/>
+  <path fill="none" stroke="#004CFF" stroke-width="6" stroke-linecap="round" d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6"/>
 </svg>

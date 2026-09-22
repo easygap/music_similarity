@@ -1,222 +1,165 @@
 <div align="center">
 
-<img src="frontend/assets/favicon.svg" width="72" height="72" alt="SoundMatch 로고">
+<img src="frontend/assets/favicon.svg" width="56" height="56" alt="SoundMatch 로고">
 
 # SoundMatch
 
-**음악 파일 하나를 올리면, 소리가 닮은 곡을 찾아서 왜 닮았는지까지 알려주는 웹 서비스**
+**두 곡, 어디가 닮았을까?**
 
-![CI](https://github.com/easygap/music_similarity/actions/workflows/ci.yml/badge.svg)
-![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.14-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+음악을 듣고, 소리의 차이를 보고, 좋아하는 곡과 비슷한 음악을 찾는 웹 서비스입니다.
 
-[어떻게 찾아내나](#어떻게-찾아내나) · [실제 결과 예시](#실제로-이렇게-찾아냅니다) · [바로 실행하기](#바로-실행하기) · [BI 가이드](docs/brand/README.md)
+[![CI](https://github.com/easygap/music_similarity/actions/workflows/ci.yml/badge.svg)](https://github.com/easygap/music_similarity/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.11%20·%203.12%20·%203.14-004CFF)
+![License](https://img.shields.io/badge/License-MIT-111216)
+
+[샘플 듣기와 비교](#먼저-들어보세요) · [내 음악으로 찾기](#좋아하는-곡에서-다음-곡으로) · [실행 방법](#직접-실행하기)
 
 </div>
 
-![SoundMatch 메인 화면. 왼쪽은 업로드, 오른쪽은 카탈로그 781곡을 펼친 소리 지도](docs/screenshots/hero.png)
+![파란 화면 위에 두 샘플의 주파수 지형과 A/B 플레이어를 펼친 SoundMatch](docs/screenshots/hero.png)
 
-<br>
+## 먼저 들어보세요
 
-## 한 줄로 말하면
+파일을 준비하지 않아도 됩니다. 첫 화면에서 9초짜리 샘플 **〈밤 산책〉**을 재생해 보세요.
+같은 멜로디의 음색을 바꾸거나 리듬까지 바꿔 가며, 소리가 얼마나 달라지는지 직접 비교할 수 있습니다.
+A와 B를 바꿔 눌러도 재생 위치는 이어집니다.
 
-좋아하는 곡의 파일을 올리면 → librosa 로 소리 특성 58개를 뽑고 → 미리 계산해 둔 카탈로그 781곡과
-코사인 유사도로 견줘서 → 가장 닮은 곡 N개와 **어디가 닮았는지**를 문장으로 돌려준다.
-제목이나 장르 태그는 전혀 쓰지 않는다. 오로지 소리만 본다.
+화면의 선은 샘플에서 뽑은 실제 주파수 데이터입니다. 두 곡을 겹치고 시점을 바꾸면 시간에 따른 차이가 드러납니다.
+‘분석값 자세히 보기’를 열면 주파수 분포, 특성별 막대그래프, 숫자를 함께 볼 수 있습니다.
 
-- **입력** — mp3 · wav · flac · ogg · m4a, 25MB 이하. 앞부분 30초만 읽고, 분석이 끝나면 즉시 지운다.
-- **출력** — 상위 N곡과 유사도(%), 닮은 이유(템포·음색·질감·화성·크로마·MFCC 묶음별 근접도),
-  요약 지표 6개, 멜 스펙트로그램. 결과 곡을 새 기준으로 삼아 계속 탐색할 수 있다.
-- **뿌리** — 졸업작품 [easygap/capstone_music](https://github.com/easygap/capstone_music) 의 분석 노트북.
-  알고리즘은 그대로 두고 FastAPI 서버, 화면, CLI, PWA, Docker, CI 를 새로 얹었다.
+| 비교 | 바뀐 점 | 분석 유사도 |
+| --- | --- | ---: |
+| 원본 ↔ 밝은 음색 | 멜로디와 박자는 유지하고 음색 변경 | **91.2%** |
+| 원본 ↔ 빠른 리듬 | 템포와 드럼 패턴까지 변경 | **80.9%** |
 
-<br>
+샘플은 이 프로젝트에서 직접 합성한 음원입니다. 표시된 값은 실제 분석 엔진으로 계산했으며, 유사도는 두 곡이 같을 확률이나 표절 확률을 뜻하지 않습니다.
 
-## 어떻게 찾아내나
+[원본 WAV](frontend/assets/demo/original.wav) · [밝은 음색 WAV](frontend/assets/demo/tone.wav) · [빠른 리듬 WAV](frontend/assets/demo/rhythm.wav)
 
-![동작 원리: 음원 → 특성 58개 추출 → 표준화 → 781곡과 코사인 유사도 → 닮은 곡과 이유](docs/how-it-works.svg)
+<details>
+<summary>주파수 분석 화면 보기</summary>
 
-1. **소리를 숫자로 읽는다.** librosa 로 앞부분 30초를 읽어 템포(BPM), 음량(RMS), 스펙트럼 중심·대역폭·롤오프,
-   제로 크로싱, 화성·타악 성분, 크로마, 20차원 MFCC 를 뽑는다. 카탈로그 CSV 와 컬럼이 1:1 로 같다.
-2. **같은 잣대로 맞춘 뒤 거리를 잰다.** 단위가 제각각인 값을 `StandardScaler` 로 표준화하고
-   카탈로그 전곡과 `cosine_similarity` 를 구해 가까운 순으로 세운다. 스케일러는 카탈로그를 읽을 때 한 번만 fit 한다.
-3. **왜 닮았는지 말로 푼다.** 특성별 거리를 여섯 묶음으로 나눠 가까운 묶음부터 한국어 문장으로 설명한다.
-   "템포 & 리듬 측면에서 거의 같은 특성을 보입니다" 같은 식이다.
+![같은 기준으로 겹쳐 본 두 샘플의 주파수 분포](docs/screenshots/listening-detail.png)
 
-메인 화면의 **원리** 섹션은 이 세 단계를 예시 곡의 실제 값으로 보여준다. 스크롤을 내리면 오른쪽 소리 지도가 단계에 맞춰 바뀐다.
+</details>
 
-![원리 섹션. 예시 곡의 실제 지표와 함께 소리 지도가 기준 곡과 닮은 곡을 비춘다](docs/screenshots/story.png)
+## 좋아하는 곡에서 다음 곡으로
 
-<br>
+음악 파일을 올리면 등록된 **781곡**에서 소리가 비슷한 곡을 찾습니다.
+곡의 앞부분 최대 30초를 읽고, 템포·음량·음색 등을 나타내는 **57개 특성**을 비교합니다.
+제목이나 장르 태그로 검색하는 방식은 아닙니다.
 
-## 실제로 이렇게 찾아냅니다
+![음악 파일을 올리거나 샘플로 실제 분석을 시작하는 화면](docs/screenshots/upload.png)
 
-메인 화면에는 서버 엔진이 카탈로그 안에서 실제로 계산한 예시 세 쌍을 그대로 실었다.
-꾸며 낸 숫자가 아니라 `scripts/build_landing_data.py` 를 돌릴 때마다 엔진에서 나오는 결과다.
-제목만 다른 동일 음원(유사도 100%) 쌍은 예시에서 뺐다.
+MP3·WAV·FLAC·OGG·M4A를 지원하며 파일 크기는 25MB까지입니다.
+분석이 끝나면 업로드한 파일은 서버에서 삭제합니다. 별도 가입 없이 사용할 수 있습니다.
 
-| 기준 곡 | 1위 곡 | 유사도 | 가장 닮은 묶음 |
-| --- | --- | ---: | --- |
-| One Step Away · Laszlo | Spoil · Brig | 94.1% | 음색 (밝기) 71% |
-| Howling · Cartoon | Crest · Codeko | 92.8% | 음색 (밝기) 79% |
-| Feel The Buzz · Sub.Sound | Don't Look Down · Laszlo | 90.5% | 음정 분포 (크로마) 89% |
+![실제 샘플 분석 결과. 추천 순위, 유사도, 닮은 부분과 지표를 함께 표시](docs/screenshots/result.png)
 
-![실제 결과 예시. 기준 곡과 1위 곡의 요약 지표 6개를 잉크·코랄 두 줄로 나란히 비교한다](docs/screenshots/showcase.png)
+결과에는 **얼마나 닮았는지, 어떤 특성이 가까운지**가 함께 나옵니다.
+마음에 드는 곡에서 ‘이 곡에서 계속 찾기’를 누르면 그 곡을 기준으로 탐색을 이어 갑니다.
+즐겨찾기에 저장하거나 YouTube·Spotify 검색으로 넘어갈 수도 있습니다.
 
-<br>
+결과는 링크로 공유하고 JSON·CSV·SVG·PNG로 저장할 수 있습니다.
+공유 링크에는 추천 결과와 요약 지표를 담고, 용량이 큰 스펙트로그램은 제외합니다.
+분석 기록과 즐겨찾기는 현재 브라우저에 보관됩니다.
 
-## 소리 지도
+## 숫자로 나란히 비교하기
 
-카탈로그 781곡을 서버와 같은 `StandardScaler` 공간에서 PCA 3축으로 눌러 캔버스에 찍었다.
-가까이 있는 점일수록 소리가 닮은 곡이다. 스크롤에 따라 천천히 돌고, 점 위에 올리면 곡명이,
-누르면 그 곡을 기준으로 바로 탐색한다. 분석 결과가 뜨면 기준 곡(잉크)과 닮은 곡(코랄)이 지도 위에 표시된다.
+![두 샘플의 템포, 에너지, 밝기 등 여섯 항목을 나란히 보여 주는 비교 화면](docs/screenshots/compare.png)
 
-외부 라이브러리 없이 canvas 2D 하나로 그린다. 화면에 보일 때만, 바뀐 게 있을 때만 다시 그리고
-유휴 회전은 30fps 로 제한한다. 좌표는 빌드 시점에 계산해 50KB 남짓한 정적 파일로 싣는다.
+최근 분석한 두 곡을 골라 여섯 가지 요약 지표를 비교합니다.
+처음 방문했다면 ‘샘플로 비교해 보기’로 시작할 수 있습니다.
+막대는 각 항목의 상대적인 크기를 보여 줍니다. 값이 크다고 더 좋은 음악이라는 뜻은 아닙니다.
 
-<br>
+등록된 곡부터 둘러보고 싶다면 카탈로그에서 곡명·아티스트를 검색하거나 템포와 에너지로 범위를 좁혀 보세요.
 
-## 결과 화면
+<details>
+<summary>카탈로그 화면 보기</summary>
 
-![결과 화면. 순위, 유사도, 닮은 이유, 핵심 지표 비교와 다음 행동 버튼](docs/screenshots/result.png)
+![검색과 필터를 제공하는 카탈로그 화면](docs/screenshots/catalog.png)
 
-순위마다 유사도 막대, 닮은 이유 문장, 핵심 지표 비교(기준 곡=잉크, 매칭 곡=코랄), YouTube·Spotify 검색 링크가 붙는다.
-**이 곡에서 계속 찾기** 를 누르면 결과 곡이 새 기준이 되어 탐색이 이어지고, 이전 결과로 한 단계 돌아갈 수 있다.
-결과는 JSON·CSV·SVG·PNG 로 내보내거나, 결과 데이터가 담긴 링크 하나로 공유할 수 있다.
+</details>
 
-![기준 곡의 소리 프로필. 요약 지표 6개와 1위 곡과 겹쳐 본 레이더 차트](docs/screenshots/result-profile.png)
-
-<br>
-
-## 둘러보고, 비교하고
+## 작은 화면에서도, 어두운 화면에서도
 
 <table>
 <tr>
-<td width="50%" valign="top">
-
-**카탈로그** — 검색하고 BPM·에너지로 걸러 곡을 훑어보다가, 마음에 드는 곡을 누르면 그 곡과 닮은 곡을 바로 띄운다.
-즐겨찾기, CSV 내보내기, 곡 단위 공유 링크까지.
-
-<img src="docs/screenshots/catalog.png" alt="카탈로그 페이지">
-
-</td>
-<td width="50%" valign="top">
-
-**비교** — 최근 분석한 두 곡을 나란히 놓고 요약 지표와 1위 곡을 맞대본다. 좋아진 값은 초록, 나빠진 값은 빨강.
-
-<img src="docs/screenshots/compare.png" alt="비교 페이지">
-
-</td>
+<td width="70%" valign="top"><img src="docs/screenshots/hero-dark.png" alt="검정 내비게이션과 파란 비교 화면을 조합한 다크 모드"></td>
+<td width="30%" valign="top"><img src="docs/screenshots/hero-mobile.png" alt="세로로 배치한 모바일 A/B 비교 화면"></td>
 </tr>
 </table>
 
-<table>
-<tr>
-<td width="64%" valign="top">
+화면 폭에 맞춰 제목·그래프·재생 도구를 다시 배치합니다. 키보드 조작, 한국어·영어 전환, 모션 감소 설정을 지원합니다.
+홈 화면에 설치하면 오프라인에서도 저장된 분석 기록을 다시 열 수 있습니다. 새 음악 분석에는 서버 연결이 필요합니다.
 
-**다크 모드** — 종이와 잉크를 뒤집은 별도 세트. 코랄은 어두운 종이 위에서 원래 색으로 돌아간다.
+## 직접 실행하기
 
-<img src="docs/screenshots/hero-dark.png" alt="다크 모드 메인 화면">
-
-</td>
-<td width="36%" valign="top">
-
-**모바일** — 한 열로 다시 배열되고, 지도는 첫 문단 아래로 내려온다. 홈 화면에 추가하면 오프라인에서도 지난 결과를 연다.
-
-<img src="docs/screenshots/mobile.png" alt="모바일 화면">
-
-</td>
-</tr>
-</table>
-
-<br>
-
-## 화면을 이렇게 만든 이유
-
-- **종이 위의 잉크.** 배경은 종이색 한 장, 글자는 잉크 한 색, 강조는 코랄 한 색. 카드 그림자, 유리 효과, 그라데이션은 쓰지 않고
-  1px 괘선으로만 영역을 나눈다. 회귀 테스트가 이 규칙을 지킨다.
-- **그림은 전부 실제 데이터.** 소리 지도, 지표 막대, 레이더, 스펙트로그램 모두 엔진이 계산한 값이다. 스톡 이미지나 장식 그래픽은 없다.
-- **글꼴은 두 종류.** 본문은 Pretendard Variable(동적 서브셋), 숫자와 라벨은 IBM Plex Mono.
-- **프레임워크도 빌드도 없다.** HTML·CSS·JS 그대로 서빙한다. 스크롤 연동 효과는 CSS `animation-timeline` 을 쓰고,
-  지원하지 않는 브라우저에서는 조용히 정적으로 보인다.
-
-<br>
-
-## 바로 실행하기
+Python 3.11·3.12·3.14에서 테스트합니다. 오디오 디코딩을 위해 시스템에 FFmpeg를 설치해 주세요.
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+source .venv/bin/activate         # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements-dev.txt
-
-uvicorn backend.main:app --reload   # → http://localhost:8000
+uvicorn backend.main:app --reload
 ```
 
-Docker 가 편하면 `docker compose up --build` 한 줄이면 된다.
-무거운 오디오 라이브러리 없이 **화면만** 보고 싶다면 `python preview_server.py 8790` — 더미 데이터로 전 페이지가 그대로 뜬다.
+[localhost:8000](http://localhost:8000)에서 열 수 있습니다. Docker를 사용한다면 `docker compose up --build`로 실행하세요.
+화면만 확인하려면 `python preview_server.py 8790`을 사용할 수 있습니다. 이 서버의 추천 결과는 시연용 데이터입니다.
 
-<br>
+**기존 기술 스택을 유지합니다.** Python·FastAPI·librosa·scikit-learn과 순수 HTML·CSS·JavaScript로 구성했습니다.
+프런트엔드 빌드 과정이나 별도 렌더링 라이브러리는 없습니다.
 
-## 조금 더 들어가면
+## 화면은 선명하게, 로딩은 가볍게
 
-- **CLI** — 서버 없이 파일·폴더 단위 분석, 두 곡 비교, 배포 헬스체크까지 (`python -m backend.cli --help`)
-- **API** — 모든 엔드포인트는 `/docs` 의 Swagger 문서에서 바로 눌러볼 수 있다
-- **설정** — rate limit · CORS · 캐시 · 프록시 신뢰 범위 등은 `MUSIC_*` 환경 변수로 조정
-- **카탈로그 교체** — `scripts/rebuild_dataset.py` 로 내 음원 폴더를 통째로 다시 카탈로그화한 뒤,
-  `python scripts/build_landing_data.py` 로 소리 지도와 예시를 다시 만든다
+입체 그래프는 미리 계산한 데이터를 Canvas 2D에 그립니다. 정지 상태에서는 계속 다시 그리지 않고,
+음원은 재생하거나 분석할 때 내려받습니다. 본문용 Pretendard와 제목용 LINE Seed KR은 필요한 문자만 묶어 로컬에서 제공합니다.
 
-**기술 스택** &nbsp;·&nbsp; Python · FastAPI · librosa · scikit-learn · numpy 위에, 프레임워크 없이 짠 Vanilla JS + CSS PWA.
-배포는 Docker, 검증은 GitHub Actions(3개 파이썬 버전 매트릭스).
+2026년 9월 22일 동일한 로컬 모바일 Lighthouse 조건에서 성능을 측정했습니다.
+[전송량·화면 밀림·기능 검증 결과](docs/verification-2026.md)에서 조건과 수치를 확인할 수 있습니다.
 
-<br>
+[화면 설계와 참고 자료](docs/design-2026.md) · [색상·로고 가이드](docs/brand/README.md)
 
-## 운영 메모
+<details>
+<summary>분석 방식과 개발 안내</summary>
 
-배포된 서버가 기대한 버전인지 확인할 때는 CLI 를 바로 쓴다.
+librosa로 길이를 포함한 58개 값을 추출하고, 길이를 제외한 57개 특성으로 비교합니다.
+카탈로그로 학습한 `StandardScaler`로 단위를 맞춘 뒤 코사인 유사도를 구합니다.
+표시 점수는 음수를 0으로 처리한 유사도에 100을 곱한 값입니다.
+
+- API 문서: 실행한 서버의 `/docs`
+- CLI: `python -m backend.cli --help`
+- 카탈로그 재생성: `scripts/rebuild_dataset.py`, 이후 `python scripts/build_landing_data.py`
+- 샘플 음원·분석값 재생성: `python scripts/build_listening_demo.py`
+- UI 글꼴 재생성: 개발 환경에 `fonttools brotli` 설치 후 `python scripts/build_ui_font.py`
+- 검증: `ruff check backend tests scripts`, `pytest -q`
+- 운영 설정: `backend/main.py`의 `MUSIC_*` 환경 변수. 다중 워커 운영 시 메모리 기반 요청 제한·캐시의 범위를 확인하세요.
+- 변경 이력: [CHANGELOG.md](CHANGELOG.md)
+
+| 운영 설정 | 기본값 | 설명 |
+| --- | --- | --- |
+| `WEB_CONCURRENCY` | `1` | 요청 제한·캐시·통계가 메모리 기반입니다. 여러 워커를 쓰려면 외부 상태 저장소를 먼저 구성해야 합니다. |
+
+배포 버전은 다음 명령으로 확인합니다.
 
 ```bash
 python -m backend.cli version
 # v1.9.0 · 2026-09-18 · <git-sha>
-
-python -m backend.cli status --url https://your-soundmatch.example --ready
 ```
-
-핵심 설정만 추리면 아래 정도다. 전체 값은 `backend/main.py` 의 `MUSIC_*` 기본값을 따른다.
-
-| 이름 | 기본 | 설명 |
-| --- | --- | --- |
-| `MUSIC_ENV` | `development` | `production` 이면 HSTS 와 엄격한 CORS 설정을 사용한다. |
-| `MUSIC_DATASET_PATH` | `data/dataset.csv` | 비교에 사용할 카탈로그 CSV 경로. |
-| `MUSIC_MAX_UPLOAD_BYTES` | `26214400` | 업로드 파일 크기 제한. 기본은 25MB. |
-| `MUSIC_RATE_LIMIT_PER_MIN` | `12` | IP 기준 분당 분석 요청 한도. |
-| `MUSIC_GIT_COMMIT` | "" | `/api/version` 과 `/api/health` 에 노출할 짧은 배포 SHA. |
-| `WEB_CONCURRENCY` | `1` | Docker / Render / Fly 기본값은 단일 worker. rate limit, 캐시, metrics 가 메모리 기반이라 여러 worker 를 쓰려면 Redis 같은 외부 상태 저장소를 먼저 붙여야 한다. |
-
-<br>
 
 ## 릴리즈
 
-1. `CHANGELOG.md` 의 `[Unreleased]` 내용을 `## [x.y.z] — YYYY-MM-DD` 섹션으로 옮긴다.
-2. `backend/__init__.py` 의 `__version__` 을 같은 `x.y.z` 로 올린다.
-3. README 의 `python -m backend.cli version` 출력 예시와 OpenAPI 스키마 예시도 같은 버전으로 맞춘다.
-4. main CI 가 초록인지 확인한 뒤 `git tag vx.y.z && git push origin vx.y.z`.
+`CHANGELOG.md`의 Unreleased 내용을 새 버전 섹션으로 옮기고, `backend/__init__.py`와 README·OpenAPI 버전 예시를 맞춥니다.
+main의 CI 통과를 확인한 뒤 `git tag vx.y.z && git push origin vx.y.z`로 태그를 올립니다.
+태그·패키지 버전·CHANGELOG가 다르면 자동으로 릴리즈 생성을 중단합니다.
 
-태그가 푸시되면 GitHub Release 워크플로가 CHANGELOG 섹션을 그대로 릴리즈 노트로 사용한다.
-태그 버전, `backend.__version__`, `CHANGELOG.md` 의 릴리즈 섹션이 하나라도 다르면 릴리즈 생성을 중단한다.
+곡의 앞부분만 분석하므로 후렴의 특징이 반영되지 않을 수 있습니다. 결과는 현재 카탈로그 범위 안에서의 비교이며,
+취향이나 저작권·표절 여부를 판정하지 않습니다.
 
-<br>
+</details>
 
-## 알아둘 것
+## 시작과 라이선스
 
-- 분석은 곡의 **앞 30초**만 본다. 가장 특징적인 후렴구가 안 잡힐 수 있다.
-- 카탈로그는 **781곡** 규모라 장르가 한쪽으로 쏠려 있다. 낯선 장르를 올리면 1위도 50%대로 떨어질 수 있고,
-  그럴 땐 결과 화면이 솔직하게 알려준다. 더 커지면 코사인 유사도 대신 Annoy·FAISS 같은 ANN 구조가 맞다.
-- rate limit·metrics 가 메모리 기반이라, 여러 워커로 띄우면 값이 워커별로 나뉜다.
-- 결과는 **취향·학습용**이다. 저작권이나 표절 판단의 근거는 될 수 없다.
-
-<br>
-
-## 라이선스
-
-MIT. 원작 캡스톤 데이터셋과 코드는 [easygap/capstone_music](https://github.com/easygap/capstone_music) 에서 볼 수 있다.
+졸업작품 [easygap/capstone_music](https://github.com/easygap/capstone_music)의 음악 분석을 웹 서비스로 발전시킨 프로젝트입니다.
+코드와 자체 제작 샘플은 MIT 라이선스를 따릅니다. 파생 UI 글꼴은 SIL OFL을 따릅니다.
+[Pretendard 라이선스](frontend/assets/fonts/OFL.txt) · [LINE Seed 라이선스](frontend/assets/fonts/LINE-Seed-OFL.txt)

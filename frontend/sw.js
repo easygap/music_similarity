@@ -6,7 +6,7 @@
 
 // 캐시 키는 빌드별로 바뀌어야 한다 — 새 자산을 추가하거나 기존 자산을 고치면
 // 이 문자열을 한 칸 올려서 옛 캐시를 강제로 무효화한다.
-const VERSION = "soundmatch-v19";
+const VERSION = "soundmatch-v25";
 const SHELL = [
   "/",
   "/catalog",
@@ -25,6 +25,11 @@ const SHELL = [
   "/error-boundary.js",
   "/site-nav.js",
   "/landing.js",
+  "/static/js/listening.js",
+  "/static/js/sound-surface.js",
+  "/static/assets/demo/analysis.json",
+  "/static/assets/fonts/soundmatch-ui-v1.woff2",
+  "/static/assets/fonts/soundmatch-display-v1.woff2",
   "/landing-data.js",
   "/favicon.svg",
   "/favicon-32.png",
@@ -62,7 +67,7 @@ self.addEventListener("activate", (event) => {
     (async () => {
       // 옛 버전 캐시는 정리.
       const names = await caches.keys();
-      await Promise.all(names.filter((n) => n !== VERSION).map((n) => caches.delete(n)));
+      await Promise.all(names.filter((n) => n.startsWith("soundmatch-") && n !== VERSION).map((n) => caches.delete(n)));
       await self.clients.claim();
     })(),
   );
@@ -73,6 +78,9 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return; // POST /api/analyze 등은 캐시 손대지 않음.
 
   const url = new URL(req.url);
+
+  // 음원 탐색에는 206 응답이 필요하다. 전체 파일 캐시로 Range 응답을 덮지 않는다.
+  if (req.headers.has("range") || /\.(wav|mp3|ogg|flac|m4a)$/i.test(url.pathname)) return;
 
   // API 요청은 항상 네트워크 우선.
   if (url.pathname.startsWith("/api/")) {

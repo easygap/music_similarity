@@ -82,7 +82,7 @@
       // 테마에 따라 색이 바뀌도록 CSS 변수에서 색을 읽는다.
       const style = getComputedStyle(canvas);
       const baseColor = style.getPropertyValue("--wave-base").trim() || "rgba(255,255,255,0.18)";
-      const playedColor = style.getPropertyValue("--wave-played").trim() || "#ff665a";
+      const playedColor = style.getPropertyValue("--wave-played").trim() || "#004cff";
 
       const bars = peaks.length;
       const gap = 2;

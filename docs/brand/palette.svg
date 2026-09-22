@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" font-family="Arial, sans-serif">
+  <title>SoundMatch color palette: blue, lime, white, black</title>
+  <rect width="1200" height="300" fill="#111216"/>
+  <rect x="0" width="600" height="300" fill="#004CFF"/>
+  <rect x="600" width="200" height="300" fill="#CCFF00"/>
+  <rect x="800" width="200" height="300" fill="#FFFFFF"/>
+  <g fill="#FFFFFF"><text x="32" y="54" font-size="26" font-weight="700">SoundMatch</text><text x="32" y="242" font-size="19">BLUE</text><text x="32" y="274" font-size="17">#004CFF</text><text x="1024" y="242" font-size="19">BLACK</text><text x="1024" y="274" font-size="17">#111216</text></g>
+  <g fill="#111216" font-size="19"><text x="624" y="242">LIME</text><text x="824" y="242">WHITE</text></g>
+  <g fill="#111216" font-size="17"><text x="624" y="274">#CCFF00</text><text x="824" y="274">#FFFFFF</text></g>
+  <g stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none"><path d="M34 104 Q54 86 75 104 T116 104"/><path d="M34 137 Q54 119 75 137 T116 137"/></g>
+</svg>

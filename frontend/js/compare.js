@@ -27,15 +27,6 @@
       return v.toFixed(digits || 3);
     }
 
-    function deltaClass(a, b, lowerBetter) {
-      // a 기준으로 b 가 어느 방향인지. lowerBetter 면 b 가 더 작으면 좋은 거.
-      if (typeof a !== "number" || typeof b !== "number") return "delta-flat";
-      if (Math.abs(a - b) < 1e-6) return "delta-flat";
-      var bIsBigger = b > a;
-      if (lowerBetter) return bIsBigger ? "delta-up" : "delta-down";
-      return bIsBigger ? "delta-down" : "delta-up";
-    }
-
     // 메트릭 라벨은 i18n 키를 통해서만 잡고, render 시점에 resolve 한다.
     var METRICS = [
       { key: "tempo_bpm", i18nKey: "compare.metric.tempo", digits: 1 },
@@ -55,14 +46,12 @@
     function renderCard(entry, other) {
       var data = entry.data || {};
       var summary = data.summary || {};
-      var otherSummary = (other && other.data && other.data.summary) || {};
       var tags = Array.isArray(data.tags) ? data.tags : [];
       var top = data.results && data.results[0];
 
       var metricsHtml = METRICS.map(function (m) {
         var a = summary[m.key];
-        var b = otherSummary[m.key];
-        var cls = deltaClass(b, a, false);
+        var cls = "delta-flat";
         return [
           '<div class="compare-metric">',
           '<span class="compare-metric-key">' + escapeHtml(t(m.i18nKey)) + '</span>',
@@ -104,10 +93,14 @@
       var selB = document.getElementById("select-b");
       var swapBtn = document.getElementById("compare-swap");
       var sameWarn = document.getElementById("compare-same-warn");
+      var chartPanel = document.getElementById("compare-chart-panel");
+      var chart = document.getElementById("compare-chart");
+      var demoButton = document.getElementById("compare-demo");
+      var demoNote = document.getElementById("compare-demo-note");
+      var isDemo = false;
 
       if (items.length < 2) {
         pickerRow.style.display = "none";
-        return;
       }
 
       function buildOptions(target, defaultIdx) {
@@ -115,14 +108,11 @@
         target.innerHTML = items.map(function (it, idx) {
           var when = new Date(it.ts);
           var label = when.toLocaleString(locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-          var name = it.filename || ("Analysis " + (idx + 1));
+          var name = isDemo ? t("demo." + ["original", "toneName", "rhythmName"][idx]) : it.filename || ("Analysis " + (idx + 1));
           return '<option value="' + idx + '"' + (idx === defaultIdx ? ' selected' : '') + '>'
-            + escapeHtml(name) + ' · ' + escapeHtml(label) + '</option>';
+            + escapeHtml(name) + (isDemo ? '' : ' · ' + escapeHtml(label)) + '</option>';
         }).join("");
       }
-
-      buildOptions(selA, 0);
-      buildOptions(selB, 1);
 
       function rerender() {
         var a = items[parseInt(selA.value, 10)];
@@ -135,7 +125,38 @@
           return;
         }
         grid.innerHTML = renderCard(a, b) + renderCard(b, a);
+        chartPanel.hidden = false;
+        chart.innerHTML = '<dl class="compare-bars">' + METRICS.map(function (metric) {
+          var va = (a.data.summary || {})[metric.key], vb = (b.data.summary || {})[metric.key];
+          var max = Math.max(Math.abs(va) || 0, Math.abs(vb) || 0, .001);
+          function bar(value, key) {
+            var width = Number.isFinite(value) ? Math.max(0, value) / max * 100 : 0;
+            return '<div class="compare-bar compare-bar-' + key + '"><b>' + key.toUpperCase() + '</b><span class="compare-bar-track" aria-hidden="true"><i style="width:' + width.toFixed(2) + '%"></i></span><span>' + fmt(value, metric.digits) + '</span></div>';
+          }
+          return '<div><dt>' + escapeHtml(t(metric.i18nKey)) + '</dt><dd>' + bar(va, 'a') + bar(vb, 'b') + '</dd></div>';
+        }).join('') + '</dl>';
       }
+
+      demoButton.addEventListener("click", async function () {
+        demoButton.disabled = true;
+        try {
+          var response = await fetch("/static/assets/demo/analysis.json");
+          if (!response.ok) throw new Error("sample unavailable");
+          var data = await response.json();
+          isDemo = true;
+          items = data.tracks.map(function (track, index) {
+            var name = t("demo." + ["original", "toneName", "rhythmName"][index]);
+            return { filename: name, data: { filename: name, summary: track.summary, tags: [], results: [] } };
+          });
+          pickerRow.style.display = "";
+          demoNote.hidden = false;
+          demoNote.textContent = t("compare.demoNote");
+          buildOptions(selA, 0); buildOptions(selB, 1); rerender();
+        } catch (_) {
+          demoNote.hidden = false;
+          demoNote.textContent = t("demo.loadError");
+        } finally { demoButton.disabled = false; }
+      });
 
       selA.addEventListener("change", rerender);
       selB.addEventListener("change", rerender);
@@ -157,13 +178,17 @@
 
       // 언어가 바뀌면 옵션 라벨(날짜) 과 카드 메트릭 라벨이 같이 바뀌어야 한다.
       window.addEventListener("i18n:change", function () {
+        if (items.length < 2) return;
         var prevA = selA.value;
         var prevB = selB.value;
+        if (isDemo) items.forEach(function (item, index) { item.data.filename = t("demo." + ["original", "toneName", "rhythmName"][index]); });
         buildOptions(selA, parseInt(prevA, 10) || 0);
-        buildOptions(selB, parseInt(prevB, 10) || 1);
+        buildOptions(selB, Number.isFinite(parseInt(prevB, 10)) ? parseInt(prevB, 10) : 1);
         rerender();
       });
-      rerender();
+      if (items.length >= 2) {
+        buildOptions(selA, 0); buildOptions(selB, 1); rerender();
+      }
     }
 
     if (document.readyState !== "loading") init();

@@ -5,17 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>카탈로그 둘러보기 · SoundMatch</title>
   <meta name="description" content="SoundMatch 분석의 비교 대상이 되는 곡 카탈로그를 검색해볼 수 있습니다." />
-  <meta name="theme-color" content="#F3F1EC" />
+  <meta name="theme-color" content="#004CFF" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" />
+  <link rel="preload" href="/static/assets/fonts/soundmatch-ui-v1.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/style.css" />
   <script src="/theme-init.js"></script>
   <style>
@@ -69,14 +65,14 @@
       transition: background 0.15s;
     }
     .cat-search-clear:hover, .cat-search-clear:focus-visible {
-      background: rgba(255, 102, 90, 0.28);
+      background: rgba(0, 76, 255, 0.28);
       outline: none;
     }
     :root[data-theme="light"] .cat-search-clear {
       background: var(--paper-3);
     }
     :root[data-theme="light"] .cat-search-clear:hover {
-      background: rgba(255, 102, 90, 0.16);
+      background: rgba(0, 76, 255, 0.16);
     }
     .cat-meta { color: var(--text-mute); font-size: 13px; }
     .cat-grid {
@@ -187,13 +183,13 @@
     .cat-metrics .sep { opacity: 0.4; }
     /* 검색어 매칭 부분 강조 — 기본 <mark> 노란색 대신 accent 계열 톤. */
     .cat-highlight {
-      background: rgba(255, 102, 90, 0.22);
+      background: rgba(0, 76, 255, 0.22);
       color: inherit;
       padding: 0 1px;
       border-radius: 3px;
     }
     :root[data-theme="light"] .cat-highlight {
-      background: rgba(255, 102, 90, 0.18);
+      background: rgba(0, 76, 255, 0.18);
     }
     .cat-filter-row {
       display: flex;
@@ -209,7 +205,7 @@
       min-width: 18px;
       padding: 0 6px;
       border-radius: 999px;
-      background: rgba(255, 102, 90, 0.2);
+      background: rgba(0, 76, 255, 0.2);
       color: var(--text);
       font-family: var(--font-mono);
       font-size: 11px;
@@ -276,8 +272,8 @@
     .cat-recent-clear:hover { color: var(--accent-1); }
     .cat-recent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .cat-recent-chip {
-      background: rgba(255, 102, 90, 0.1);
-      border: 1px solid rgba(255, 102, 90, 0.3);
+      background: rgba(0, 76, 255, 0.1);
+      border: 1px solid rgba(0, 76, 255, 0.3);
       color: var(--text);
       min-height: 40px;
       padding: 8px 12px;
@@ -292,7 +288,7 @@
     }
     .cat-recent-chip:hover, .cat-recent-chip:focus-visible {
       border-color: var(--accent-1);
-      background: rgba(255, 102, 90, 0.16);
+      background: rgba(0, 76, 255, 0.16);
     }
     .cat-recent-chip .chip-artist { color: var(--text-mute); }
     .cat-hist-head {
@@ -452,8 +448,8 @@
     }
     .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
     .modal-tag {
-      background: rgba(255, 102, 90, 0.13);
-      border: 1px solid rgba(255, 102, 90, 0.34);
+      background: rgba(0, 76, 255, 0.13);
+      border: 1px solid rgba(0, 76, 255, 0.34);
       color: var(--accent-1);
       padding: 4px 10px;
       border-radius: 999px;
@@ -588,8 +584,8 @@
   <noscript>
     <div class="noscript-banner" role="alert" style="
       max-width: 760px; margin: 24px auto; padding: 18px 22px;
-      border: 1px solid #121110; border-radius: 12px;
-      background: #F3F1EC; color: #121110;
+      border: 1px solid #111216; border-radius: 12px;
+      background: #FFFFFF; color: #111216;
       font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif; line-height: 1.6;
     ">
       <strong style="display: block; font-size: 15px; margin-bottom: 6px;">
@@ -610,7 +606,7 @@
         <path class="brand-mark-trace" d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8" />
         <path class="brand-mark-trace" d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6" />
       </svg>
-      <span class="brand-wordmark">soundmatch</span>
+      <span class="brand-wordmark">SoundMatch</span>
     </a>
     <nav class="site-nav-links" aria-label="주요 메뉴" data-i18n-attr="aria-label:nav.primary">
       <div class="nav-links-group" id="nav-links-group">
@@ -787,20 +783,20 @@
   <div class="cat-toast" id="cat-toast" role="status" aria-live="polite" hidden></div>
 
   <footer class="site-foot">
-    <p data-i18n="footer.tagline">소리의 특징으로 다음 곡을 찾는 음악 탐색 도구. 졸업작품에서 출발해 혼자 끝까지 다듬었습니다.</p>
+    <p data-i18n="footer.tagline">SoundMatch — 소리의 특징으로 비슷한 음악을 찾습니다.</p>
     <p class="muted">
       © <span id="year"></span> SoundMatch ·
       <a href="/privacy" data-i18n="footer.privacy">개인정보 처리방침</a> ·
       <a href="/terms" data-i18n="footer.terms">이용약관</a> ·
       <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="footer.repoLink">GitHub</a>
     </p>
-    <p class="muted" data-i18n="footer.notice">음원은 분석 직후 삭제되고, 결과는 취향 탐색을 위한 참고 정보예요.</p>
+    <p class="muted" data-i18n="footer.notice">분석 결과는 음악을 탐색하기 위한 참고 정보이며, 표절 여부를 판단하지 않습니다.</p>
   </footer>
 
-  <script src="/i18n.js"></script>
-  <script src="/site-nav.js"></script>
-  <script src="/favorites.js"></script>
-  <script src="/catalog.js"></script>
-  <script src="/sw-register.js"></script>
+  <script defer src="/i18n.js"></script>
+  <script defer src="/site-nav.js"></script>
+  <script defer src="/favorites.js"></script>
+  <script defer src="/catalog.js"></script>
+  <script defer src="/sw-register.js"></script>
 </body>
 </html>

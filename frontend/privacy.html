@@ -5,17 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>개인정보 처리 방침 · SoundMatch</title>
   <meta name="description" content="SoundMatch 가 사용자 음원과 분석 결과를 어떻게 다루는지에 대한 안내." />
-  <meta name="theme-color" content="#F3F1EC" />
+  <meta name="theme-color" content="#004CFF" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" />
+  <link rel="preload" href="/static/assets/fonts/soundmatch-ui-v1.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/style.css" />
   <script src="/theme-init.js"></script>
   <style>
@@ -55,7 +51,7 @@
         <path class="brand-mark-trace" d="M6 12.5C14.5 5.8 23 5.9 32.8 12.4C42.5 18.9 50.8 18.8 58 11.8" />
         <path class="brand-mark-trace" d="M6 35.1C15.1 27.7 23.4 28.2 32.9 34.2C42.3 40.2 50.4 40.5 58 33.6" />
       </svg>
-      <span class="brand-wordmark">soundmatch</span>
+      <span class="brand-wordmark">SoundMatch</span>
     </a>
     <nav class="site-nav-links" aria-label="주요 메뉴" data-i18n-attr="aria-label:nav.primary">
       <div class="nav-links-group" id="nav-links-group">
@@ -156,18 +152,18 @@
   </main>
 
   <footer class="site-foot">
-    <p data-i18n="footer.tagline">소리의 특징으로 다음 곡을 찾는 음악 탐색 도구. 졸업작품에서 출발해 혼자 끝까지 다듬었습니다.</p>
+    <p data-i18n="footer.tagline">SoundMatch — 소리의 특징으로 비슷한 음악을 찾습니다.</p>
     <p class="muted">
       © <span id="year"></span> SoundMatch ·
       <a href="/privacy" data-i18n="footer.privacy">개인정보 처리방침</a> ·
       <a href="/terms" data-i18n="footer.terms">이용약관</a> ·
       <a href="https://github.com/easygap/music_similarity" target="_blank" rel="noopener" data-i18n="footer.repoLink">GitHub</a>
     </p>
-    <p class="muted" data-i18n="footer.notice">음원은 분석 직후 삭제되고, 결과는 취향 탐색을 위한 참고 정보예요.</p>
+    <p class="muted" data-i18n="footer.notice">분석 결과는 음악을 탐색하기 위한 참고 정보이며, 표절 여부를 판단하지 않습니다.</p>
   </footer>
 
-  <script src="/i18n.js"></script>
-  <script src="/site-nav.js"></script>
-  <script src="/sw-register.js"></script>
+  <script defer src="/i18n.js"></script>
+  <script defer src="/site-nav.js"></script>
+  <script defer src="/sw-register.js"></script>
 </body>
 </html>

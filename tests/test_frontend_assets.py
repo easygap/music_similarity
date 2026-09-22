@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -121,13 +122,13 @@ def test_mobile_touch_targets_have_minimum_hit_area():
 
 
 def test_hero_title_keeps_key_phrase_together():
-    """히어로의 실제 제안인 '소리로 찾아드려요'가 한 덩어리로 읽혀야 한다."""
+    """첫 화면의 제안과 A/B 비교 샘플을 번역에서도 유지한다."""
     html = _read("index.html")
     i18n = _read("js/i18n.js")
-    assert '<span class="grad">소리로 찾아드려요.</span>' in html
-    assert '<span class=\\"grad\\">소리로 찾아드려요.</span>' in i18n
-    assert '<span class=\\"grad\\">sound like this one.</span>' in i18n
-    assert "white-space: nowrap;" in _read("css/style.css")
+    assert '두 곡,<br/>어디가 닮았을까?' in html
+    assert '두 곡,<br/>어디가 닮았을까?' in i18n
+    assert 'Two tracks.<br/>What sounds alike?' in i18n
+    assert 'data-demo-play="a"' in html and 'data-demo-play="b"' in html
 
 
 def test_home_content_structure_prioritizes_discovery_over_technical_charts():
@@ -143,7 +144,7 @@ def test_home_content_structure_prioritizes_discovery_over_technical_charts():
     showcase = html.index('id="showcase"')
     catalog = html.index('id="catalog-preview"')
     method = html.index('id="features"')
-    assert how < showcase < catalog < method
+    assert showcase < how < catalog < method
     assert html.count('id="how"') == 1
     assert 'id="experience"' not in html
     assert '<details class="method-note">' in html
@@ -319,14 +320,13 @@ def test_upload_limit_uses_version_api_value():
     assert "subtitleWithLimit" in i18n
 
 
-def test_hero_shows_social_proof_total_analyses():
-    """Hero 영역에 누적 분석 횟수 라인이 있어야 한다."""
+def test_hero_prioritizes_listening_over_social_proof():
+    """첫 화면에서 파일 없이 직접 듣고 비교할 수 있어야 한다."""
     html = _read("index.html")
-    assert 'id="hero-social-proof"' in html
-    js = _read("js/app.js")
-    assert "loadSocialProof" in js
-    assert 'data.analyses_total' in js or "analyses_total" in js
-    assert 't("hero.totalAnalyses"' in js
+    assert 'id="hero-social-proof"' not in html
+    assert 'id="demo-score"' in html
+    assert 'id="demo-seek"' in html
+    assert 'id="demo-analyze"' in html
 
 
 def test_whats_new_seen_marker_includes_version_and_release_date():
@@ -625,12 +625,8 @@ def test_shell_pages_expose_complete_favicon_set(page: str):
     assert '<link rel="shortcut icon" href="/favicon.ico" />' in text
 
 
-def test_brand_identity_uses_paper_ink_coral_system():
-    """BI가 종이·잉크·코랄 세 색 체계와 단색 공명 마크를 유지하는지 확인한다.
-
-    이전 팔레트(플럼/페리윙클/보라 그라데이션)나 유리 효과가 슬쩍 되살아나면
-    디자인 전체가 다시 흔들리므로 정적으로 못 박아 둔다.
-    """
+def test_brand_identity_uses_blue_lime_and_neutral_surfaces():
+    """색의 역할을 화면 전체에서 공유하고 장식용 유리 효과를 쓰지 않는다."""
     favicon = _read("assets/favicon.svg")
     css = _read("css/style.css")
     index = _read("index.html")
@@ -638,9 +634,9 @@ def test_brand_identity_uses_paper_ink_coral_system():
     og_image = _read("assets/og-image.svg")
     brand_source = (REPO_ROOT / "docs" / "brand" / "brand-mark.svg").read_text(encoding="utf-8")
 
-    # 파비콘/마크 원본은 시그널 코랄 단색 두 궤적.
-    assert "#ff665a" in favicon.lower()
-    assert "#f7f3ee" in favicon.lower()
+    # 파비콘/마크 원본은 블루와 순백, 두 궤적을 유지한다.
+    assert "#004cff" in favicon.lower()
+    assert "#ffffff" in favicon.lower()
     assert "linearGradient" not in favicon
     assert "<circle" not in favicon
     assert 'fill="none"' in favicon
@@ -648,8 +644,7 @@ def test_brand_identity_uses_paper_ink_coral_system():
     assert favicon.count("<path") == 2
     assert brand_source.count("<path") == 2
 
-    # 화면 토큰: 종이 #f3f1ec · 잉크 #121110 · 눌린 코랄 #e8452b (라이트) / 시그널 코랄 #ff665a (다크).
-    for color in ("#f3f1ec", "#121110", "#e8452b", "#ff665a"):
+    for color in ("#ffffff", "#111216", "#004cff", "#ccff00"):
         assert color in css.lower(), f"style.css 에 {color} 토큰이 없습니다."
     assert "--series-query" in css and "--series-match" in css and "--series-other" in css
     assert "backdrop-filter" not in css, "유리 효과(backdrop-filter)는 쓰지 않는다."
@@ -692,7 +687,7 @@ def test_brand_identity_uses_paper_ink_coral_system():
     assert index.count('class="brand-mark-trace"') == 2
     assert ".brand-mark-trace" in css
     assert "stroke: var(--brand-coral);" in css
-    assert '<span class="brand-wordmark">soundmatch</span>' in index
+    assert '<span class="brand-wordmark">SoundMatch</span>' in index
 
 
 @pytest.mark.parametrize(
@@ -703,7 +698,7 @@ def test_shell_pages_use_current_resonance_mark(page: str):
     """주요 진입 페이지는 모두 같은 공명 마크와 브라우저 테마 색을 사용한다."""
     text = _read(page)
 
-    assert '<meta name="theme-color" content="#F3F1EC" />' in text
+    assert '<meta name="theme-color" content="#004CFF" />' in text
     assert '<svg class="brand-mark" viewBox="0 0 64 48"' in text
     assert text.count('class="brand-mark-trace"') == 2
 
@@ -1104,14 +1099,14 @@ def test_catalog_card_click_shows_loading_state():
 def test_subpages_load_i18n(page: str):
     """카탈로그 / 비교 페이지도 i18n.js 를 직접 로딩해야 lang 토글이 동작한다."""
     text = _read(page)
-    assert '<script src="/i18n.js">' in text, f"{page} 가 i18n.js 를 불러오지 않습니다."
+    assert re.search(r'<script\b[^>]*\bsrc="/i18n\.js"[^>]*>', text), f"{page} 가 i18n.js 를 불러오지 않습니다."
 
 
 @pytest.mark.parametrize("page", ["index.html", "catalog.html", "compare.html", "privacy.html", "terms.html"])
 def test_shell_pages_load_sw_register(page: str):
     """프리캐시되는 주요 HTML 은 직접 SW 업데이트 체크를 걸어야 한다."""
     text = _read(page)
-    assert '<script src="/sw-register.js">' in text, f"{page} 가 sw-register.js 를 불러오지 않습니다."
+    assert re.search(r'<script\b[^>]*\bsrc="/sw-register\.js"[^>]*>', text), f"{page} 가 sw-register.js 를 불러오지 않습니다."
 
 
 def test_mobile_nav_hamburger_wired():
@@ -1280,14 +1275,17 @@ def _landing_data() -> dict:
 
 
 def test_landing_data_matches_catalog_and_has_real_showcase():
-    """소리 지도 좌표와 예시 3쌍이 실제 카탈로그와 같은 규모·형식이어야 한다."""
+    """비교 예시는 실제 카탈로그 곡을 쓰며 사용하지 않는 좌표를 전송하지 않는다."""
+    from backend.similarity import MusicSimilarityEngine
+
+    engine = MusicSimilarityEngine(REPO_ROOT / "data" / "dataset.csv")
     data = _landing_data()
-    assert data["catalogSize"] == len(data["names"]) == len(data["points"]) == 781
+    assert data["catalogSize"] == engine.catalog_size == 781
     assert data["featureCount"] == 57
-    assert all(len(p) == 3 and all(isinstance(v, int) and -1000 <= v <= 1000 for v in p) for p in data["points"])
+    assert "points" not in data and "names" not in data
     assert len(data["showcase"]) == 3
     for entry in data["showcase"]:
-        assert data["names"][entry["index"]] == f"{entry['title']} - {entry['artist']}"
+        assert engine.catalog_row_raw(f"{entry['title']} - {entry['artist']}") is not None
         assert len(entry["hits"]) == 3
         top = entry["hits"][0]
         # 동일 음원(100%)이나 너무 먼 곡은 예시로 쓰지 않는다.
@@ -1298,19 +1296,16 @@ def test_landing_data_matches_catalog_and_has_real_showcase():
         }
 
 
-def test_index_wires_sound_map_and_showcase():
-    """메인 화면은 소리 지도 캔버스와 예시 목록을 갖고, 스크립트 순서가 맞아야 한다."""
+def test_index_wires_listening_surface_and_showcase():
+    """샘플 시각화와 실제 추천 예시가 로드 순서에 맞춰 연결되어야 한다."""
     html = _read("index.html")
     for marker in (
-        'id="sound-map"',
-        'id="map-frame"',
-        'id="map-label"',
+        'id="sound-surface"',
+        'id="surface-viewport"',
+        'id="demo-values"',
         'id="showcase-list"',
-        'id="story-strip"',
-        'id="story-reasons"',
-        'data-story-step="1"',
-        'data-story-step="3"',
-        'class="stage-visual"',
+        'id="surface-overlay"',
+        'id="surface-view"',
         '<i class="meter" id="meter"',
     ):
         assert marker in html, f"index.html 에 '{marker}' 가 없습니다."
@@ -1323,13 +1318,7 @@ def test_index_wires_sound_map_and_showcase():
     assert "window.SoundMatchApp = {" in app
     assert 'new CustomEvent("soundmatch:results"' in app
     landing = _read("js/landing.js")
-    for marker in (
-        'window.addEventListener("soundmatch:results"',
-        "requestAnimationFrame",
-        "IntersectionObserver",
-        "prefers-reduced-motion",
-        "data-showcase-seed",
-    ):
+    for marker in ("requestAnimationFrame", "data-showcase-seed"):
         assert marker in landing, f"landing.js 에 '{marker}' 가 없습니다."
 
 
@@ -1337,11 +1326,11 @@ def test_landing_copy_is_written_in_natural_korean():
     """대표 문구를 고정해 번역투 문안이 되돌아오지 않게 한다."""
     i18n = _read("js/i18n.js")
     for phrase in (
-        "이 노래와 닮은 곡,",
-        "소리로 찾아드려요.",
-        "파일을 여기에 끌어다 놓거나 눌러서 고르세요",
-        "소리를 숫자로 바꾸면 닮음도 잴 수 있어요",
-        "카탈로그 안에서 실제로 찾아낸 닮은 곡",
+        "어디가 닮았을까?",
+        "같은 멜로디, 다른 소리",
+        "음악 파일을 끌어 놓거나 선택하세요",
+        "어떻게 비슷한 곡을 찾나요?",
+        "실제로 찾은, 닮은 곡들",
     ):
         assert phrase in i18n, f"i18n.js 에 '{phrase}' 가 없습니다."
     for stale in ("소리로 이어지는 음악 탐색", "발견은 결과에서 시작됩니다", "Language: English"):

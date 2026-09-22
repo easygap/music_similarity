@@ -1,8 +1,6 @@
-"""메인 화면의 '소리 지도'와 '닮은 곡 예시'에 쓰는 정적 데이터를 만든다.
+"""실제 엔진이 뽑은 비교 예시 3쌍을 frontend/js/landing-data.js로 저장한다.
 
-브라우저는 sklearn 을 못 돌리니, 카탈로그 전곡의 특성 벡터를 서버와 같은
-StandardScaler 공간에서 PCA 로 3차원까지 투영한 좌표와, 실제 엔진이 뽑은
-비교 예시 3쌍을 미리 계산해 ``frontend/js/landing-data.js`` 로 떨궈둔다.
+화면에서 쓰지 않는 카탈로그 전곡의 PCA 좌표와 이름은 전송하지 않는다.
 
 카탈로그(``data/dataset.csv``)가 바뀌면 다시 실행한다::
 
@@ -32,30 +30,9 @@ from backend.tagging import derive_tags  # noqa: E402
 DATASET = ROOT / "data" / "dataset.csv"
 OUTPUT = ROOT / "frontend" / "js" / "landing-data.js"
 
-# 지도 좌표는 -1000..1000 정수로 저장한다. 소수점 6자리 float 보다 파일이 절반 이하다.
-COORD_SCALE = 1000
-
-
 def _split(full: str) -> tuple[str, str]:
     title, _, artist = full.partition(" - ")
     return title.strip() or full, artist.strip() or "Unknown"
-
-
-def _project(scaled: np.ndarray) -> tuple[np.ndarray, list[float]]:
-    """표준화된 특성 행렬을 PCA 3축으로 투영하고 각 축을 [-1, 1] 로 맞춘다."""
-    from sklearn.decomposition import PCA
-
-    pca = PCA(n_components=3, random_state=0)
-    coords = pca.fit_transform(scaled)
-    # 극단값 몇 곡 때문에 나머지가 가운데로 뭉치지 않도록 2.5σ 에서 자른 뒤 정규화한다.
-    out = np.empty_like(coords)
-    for axis in range(coords.shape[1]):
-        col = coords[:, axis]
-        limit = 2.5 * float(col.std()) or 1.0
-        clipped = np.clip(col, -limit, limit)
-        out[:, axis] = clipped / limit
-    explained = [round(float(v), 4) for v in pca.explained_variance_ratio_]
-    return out, explained
 
 
 def _pick_showcase(eng: MusicSimilarityEngine, names: list[str], top_n: int = 3) -> list[dict]:
@@ -118,7 +95,6 @@ def _showcase_entry(eng: MusicSimilarityEngine, names: list[str], idx: int, top_
     filtered = [h for h in hits if f"{h.name} - {h.artist}" != full][:top_n]
     title, artist = _split(full)
     entry = {
-        "index": idx,
         "title": title,
         "artist": artist,
         "summary": summary_metrics(features),
@@ -136,7 +112,6 @@ def _showcase_entry(eng: MusicSimilarityEngine, names: list[str], idx: int, top_
         safe = dict(cat_raw)
         safe.setdefault("length", 0.0)
         entry["hits"].append({
-            "index": names.index(hit_full),
             "rank": rank,
             "title": hit.name,
             "artist": hit.artist,
@@ -152,15 +127,10 @@ def _showcase_entry(eng: MusicSimilarityEngine, names: list[str], idx: int, top_
 def build() -> dict:
     eng = MusicSimilarityEngine(DATASET)
     names = list(eng._catalog_index)
-    coords, explained = _project(eng._catalog_scaled)
-    points = [[int(round(v * COORD_SCALE)) for v in row] for row in coords]
     return {
         "generatedAt": dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat(),
         "catalogSize": eng.catalog_size,
         "featureCount": len(eng.feature_columns),
-        "explainedVariance": explained,
-        "names": names,
-        "points": points,
         "showcase": _pick_showcase(eng, names),
     }
 
@@ -170,13 +140,12 @@ def main() -> None:
     body = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     OUTPUT.write_text(
         "// scripts/build_landing_data.py 가 만든 파일. 손으로 고치지 말 것.\n"
-        "// 카탈로그 전곡의 PCA 좌표(소리 지도)와 실제 엔진이 뽑은 비교 예시.\n"
+        "// 실제 카탈로그에서 계산한 비교 예시 3쌍.\n"
         f"window.SoundMatchLanding = {body};\n",
         encoding="utf-8",
     )
     size_kb = OUTPUT.stat().st_size / 1024
     print(f"wrote {OUTPUT.relative_to(ROOT)} ({size_kb:.1f} KB)")
-    print(f"explained variance: {data['explainedVariance']}")
     for entry in data["showcase"]:
         top = entry["hits"][0]
         print(

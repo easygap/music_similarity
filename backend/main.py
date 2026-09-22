@@ -44,6 +44,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 
 from . import __version__
 from .audio_features import AudioFeatureVector, extract_features, summary_metrics
@@ -373,6 +374,21 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class TextCompressionMiddleware:
+    """텍스트 응답을 압축하되 음원과 Range 요청의 바이트 범위는 그대로 보낸다."""
+
+    def __init__(self, app):
+        self.app = app
+        self.compressed = GZipMiddleware(app, minimum_size=1024, compresslevel=5)
+
+    async def __call__(self, scope, receive, send):
+        audio = scope.get("path", "").lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".m4a"))
+        ranged = any(key.lower() == b"range" for key, _ in scope.get("headers", []))
+        handler = self.app if audio or ranged else self.compressed
+        await handler(scope, receive, send)
+
+
+app.add_middleware(TextCompressionMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestLogMiddleware)
 

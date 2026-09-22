@@ -240,6 +240,9 @@ class PreviewHandler(SimpleHTTPRequestHandler):
 
     def _resolve_static_alias(self, path: str) -> str | None:
         """루트 경로의 정적 파일 / pretty 페이지 경로를 실제 파일로 매핑. 없으면 None."""
+        if path.startswith("/static/"):
+            # 실제 앱의 /static 마운트와 같은 경로로 샘플·글꼴·새 JS를 제공한다.
+            return path.removeprefix("/static")
         if path in self.STATIC_ALIASES:
             return self.STATIC_ALIASES[path]
         if path in self.PAGE_ALIASES:

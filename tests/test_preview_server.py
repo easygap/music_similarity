@@ -60,6 +60,17 @@ def test_preview_dummy_catalog_is_well_formed():
         assert {"bpm", "energy_rms", "brightness"} <= set(m)
 
 
+def test_preview_static_mount_serves_listening_assets(preview_url):
+    """실제 앱과 같은 URL로 샘플·글꼴을 열 수 있어야 한다."""
+    from pathlib import Path
+
+    frontend = Path(__file__).resolve().parents[1] / "frontend"
+    for asset in ("assets/demo/analysis.json", "assets/demo/original.wav", "assets/fonts/soundmatch-display-v1.woff2", "js/listening.js"):
+        status, _, body = _get_bytes(preview_url + "/static/" + asset)
+        assert status == 200
+        assert body == (frontend / asset).read_bytes()
+
+
 def test_preview_serves_version(preview_url):
     """/api/version 더미가 git_commit / dependencies 까지 포함해야 한다."""
     status, body = _get(preview_url + "/api/version")

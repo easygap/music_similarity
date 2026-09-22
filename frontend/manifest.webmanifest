@@ -1,14 +1,14 @@
 {
   "name": "SoundMatch · 닮은 곡을 소리로 찾기",
   "short_name": "SoundMatch",
-  "description": "음악 파일 하나로 58가지 소리 특성을 뽑아 가장 닮은 곡과 그 이유를 찾아주는 음악 유사도 분석 PWA.",
+  "description": "음악 파일 하나로 57가지 소리 특성을 뽑아 가장 닮은 곡과 그 이유를 찾아주는 음악 유사도 분석 PWA.",
   "lang": "ko",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#F3F1EC",
-  "background_color": "#F3F1EC",
+  "theme_color": "#004CFF",
+  "background_color": "#FFFFFF",
   "categories": ["music", "utilities", "entertainment"],
   "icons": [
     {
@@ -41,7 +41,7 @@
       "name": "음악 올리기",
       "short_name": "업로드",
       "description": "메인 화면의 업로드 영역으로 바로 이동",
-      "url": "/#main",
+      "url": "/#upload",
       "icons": [{ "src": "/app-icon-192.png", "type": "image/png", "sizes": "192x192" }]
     }
   ],

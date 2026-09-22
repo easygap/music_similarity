@@ -1,0 +1,131 @@
+{
+  "url": "http://127.0.0.1:8840/",
+  "note": "로컬 단일 측정. 실사용자 지표가 아니며 최적화 전 값은 개편 과정의 화면에서 측정했다.",
+  "reports": [
+    {
+      "label": "개편 중 최적화 전",
+      "fetchTime": "2026-09-22T05:35:47.502Z",
+      "lighthouseVersion": "13.5.0",
+      "hostUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "settings": {
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "screenEmulation": {
+          "mobile": true,
+          "width": 412,
+          "height": 823,
+          "deviceScaleFactor": 1.75,
+          "disabled": false
+        }
+      },
+      "scores": {
+        "performance": 0.71,
+        "accessibility": 1,
+        "best-practices": 1,
+        "seo": 1
+      },
+      "metrics": {
+        "first-contentful-paint": 3835.7380000000003,
+        "largest-contentful-paint": 4295.1319,
+        "cumulative-layout-shift": 0.1358000506400877,
+        "total-blocking-time": 0,
+        "total-byte-weight": 541993
+      },
+      "fontTransferBytes": 384114,
+      "fontRequests": 14,
+      "runtimeError": null
+    },
+    {
+      "label": "최종 모바일",
+      "fetchTime": "2026-09-22T06:32:18.108Z",
+      "lighthouseVersion": "13.5.0",
+      "hostUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "settings": {
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "screenEmulation": {
+          "mobile": true,
+          "width": 412,
+          "height": 823,
+          "deviceScaleFactor": 1.75,
+          "disabled": false
+        }
+      },
+      "scores": {
+        "performance": 0.95,
+        "accessibility": 1,
+        "best-practices": 1,
+        "seo": 1,
+        "agentic-browsing": 1
+      },
+      "metrics": {
+        "first-contentful-paint": 927.6384,
+        "largest-contentful-paint": 2877.6384000000003,
+        "cumulative-layout-shift": 0.000342723222285159,
+        "total-blocking-time": 0,
+        "total-byte-weight": 283462
+      },
+      "fontTransferBytes": 152777,
+      "fontRequests": 2,
+      "runtimeError": null
+    },
+    {
+      "label": "최종 데스크톱",
+      "fetchTime": "2026-09-22T06:33:03.733Z",
+      "lighthouseVersion": "13.5.0",
+      "hostUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "settings": {
+        "formFactor": "desktop",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "requestLatencyMs": 0,
+          "downloadThroughputKbps": 0,
+          "uploadThroughputKbps": 0,
+          "cpuSlowdownMultiplier": 1
+        },
+        "screenEmulation": {
+          "mobile": false,
+          "width": 1350,
+          "height": 940,
+          "deviceScaleFactor": 1,
+          "disabled": false
+        }
+      },
+      "scores": {
+        "performance": 1,
+        "accessibility": 1,
+        "best-practices": 1,
+        "seo": 1,
+        "agentic-browsing": 1
+      },
+      "metrics": {
+        "first-contentful-paint": 305.694,
+        "largest-contentful-paint": 652.694,
+        "cumulative-layout-shift": 0.0005679245223890887,
+        "total-blocking-time": 0,
+        "total-byte-weight": 283462
+      },
+      "fontTransferBytes": 152777,
+      "fontRequests": 2,
+      "runtimeError": null
+    }
+  ]
+}

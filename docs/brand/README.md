@@ -1,70 +1,51 @@
-# SoundMatch BI 가이드
+# SoundMatch 색상·로고 가이드
 
-## 콘셉트
+2026년 9월 22일 기준. [화면 설계와 참고 자료](../design-2026.md)에서 선택 근거를 확인할 수 있다.
 
-SoundMatch는 두 곡이 완전히 같다고 판정하지 않는다. 서로 다른 소리에서 닮은
-특성을 찾아 얼마나 가까운지 보여준다. BI는 이 제품 의미를 근삿값 기호 `≈`에서
-출발하되, 수학 기호를 그대로 쓰지 않고 두 개의 공명 궤적으로 다시 그렸다.
+![SoundMatch 첫 화면](../screenshots/hero.png)
 
-두 궤적은 같은 방향으로 움직이지만 굴곡과 끝점이 미세하게 다르다. "복제"가
-아니라 "닮음"을 나타내기 위한 차이다. 마크는 한 색만으로 완성되어야 한다.
+## 로고
 
-헤더의 시각 워드마크는 소문자 `soundmatch`를 사용한다. 본문, 문서, 접근성 이름은
-기존 제품명 `SoundMatch`를 유지한다.
+두 파형은 같은 방향으로 흐르지만 굴곡이 조금 다르다. 서로 다른 음악에서 닮은 특성을 찾는 제품을 나타낸다.
+제품명은 화면과 문서 모두 **SoundMatch**로 쓴다.
 
-## 화면 원칙 — 종이 위의 잉크
+로고는 단색으로 표시한다. 밝은 바탕에서는 파랑, 어두운 바탕에서는 라임을 사용한다.
+앱 아이콘과 파비콘은 파란 면 위 흰 파형으로 통일한다.
 
-2026년 9월 개편부터 화면은 인쇄물처럼 다룬다.
+## 색상
 
-- 배경은 따뜻한 종이색 한 장, 글자는 잉크 한 색, 강조는 코랄 한 색. 그 외 색은
-  경고·오류 같은 상태에만 쓴다.
-- 카드·그림자·유리 효과·그라데이션을 쓰지 않는다. 영역은 1px 괘선으로만 나눈다.
-- 데이터 시각화(소리 지도, 지표 막대, 레이더, 스펙트로그램)는 실제 값만 그린다.
-  장식용 그래픽과 스톡 이미지는 없다.
-- 라이트가 기본이다. 다크는 종이와 잉크를 뒤집은 별도 세트이며, 코랄은 어두운
-  종이 위에서 원래의 시그널 코랄로 돌아간다.
-- 글꼴은 두 종류뿐이다. 본문·제목은 Pretendard Variable, 숫자·라벨·수식은
-  IBM Plex Mono.
+![블루·라임·흰색·검정 색상표](palette.svg)
 
-## 색상 역할
+| 역할 | 라이트 모드 | 다크 모드 |
+| --- | --- | --- |
+| 본문 바탕 | `#FFFFFF` | `#111216` |
+| 기본 글자 | `#111216` | `#FFFFFF` |
+| 보조 글자 | `#484D5C` | `#CCD0DA` |
+| 강조 | `#004CFF` | `#CCFF00` |
+| 분석 차트 A | `#004CFF` | `#A5BAFF` |
+| 분석 차트 B | `#111216` | `#CCFF00` |
 
-| 토큰 | 라이트 | 다크 | 용도 |
-| --- | --- | --- | --- |
-| Paper | `#F3F1EC` | `#131211` | 배경 |
-| Ink | `#121110` | `#F3F1EC` | 본문, 제목, 기준 곡 시리즈 |
-| Coral (마크) | `#E8452B` | `#FF665A` | 브랜드 마크, 닮은 곡 시리즈, 강조 막대 |
-| Coral (텍스트) | `#BD3419` | `#FF8A80` | 작은 글자에 쓰는 강조 |
-| Rule | Ink 14% / 30% | Ink 14% / 30% | 괘선 |
-| Amber | `#8A5A00` | `#E6B04A` | 주의 안내 |
+첫 화면은 두 모드 모두 파란 바탕 `#004CFF`, 흰 글자 `#FFFFFF`, A 파형과 주요 버튼은 라임 `#CCFF00`이다.
+라임 버튼 안 글자는 검정이다. A/B 표기를 색과 함께 제공한다.
 
-파비콘과 앱 아이콘 원본은 시그널 코랄 `#FF665A` 면 위에 포슬린 `#F7F3EE` 마크를
-그대로 유지한다. 종이 위에서는 코랄이 대비 3:1을 넘도록 한 단계 눌린 `#E8452B`를
-쓰고, 어두운 종이에서는 원래 값을 쓴다. 두 값 모두 같은 브랜드 색으로 취급한다.
+## 글꼴
 
-차트 시리즈 색은 세 가지뿐이다. 기준 곡은 잉크, 닮은 곡은 코랄, 나머지 카탈로그는
-옅은 잉크. 순위나 크기를 색으로 나타내지 않는다.
-
-## 사용 규칙
-
-- 로고의 두 궤적은 항상 같은 색을 사용한다.
-- 로고에 그라데이션, 광택, 그림자, 외곽선, 별도 배경 장식을 추가하지 않는다.
-- 파비콘은 16px 미만으로 축소하지 않는다.
-- 마스커블 아이콘의 핵심 도형은 중앙 안전 영역 안에 둔다.
-- 화면 어디에서도 backdrop-filter(유리 효과)와 배경 그라데이션을 쓰지 않는다.
-  회귀 테스트가 이를 확인한다.
+첫 화면 제목·큰 숫자는 **LINE Seed KR Bold**, 본문·폼·표는 **Pretendard Variable**을 바탕으로 한 로컬 서브셋을 사용한다.
+파생 글꼴 이름은 SoundMatch Display / SoundMatch UI이며 원 저작권과 OFL 라이선스를 함께 배포한다.
+본문의 숫자는 `tabular-nums`로 폭을 맞춘다. 전체 글꼴을 외부 CDN에서 매번 내려받지 않는다.
 
 ## 자산
 
 | 파일 | 용도 |
 | --- | --- |
-| `docs/brand/brand-mark.svg` | 단색 공명 마크 원본 |
-| `frontend/assets/favicon.svg` | 브라우저용 타일형 파비콘 |
-| `frontend/assets/favicon-32.png` | PNG 파비콘 폴백 |
-| `frontend/assets/favicon.ico` | 레거시 브라우저 폴백 |
-| `frontend/assets/apple-touch-icon.png` | iOS 홈 화면 |
-| `frontend/assets/app-icon-192.png` | PWA 192px 아이콘 |
-| `frontend/assets/app-icon-512.png` | PWA 512px 아이콘 |
-| `frontend/assets/maskable-icon-512.png` | Android 마스커블 아이콘 |
-| `frontend/assets/og-image.svg` | 링크 공유 카드 (종이 위 헤드라인 + 소리 지도) |
-| `docs/brand/app-icon-source.svg` | 일반 앱 아이콘 원본 |
-| `docs/brand/maskable-icon-source.svg` | 마스커블 아이콘 원본 |
+| `brand-mark.svg` | 단색 파형 로고 |
+| `app-icon-source.svg`, `maskable-icon-source.svg` | 앱 아이콘 원본 |
+| `../../frontend/assets/favicon.svg` | SVG 파비콘 |
+| `../../frontend/assets/favicon-32.png`, `favicon.ico` | 파비콘 폴백 |
+| `../../frontend/assets/apple-touch-icon.png` | iOS 홈 화면 |
+| `../../frontend/assets/app-icon-192.png`, `app-icon-512.png` | PWA 아이콘 |
+| `../../frontend/assets/maskable-icon-512.png` | Android 마스커블 아이콘 |
+| `../../frontend/assets/og-image.svg` | 실제 샘플 파형을 사용한 공유 이미지 |
+| `../../frontend/assets/fonts/` | UI 글꼴과 라이선스 |
+
+SVG·PNG 결과 저장도 흰색·검정·파랑을 사용한다. 이미지 자산에 이전 베이지·코랄 색상을 섞지 않는다.
