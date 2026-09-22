@@ -74,9 +74,10 @@ def test_compose_and_paas_configs_pin_single_worker():
     assert 'WEB_CONCURRENCY = "1"' in fly
 
 
-def test_readme_documents_single_worker_default():
-    """README 환경 변수 표도 Docker 기본값과 같은 단일 worker 를 안내해야 한다."""
-    text = _read("README.md")
+def test_operations_guide_documents_single_worker_default():
+    """README에서 연결한 운영 안내도 Docker와 같은 단일 worker를 기본값으로 둔다."""
+    assert "(CONTRIBUTING.md)" in _read("README.md")
+    text = _read("CONTRIBUTING.md")
 
     assert "| `WEB_CONCURRENCY` | `1` |" in text
     assert "외부 상태 저장소" in text

@@ -70,3 +70,14 @@
 구현 근거: [MDN Canvas 최적화](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Optimizing_canvas),
 [web.dev 렌더링 성능](https://web.dev/articles/rendering-performance), [Web Vitals](https://web.dev/articles/vitals).
 측정 결과는 [검증 기록](verification-2026.md)에 정리한다.
+
+## 한국어 소개와 GitHub 안내
+
+2026년 9월 22일 아래 공식 자료와 실제 한국어 안내를 다시 확인했다. 각 자료의 작성 연도와 확인 날짜는 구분한다.
+
+- [토스의 글쓰기 원칙](https://toss.tech/article/8-writing-principles-of-toss): 평소 말할 때 쓰는 표현을 고르고, 한 문장에 여러 설명을 몰아넣지 않는 원칙을 참고했다. README의 추상적인 제목과 불필요한 수식어를 덜어냈다.
+- [토스의 문서 작성·검토 사례](https://toss.tech/article/technical-writing-5) (2026-06-23): 글의 목적과 독자를 먼저 정하고, 형식적인 체크리스트보다 실제로 읽힐 내용을 검토하는 과정을 확인했다. SoundMatch 소개는 음악을 올리고 비교해 보려는 사람을 기준으로 다듬었다.
+- [VIBE 플레이리스트 안내](https://help.naver.com/service/20370/contents/23297?lang=ko&osType=COMMONOS): 노래를 찾고 고르고 재생하는 순서와 실제 버튼을 설명하는 방식을 참고했다.
+- [es-toolkit 한국어 README](https://github.com/toss/es-toolkit/blob/main/README-ko_kr.md): 프로젝트 설명과 사용 예시를 먼저 보여주는 구성을 살폈다. 홍보 문장이나 성능 표현은 옮기지 않았다.
+- [GitHub README 안내](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes): 무엇을 할 수 있는지, 시작 방법과 도움받을 곳을 README에 두고 개발·배포 설명은 CONTRIBUTING으로 옮겼다.
+- [GitHub 검색 안내](https://docs.github.com/en/search-github/searching-on-github/searching-for-repositories), [주제 태그 안내](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/classifying-your-repository-with-topics): 기본 검색 대상인 저장소 설명과 주제 태그에 실제 기능을 반영한다. 태그 추가가 검색 순위나 Star 수를 보장한다는 근거는 없다.

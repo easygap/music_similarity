@@ -35,9 +35,10 @@ def test_release_workflow_checks_version_consistency_before_release():
     assert '"## [Unreleased]"' not in text
 
 
-def test_readme_documents_release_order_and_guard():
-    """README 에 사람이 따라갈 릴리즈 순서와 자동 가드가 설명돼 있어야 한다."""
-    text = _read("README.md")
+def test_contributing_documents_release_order_and_guard():
+    """README에서 연결한 개발 안내에 릴리즈 순서와 자동 가드가 설명돼 있어야 한다."""
+    assert "(CONTRIBUTING.md)" in _read("README.md")
+    text = _read("CONTRIBUTING.md")
 
     assert "## 릴리즈" in text
     assert "backend/__init__.py" in text
@@ -45,15 +46,15 @@ def test_readme_documents_release_order_and_guard():
     assert "릴리즈 생성을 중단" in text
 
 
-def test_top_changelog_release_matches_package_and_readme_example():
-    """운영에 노출되는 버전/릴리즈 날짜가 README 예시와 같이 움직여야 한다."""
+def test_top_changelog_release_matches_package_and_documented_example():
+    """운영에 노출되는 버전/릴리즈 날짜가 개발 안내 예시와 같이 움직여야 한다."""
     from backend import __version__
 
     version, release_date = _top_release_from_changelog()
-    readme = _read("README.md")
+    guide = _read("CONTRIBUTING.md")
 
     assert version == __version__
-    assert f"# v{version} · {release_date} · <git-sha>" in readme
+    assert f"# v{version} · {release_date} · <git-sha>" in guide
 
 
 def test_changelog_keeps_v1814_actual_release_date():

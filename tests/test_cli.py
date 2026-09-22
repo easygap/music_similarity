@@ -518,12 +518,12 @@ def test_cli_version_json(capsys):
 
 
 def test_version_examples_follow_package_version():
-    """README / OpenAPI 예시 버전이 패키지 버전과 같이 움직여야 한다."""
+    """개발 안내 / OpenAPI 예시 버전이 패키지 버전과 같이 움직여야 한다."""
     root = Path(__file__).resolve().parent.parent
-    readme = (root / "README.md").read_text(encoding="utf-8")
+    guide = (root / "CONTRIBUTING.md").read_text(encoding="utf-8")
     schemas = (root / "backend" / "schemas.py").read_text(encoding="utf-8")
 
-    assert f"# v{__version__} " in readme
+    assert f"# v{__version__} " in guide
     assert f'examples=["{__version__}"]' in schemas
 
 

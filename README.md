@@ -1,165 +1,151 @@
-<div align="center">
-
-<img src="frontend/assets/favicon.svg" width="56" height="56" alt="SoundMatch 로고">
-
 # SoundMatch
 
-**두 곡, 어디가 닮았을까?**
+**음악 파일을 올리면 비슷한 곡을 찾아줍니다.**
 
-음악을 듣고, 소리의 차이를 보고, 좋아하는 곡과 비슷한 음악을 찾는 웹 서비스입니다.
+MP3나 WAV 파일을 올려 등록된 **781곡** 중 소리가 비슷한 곡을 찾아보세요.
+두 곡의 차이는 그래프로 볼 수 있고, 준비된 샘플은 번갈아 들으며 비교할 수 있습니다.
 
-[![CI](https://github.com/easygap/music_similarity/actions/workflows/ci.yml/badge.svg)](https://github.com/easygap/music_similarity/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/Python-3.11%20·%203.12%20·%203.14-004CFF)
-![License](https://img.shields.io/badge/License-MIT-111216)
+[시작하기](#시작하기) · [사용 방법](#비슷한-곡-찾기) · [문제 신고·기능 제안](https://github.com/easygap/music_similarity/issues/new/choose)
 
-[샘플 듣기와 비교](#먼저-들어보세요) · [내 음악으로 찾기](#좋아하는-곡에서-다음-곡으로) · [실행 방법](#직접-실행하기)
+[![CI](https://github.com/easygap/music_similarity/actions/workflows/ci.yml/badge.svg)](https://github.com/easygap/music_similarity/actions/workflows/ci.yml) [![MIT License](https://img.shields.io/badge/License-MIT-111216)](LICENSE)
 
-</div>
+![SoundMatch 첫 화면. 두 샘플을 재생하고 소리의 차이를 그래프로 비교할 수 있습니다.](docs/screenshots/hero.png)
 
-![파란 화면 위에 두 샘플의 주파수 지형과 A/B 플레이어를 펼친 SoundMatch](docs/screenshots/hero.png)
+## 비슷한 곡 찾기
 
-## 먼저 들어보세요
+1. **음악 파일을 올리세요.** 파일을 끌어 놓으세요. 클릭해서 골라도 됩니다.
+2. **‘닮은 곡 찾기’를 누르세요.** 비슷한 곡과 함께, 박자·음색 등 어떤 부분이 닮았는지 보여줍니다.
+3. **마음에 드는 곡에서 더 찾아보세요.** ‘이 곡에서 계속 찾기’를 누르면 그 곡을 기준으로 다시 추천합니다.
 
-파일을 준비하지 않아도 됩니다. 첫 화면에서 9초짜리 샘플 **〈밤 산책〉**을 재생해 보세요.
-같은 멜로디의 음색을 바꾸거나 리듬까지 바꿔 가며, 소리가 얼마나 달라지는지 직접 비교할 수 있습니다.
-A와 B를 바꿔 눌러도 재생 위치는 이어집니다.
+![음악 파일을 분석한 실제 결과. 추천 곡, 유사도, 비슷한 부분을 함께 보여줍니다.](docs/screenshots/result.png)
 
-화면의 선은 샘플에서 뽑은 실제 주파수 데이터입니다. 두 곡을 겹치고 시점을 바꾸면 시간에 따른 차이가 드러납니다.
-‘분석값 자세히 보기’를 열면 주파수 분포, 특성별 막대그래프, 숫자를 함께 볼 수 있습니다.
+MP3·WAV·FLAC·OGG·M4A를 지원합니다. 파일은 **25MB까지**, 분석은 **앞부분 30초까지** 가능합니다.
+추천 곡은 YouTube·Spotify 검색 링크로 찾아 들을 수 있습니다.
 
-| 비교 | 바뀐 점 | 분석 유사도 |
+## 샘플로 먼저 써 보기
+
+음악 파일이 없어도 괜찮습니다. 첫 화면에 있는 9초짜리 샘플을 재생해 보세요.
+직접 만든 곡의 음색과 리듬을 바꿔 놓았습니다.
+
+**A와 B를 번갈아 누르면 같은 부분을 이어서 들을 수 있습니다.**
+‘겹쳐 보기’로 두 그래프를 포개 보거나, ‘분석값 자세히 보기’에서 숫자를 확인해 보세요.
+
+| 샘플 | 바꾼 부분 | 유사도 |
 | --- | --- | ---: |
-| 원본 ↔ 밝은 음색 | 멜로디와 박자는 유지하고 음색 변경 | **91.2%** |
-| 원본 ↔ 빠른 리듬 | 템포와 드럼 패턴까지 변경 | **80.9%** |
+| 밝은 음색 | 멜로디와 박자는 그대로 두고 음색만 변경 | 91.2% |
+| 빠른 리듬 | 템포를 높이고 드럼 패턴도 변경 | 80.9% |
 
-샘플은 이 프로젝트에서 직접 합성한 음원입니다. 표시된 값은 실제 분석 엔진으로 계산했으며, 유사도는 두 곡이 같을 확률이나 표절 확률을 뜻하지 않습니다.
+위 점수는 각 샘플을 원본과 비교한 결과입니다. 화면의 그래프도 실제 샘플에서 뽑은 값으로 그렸습니다.
 
-[원본 WAV](frontend/assets/demo/original.wav) · [밝은 음색 WAV](frontend/assets/demo/tone.wav) · [빠른 리듬 WAV](frontend/assets/demo/rhythm.wav)
+샘플 파일 받기: [원본 WAV](frontend/assets/demo/original.wav?raw=true) · [밝은 음색 WAV](frontend/assets/demo/tone.wav?raw=true) · [빠른 리듬 WAV](frontend/assets/demo/rhythm.wav?raw=true)
 
 <details>
-<summary>주파수 분석 화면 보기</summary>
+<summary>샘플 분석 화면 보기</summary>
 
-![같은 기준으로 겹쳐 본 두 샘플의 주파수 분포](docs/screenshots/listening-detail.png)
+![두 샘플의 주파수 그래프와 박자·음량·음색을 비교하는 표](docs/screenshots/listening-detail.png)
 
 </details>
 
-## 좋아하는 곡에서 다음 곡으로
+## 두 곡 나란히 비교하기
 
-음악 파일을 올리면 등록된 **781곡**에서 소리가 비슷한 곡을 찾습니다.
-곡의 앞부분 최대 30초를 읽고, 템포·음량·음색 등을 나타내는 **57개 특성**을 비교합니다.
-제목이나 장르 태그로 검색하는 방식은 아닙니다.
+분석 기록에서 두 곡을 고르면 박자, 음량, 음색을 한 화면에서 비교할 수 있습니다.
+분석한 곡이 아직 없다면 ‘샘플로 비교해 보기’를 눌러 보세요.
 
-![음악 파일을 올리거나 샘플로 실제 분석을 시작하는 화면](docs/screenshots/upload.png)
+![두 곡의 분석값을 나란히 보여주는 비교 화면](docs/screenshots/compare.png)
 
-MP3·WAV·FLAC·OGG·M4A를 지원하며 파일 크기는 25MB까지입니다.
-분석이 끝나면 업로드한 파일은 서버에서 삭제합니다. 별도 가입 없이 사용할 수 있습니다.
-
-![실제 샘플 분석 결과. 추천 순위, 유사도, 닮은 부분과 지표를 함께 표시](docs/screenshots/result.png)
-
-결과에는 **얼마나 닮았는지, 어떤 특성이 가까운지**가 함께 나옵니다.
-마음에 드는 곡에서 ‘이 곡에서 계속 찾기’를 누르면 그 곡을 기준으로 탐색을 이어 갑니다.
-즐겨찾기에 저장하거나 YouTube·Spotify 검색으로 넘어갈 수도 있습니다.
-
-결과는 링크로 공유하고 JSON·CSV·SVG·PNG로 저장할 수 있습니다.
-공유 링크에는 추천 결과와 요약 지표를 담고, 용량이 큰 스펙트로그램은 제외합니다.
-분석 기록과 즐겨찾기는 현재 브라우저에 보관됩니다.
-
-## 숫자로 나란히 비교하기
-
-![두 샘플의 템포, 에너지, 밝기 등 여섯 항목을 나란히 보여 주는 비교 화면](docs/screenshots/compare.png)
-
-최근 분석한 두 곡을 골라 여섯 가지 요약 지표를 비교합니다.
-처음 방문했다면 ‘샘플로 비교해 보기’로 시작할 수 있습니다.
-막대는 각 항목의 상대적인 크기를 보여 줍니다. 값이 크다고 더 좋은 음악이라는 뜻은 아닙니다.
-
-등록된 곡부터 둘러보고 싶다면 카탈로그에서 곡명·아티스트를 검색하거나 템포와 에너지로 범위를 좁혀 보세요.
+마음에 드는 곡은 **즐겨찾기**에 저장해 두세요.
+추천 결과는 **링크로 공유**하거나 **이미지·표 파일로 저장**할 수 있습니다. PNG·SVG·CSV·JSON을 지원합니다.
 
 <details>
-<summary>카탈로그 화면 보기</summary>
+<summary>곡 목록·모바일·다크 모드 화면 보기</summary>
 
-![검색과 필터를 제공하는 카탈로그 화면](docs/screenshots/catalog.png)
+등록된 곡은 ‘카탈로그’에서 검색할 수 있습니다. 박자와 음량으로 범위를 좁힐 수도 있습니다.
 
-</details>
+![곡명과 아티스트를 검색하는 카탈로그 화면](docs/screenshots/catalog.png)
 
-## 작은 화면에서도, 어두운 화면에서도
+모바일 화면과 다크 모드를 지원합니다. 한국어·영어로 바꿔 쓸 수 있고, 키보드로도 조작할 수 있습니다.
 
 <table>
 <tr>
-<td width="70%" valign="top"><img src="docs/screenshots/hero-dark.png" alt="검정 내비게이션과 파란 비교 화면을 조합한 다크 모드"></td>
-<td width="30%" valign="top"><img src="docs/screenshots/hero-mobile.png" alt="세로로 배치한 모바일 A/B 비교 화면"></td>
+<td width="70%" valign="top"><img src="docs/screenshots/hero-dark.png" alt="SoundMatch 다크 모드"></td>
+<td width="30%" valign="top"><img src="docs/screenshots/hero-mobile.png" alt="휴대전화 크기의 SoundMatch 화면"></td>
 </tr>
 </table>
 
-화면 폭에 맞춰 제목·그래프·재생 도구를 다시 배치합니다. 키보드 조작, 한국어·영어 전환, 모션 감소 설정을 지원합니다.
-홈 화면에 설치하면 오프라인에서도 저장된 분석 기록을 다시 열 수 있습니다. 새 음악 분석에는 서버 연결이 필요합니다.
+</details>
 
-## 직접 실행하기
+## 시작하기
 
-Python 3.11·3.12·3.14에서 테스트합니다. 오디오 디코딩을 위해 시스템에 FFmpeg를 설치해 주세요.
+**내 컴퓨터에서 실행하기** — Docker가 있다면 아래 명령을 입력하세요.
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate         # Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt
-uvicorn backend.main:app --reload
+git clone https://github.com/easygap/music_similarity.git
+cd music_similarity
+docker compose up --build
 ```
 
-[localhost:8000](http://localhost:8000)에서 열 수 있습니다. Docker를 사용한다면 `docker compose up --build`로 실행하세요.
-화면만 확인하려면 `python preview_server.py 8790`을 사용할 수 있습니다. 이 서버의 추천 결과는 시연용 데이터입니다.
-
-**기존 기술 스택을 유지합니다.** Python·FastAPI·librosa·scikit-learn과 순수 HTML·CSS·JavaScript로 구성했습니다.
-프런트엔드 빌드 과정이나 별도 렌더링 라이브러리는 없습니다.
-
-## 화면은 선명하게, 로딩은 가볍게
-
-입체 그래프는 미리 계산한 데이터를 Canvas 2D에 그립니다. 정지 상태에서는 계속 다시 그리지 않고,
-음원은 재생하거나 분석할 때 내려받습니다. 본문용 Pretendard와 제목용 LINE Seed KR은 필요한 문자만 묶어 로컬에서 제공합니다.
-
-2026년 9월 22일 동일한 로컬 모바일 Lighthouse 조건에서 성능을 측정했습니다.
-[전송량·화면 밀림·기능 검증 결과](docs/verification-2026.md)에서 조건과 수치를 확인할 수 있습니다.
-
-[화면 설계와 참고 자료](docs/design-2026.md) · [색상·로고 가이드](docs/brand/README.md)
+실행이 끝나면 브라우저에서 **[localhost:8000](http://localhost:8000)**을 여세요.
+첫 화면에서 샘플을 들어보거나, ‘방금 들은 샘플로 분석해 보기’를 눌러 실제 추천 결과를 확인할 수 있습니다.
+처음 실행할 때는 필요한 프로그램을 내려받아 시간이 걸립니다.
 
 <details>
-<summary>분석 방식과 개발 안내</summary>
+<summary>Docker 없이 Python으로 실행하기</summary>
 
-librosa로 길이를 포함한 58개 값을 추출하고, 길이를 제외한 57개 특성으로 비교합니다.
-카탈로그로 학습한 `StandardScaler`로 단위를 맞춘 뒤 코사인 유사도를 구합니다.
-표시 점수는 음수를 0으로 처리한 유사도에 100을 곱한 값입니다.
+Python 3.11·3.12·3.14에서 확인했습니다. [FFmpeg](https://ffmpeg.org/download.html)를 먼저 설치해 주세요.
+위의 `git clone`과 `cd` 명령을 실행한 뒤, 사용하는 운영체제에 맞는 명령을 입력하세요.
 
-- API 문서: 실행한 서버의 `/docs`
-- CLI: `python -m backend.cli --help`
-- 카탈로그 재생성: `scripts/rebuild_dataset.py`, 이후 `python scripts/build_landing_data.py`
-- 샘플 음원·분석값 재생성: `python scripts/build_listening_demo.py`
-- UI 글꼴 재생성: 개발 환경에 `fonttools brotli` 설치 후 `python scripts/build_ui_font.py`
-- 검증: `ruff check backend tests scripts`, `pytest -q`
-- 운영 설정: `backend/main.py`의 `MUSIC_*` 환경 변수. 다중 워커 운영 시 메모리 기반 요청 제한·캐시의 범위를 확인하세요.
-- 변경 이력: [CHANGELOG.md](CHANGELOG.md)
+**Windows PowerShell**
 
-| 운영 설정 | 기본값 | 설명 |
-| --- | --- | --- |
-| `WEB_CONCURRENCY` | `1` | 요청 제한·캐시·통계가 메모리 기반입니다. 여러 워커를 쓰려면 외부 상태 저장소를 먼저 구성해야 합니다. |
-
-배포 버전은 다음 명령으로 확인합니다.
-
-```bash
-python -m backend.cli version
-# v1.9.0 · 2026-09-18 · <git-sha>
+```powershell
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m uvicorn backend.main:app
 ```
 
-## 릴리즈
+**macOS·Linux**
 
-`CHANGELOG.md`의 Unreleased 내용을 새 버전 섹션으로 옮기고, `backend/__init__.py`와 README·OpenAPI 버전 예시를 맞춥니다.
-main의 CI 통과를 확인한 뒤 `git tag vx.y.z && git push origin vx.y.z`로 태그를 올립니다.
-태그·패키지 버전·CHANGELOG가 다르면 자동으로 릴리즈 생성을 중단합니다.
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m uvicorn backend.main:app
+```
 
-곡의 앞부분만 분석하므로 후렴의 특징이 반영되지 않을 수 있습니다. 결과는 현재 카탈로그 범위 안에서의 비교이며,
-취향이나 저작권·표절 여부를 판정하지 않습니다.
+실행 후 접속 주소는 동일하게 [localhost:8000](http://localhost:8000)입니다.
 
 </details>
 
-## 시작과 라이선스
+## 사용 전에 알아두세요
 
-졸업작품 [easygap/capstone_music](https://github.com/easygap/capstone_music)의 음악 분석을 웹 서비스로 발전시킨 프로젝트입니다.
-코드와 자체 제작 샘플은 MIT 라이선스를 따릅니다. 파생 UI 글꼴은 SIL OFL을 따릅니다.
-[Pretendard 라이선스](frontend/assets/fonts/OFL.txt) · [LINE Seed 라이선스](frontend/assets/fonts/LINE-Seed-OFL.txt)
+**어떤 곡을 찾아주나요?**
+
+프로젝트에 등록된 781곡 안에서 찾습니다. 제목이나 가사가 아니라 실제 소리를 분석해 비교합니다.
+
+**올린 파일은 어디에 저장되나요?**
+
+파일은 SoundMatch를 실행한 서버에서 분석하고, 분석이 끝나면 삭제합니다.
+위 방법으로 내 컴퓨터에서 실행하면 파일도 내 컴퓨터에서 처리합니다. AI 학습에 사용하지 않습니다.
+분석 기록과 즐겨찾기는 사용 중인 브라우저에 저장됩니다.
+
+**유사도가 높으면 표절인가요?**
+
+아닙니다. 박자나 음색 같은 소리의 특징을 비교한 점수입니다.
+곡의 앞부분만 분석하기 때문에, 후렴처럼 뒤에 나오는 부분은 결과에 반영되지 않을 수 있습니다.
+
+**가입이나 API 키가 필요한가요?**
+
+필요 없습니다. 저장소에 포함된 데이터로 실행할 수 있습니다.
+
+## 의견 남기기
+
+쓰다가 불편한 점이나 추가했으면 하는 기능이 있다면 [이슈](https://github.com/easygap/music_similarity/issues/new/choose)에 남겨 주세요.
+오류를 알려주실 때는 사용한 브라우저와 어떤 버튼을 눌렀는지 적어 주시면 도움이 됩니다.
+다시 찾아보고 싶다면 오른쪽 위의 **Star**로 저장해 두세요.
+
+[개발에 참여하기](CONTRIBUTING.md) · [변경 이력](CHANGELOG.md) · [화면·속도 확인 결과](docs/verification-2026.md)
+
+---
+
+졸업작품 [capstone_music](https://github.com/easygap/capstone_music)에서 시작한 음악 추천 프로젝트입니다.
+FastAPI·librosa·scikit-learn·HTML·CSS·JavaScript로 만들었습니다.
+코드와 직접 만든 샘플 음원은 [MIT 라이선스](LICENSE), 글꼴은 SIL OFL을 따릅니다.
+[Pretendard](frontend/assets/fonts/OFL.txt) · [LINE Seed KR](frontend/assets/fonts/LINE-Seed-OFL.txt)

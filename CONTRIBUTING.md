@@ -1,6 +1,6 @@
-# 컨트리뷰션 가이드
+# 개발에 참여하기
 
-오픈소스 형태로 기여를 받습니다. 이슈/PR 환영해요.
+오류 수정, 기능 추가, 문서 개선 모두 환영합니다. 사용 방법은 [README](README.md)에 있습니다.
 
 ## 개발 환경 빠른 셋업
 
@@ -53,3 +53,45 @@ ruff check backend tests scripts
 ## 보안 이슈 보고
 
 공개 이슈로 올리지 말고 저장소 소유자에게 비공개로 메일을 주세요.
+
+## 분석 방식
+
+librosa로 길이를 포함한 58개 값을 추출하고, 길이를 제외한 57개 특성으로 비교합니다.
+카탈로그로 학습한 `StandardScaler`로 단위를 맞춘 뒤 코사인 유사도를 구합니다.
+화면에는 음수를 0으로 처리한 유사도에 100을 곱해 표시합니다.
+
+곡의 앞부분 최대 30초만 분석합니다. 결과는 등록된 곡 안에서의 비교이며 표절 여부를 판단하는 데 사용할 수 없습니다.
+
+## 데이터와 화면 자료 만들기
+
+- API 문서: 실행한 서버의 `/docs`
+- CLI: `python -m backend.cli --help`
+- 카탈로그: `scripts/rebuild_dataset.py` 실행 후 `python scripts/build_landing_data.py`
+- 샘플 음원과 분석값: `python scripts/build_listening_demo.py`
+- UI 글꼴: 개발 환경에 `fonttools brotli`를 설치한 뒤 `python scripts/build_ui_font.py`
+- 화면만 미리 보기: `python preview_server.py 8790` — 이 서버의 추천 결과는 예시 데이터입니다.
+- [화면 설계와 참고 자료](docs/design-2026.md)
+- [화면·기능·성능 확인 결과](docs/verification-2026.md)
+
+## 운영 설정
+
+환경 변수는 `backend/main.py`의 `MUSIC_*` 설정을 확인하세요.
+
+| 설정 | 기본값 | 설명 |
+| --- | --- | --- |
+| `WEB_CONCURRENCY` | `1` | 요청 제한·캐시·통계가 메모리 기반입니다. 여러 워커를 쓰려면 외부 상태 저장소를 먼저 구성해야 합니다. |
+
+배포한 버전은 다음 명령으로 확인합니다.
+
+```bash
+python -m backend.cli version
+# v1.9.0 · 2026-09-18 · <git-sha>
+```
+
+## 릴리즈
+
+1. `CHANGELOG.md`의 Unreleased 내용을 새 버전 섹션으로 옮깁니다.
+2. `backend/__init__.py`와 이 문서·OpenAPI의 버전 예시를 맞춥니다.
+3. main의 CI가 통과하면 `git tag vx.y.z && git push origin vx.y.z`로 태그를 올립니다.
+
+태그·패키지 버전·CHANGELOG가 다르면 자동으로 릴리즈 생성을 중단합니다.
