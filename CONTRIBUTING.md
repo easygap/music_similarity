@@ -17,6 +17,12 @@ pytest -q
 ruff check backend tests scripts
 ```
 
+오디오 화면을 수정했다면 Node.js로 파형 테스트도 실행해 주세요. 추가 패키지는 필요 없습니다.
+
+```bash
+node --test tests/frontend/audio.test.cjs
+```
+
 ## 작업 흐름
 
 1. 큰 변경은 먼저 이슈로 의도를 공유해 주세요. 작은 버그 픽스는 바로 PR 도 OK.

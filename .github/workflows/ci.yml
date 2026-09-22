@@ -20,6 +20,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  frontend:
+    name: 오디오 화면 회귀 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: 파형·초기화·메모리 정리 확인
+        run: node --test tests/frontend/*.test.cjs
+
   lint-and-test:
     name: 린트 + 테스트 (Python ${{ matrix.python }})
     runs-on: ubuntu-latest

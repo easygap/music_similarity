@@ -988,7 +988,7 @@ def test_seed_from_hit_failure_restores_previous_results():
     text = _read("js/app.js")
     assert "async function restoreSeedPrevious()" in text
     assert "const prevFile = _seedPrevFile" in text
-    assert "await setAudioPreview(prevFile)" in text
+    assert "setAudioPreview(prevFile)" in text
     assert "await restoreSeedPrevious()" in text
     assert 't("results.seedFailedToast")' in text
 

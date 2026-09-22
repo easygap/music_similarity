@@ -34,8 +34,8 @@
   <meta name="apple-mobile-web-app-title" content="SoundMatch" />
 
   <!-- 한국어·영문·숫자 모두 Pretendard. 동적 서브셋으로 쓰는 글자만 로드. -->
+  <link rel="preload" href="/static/assets/fonts/soundmatch-display-v1.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high" />
   <link rel="preload" href="/static/assets/fonts/soundmatch-ui-v1.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/static/assets/fonts/soundmatch-display-v1.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/style.css" />
 
   <!-- 첫 페인트에서 테마가 튀는 걸 막기 위해 외부 동기 스크립트로 먼저 적용. -->
@@ -181,8 +181,12 @@
           </div>
         </div>
         <div class="demo-transport">
-          <span id="demo-time">0:00 / 0:09</span><input type="range" id="demo-seek" min="0" max="8.971" step="0.01" value="0" aria-label="샘플 재생 위치" data-i18n-attr="aria-label:demo.seek" disabled><span class="transport-hint" data-i18n="demo.switchHint">A/B를 눌러 바꿔 듣기</span>
+          <span id="demo-time">0:00 / 0:09</span>
+          <input type="range" id="demo-seek" min="0" max="8.971" step="0.01" value="0" aria-label="샘플 재생 위치" data-i18n-attr="aria-label:demo.seek" disabled>
+          <button class="demo-loop" id="demo-loop" type="button" aria-pressed="false" aria-label="샘플 반복 재생" data-i18n-attr="aria-label:demo.loopLabel" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l4 4-4 4M21 7H7a4 4 0 0 0-4 4m4 10-4-4 4-4m-4 4h14a4 4 0 0 0 4-4"/></svg><span data-i18n="demo.loop">반복</span></button>
+          <span class="transport-hint" data-i18n="demo.switchHint">키보드 A / B로 전환</span>
         </div>
+        <p id="demo-status" class="sr-only" role="status"></p>
 </div>
       <details class="data-inspector"><summary><span data-i18n="stage.inspect">분석값 자세히 보기</span><span aria-hidden="true">＋</span></summary>        <div class="demo-analysis">
           <div class="demo-analysis-head"><div class="demo-tabs" role="group" aria-label="차트 종류" data-i18n-attr="aria-label:demo.chartType"><button type="button" data-demo-chart="spectrum" aria-pressed="true" data-i18n="demo.spectrum">주파수 분포</button><button type="button" data-demo-chart="features" aria-pressed="false" data-i18n="demo.features">특성 비교</button></div></div>
@@ -190,7 +194,6 @@
           <div class="demo-chart-legend"><span class="key-a" data-i18n="demo.legendA">A 기준 샘플</span><span class="key-b" data-i18n="demo.legendB">B 비교 샘플</span><span data-i18n="demo.chartHint">소리의 분포를 비교합니다</span></div>
         </div>
         <p class="demo-note" id="demo-note" data-i18n="demo.toneNote">박자와 멜로디는 같지만, 높은 음역의 소리가 더해졌어요.</p>
-        <p id="demo-status" class="sr-only" role="status"></p>
         <details class="demo-source"><summary data-i18n="demo.source">샘플 정보와 분석값</summary><p data-i18n="demo.sourceNote">직접 합성한 9초 음악입니다. 파형과 그래프는 이 파일을 분석한 값이며, 유사도는 기존 분석 엔진으로 계산했습니다.</p><div id="demo-values"></div><a href="/static/assets/demo/original.wav" download data-i18n="demo.downloadA">기준 샘플 내려받기</a><a id="demo-download-b" href="/static/assets/demo/tone.wav" download data-i18n="demo.downloadB">비교 샘플 내려받기</a></details>
         <audio id="demo-audio-a" preload="none"></audio><audio id="demo-audio-b" preload="none"></audio>
 </details>
@@ -263,8 +266,8 @@
           <div class="loading-bars" aria-hidden="true">
             <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
-          <p class="loading-title" data-i18n="loading.title">소리 특성을 뽑고 있어요</p>
-          <p class="loading-sub" id="loading-step">librosa · STFT · MFCC · cosine similarity</p>
+          <p class="loading-title" data-i18n="loading.title">비슷한 곡을 찾고 있어요</p>
+          <p class="loading-sub" id="loading-step">곡 길이와 파일 크기에 따라 시간이 걸릴 수 있어요.</p>
           <p class="loading-elapsed" id="loading-elapsed" aria-hidden="true"></p>
         </section>
 

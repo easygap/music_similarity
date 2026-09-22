@@ -44,7 +44,7 @@
       "runtimeError": null
     },
     {
-      "label": "최종 모바일",
+      "label": "재생·공유 보완 전 모바일",
       "fetchTime": "2026-09-22T06:32:18.108Z",
       "lighthouseVersion": "13.5.0",
       "hostUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
@@ -86,7 +86,7 @@
       "runtimeError": null
     },
     {
-      "label": "최종 데스크톱",
+      "label": "재생·공유 보완 전 데스크톱",
       "fetchTime": "2026-09-22T06:33:03.733Z",
       "lighthouseVersion": "13.5.0",
       "hostUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
@@ -124,6 +124,90 @@
         "total-byte-weight": 283462
       },
       "fontTransferBytes": 152777,
+      "fontRequests": 2,
+      "runtimeError": null
+    },
+    {
+      "label": "최종 모바일",
+      "fetchTime": "2026-09-22T07:56:00.131Z",
+      "lighthouseVersion": "13.5.0",
+      "hostUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "settings": {
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "screenEmulation": {
+          "mobile": true,
+          "width": 412,
+          "height": 823,
+          "deviceScaleFactor": 1.75,
+          "disabled": false
+        }
+      },
+      "scores": {
+        "performance": 0.95,
+        "accessibility": 1,
+        "best-practices": 1,
+        "seo": 1,
+        "agentic-browsing": 1
+      },
+      "metrics": {
+        "first-contentful-paint": 921.7353,
+        "largest-contentful-paint": 2871.7353,
+        "cumulative-layout-shift": 0.000342723222285159,
+        "total-blocking-time": 0,
+        "total-byte-weight": 286143
+      },
+      "fontTransferBytes": 153467,
+      "fontRequests": 2,
+      "runtimeError": null
+    },
+    {
+      "label": "최종 데스크톱",
+      "fetchTime": "2026-09-22T07:57:01.795Z",
+      "lighthouseVersion": "13.5.0",
+      "hostUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+      "settings": {
+        "formFactor": "desktop",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "requestLatencyMs": 0,
+          "downloadThroughputKbps": 0,
+          "uploadThroughputKbps": 0,
+          "cpuSlowdownMultiplier": 1
+        },
+        "screenEmulation": {
+          "mobile": false,
+          "width": 1350,
+          "height": 940,
+          "deviceScaleFactor": 1,
+          "disabled": false
+        }
+      },
+      "scores": {
+        "performance": 1,
+        "accessibility": 1,
+        "best-practices": 1,
+        "seo": 1,
+        "agentic-browsing": 1
+      },
+      "metrics": {
+        "first-contentful-paint": 266.7769,
+        "largest-contentful-paint": 626.7769000000001,
+        "cumulative-layout-shift": 0.0005679245223890887,
+        "total-blocking-time": 0,
+        "total-byte-weight": 286143
+      },
+      "fontTransferBytes": 153467,
       "fontRequests": 2,
       "runtimeError": null
     }

@@ -14,42 +14,65 @@
       this.ctx = canvas.getContext("2d");
       this.peaks = null;
       this.duration = 0;
-      this._raf = null;
+      this._version = 0;
+      this._context = null;
+      this._destroyed = false;
+      this._progress = 0;
+      this._resize = typeof ResizeObserver === "function" ? new ResizeObserver(() => this.draw(this._progress)) : null;
+      if (this._resize) this._resize.observe(canvas);
     }
 
     async load(file) {
-      // 디코딩이 끝나면 raw samples 는 필요 없어서 즉시 컨텍스트를 닫는다.
-      const ac = new (window.AudioContext || window.webkitAudioContext)();
-      const arrayBuffer = await file.arrayBuffer();
+      if (this._destroyed) return;
+      const version = ++this._version;
+      this._closeContext(this._context);
+      let ac;
       try {
-        const buf = await ac.decodeAudioData(arrayBuffer.slice(0));
+        const arrayBuffer = await file.arrayBuffer();
+        if (this._destroyed || version !== this._version) return;
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+        this._context = ac;
+        // decodeAudioData에 원본 버퍼를 넘긴다. 같은 파일 크기의 복사본은 필요 없다.
+        const buf = await ac.decodeAudioData(arrayBuffer);
+        if (this._destroyed || version !== this._version) return;
         this.duration = buf.duration;
         this.peaks = this._computePeaks(buf, 96);
         this.draw(0);
       } catch (e) {
+        if (this._destroyed || version !== this._version) return;
         // 일부 코덱은 브라우저 디코딩이 안 되는 경우가 있다(예: m4a 일부 변종).
         // 그 때는 평탄한 막대로 fallback.
         this.peaks = new Float32Array(96);
         this.duration = 0;
         this.draw(0);
       } finally {
-        ac.close && ac.close();
+        this._closeContext(ac);
+      }
+    }
+
+    _closeContext(context) {
+      if (!context) return;
+      if (this._context === context) this._context = null;
+      if (context.state !== "closed") {
+        try { Promise.resolve(context.close()).catch(() => {}); } catch (_) {}
       }
     }
 
     _computePeaks(buf, bins) {
-      // 모노 첫 채널만 가지고 bins 구간으로 잘라 각 구간의 최대 절댓값을 뽑는다.
-      // (스테레오 평균을 내봐야 시각적으로 큰 차이는 없음)
-      const ch = buf.getChannelData(0);
-      const block = Math.floor(ch.length / bins);
+      // 어느 채널에만 소리가 있어도 표시하고, 마지막 구간까지 빠짐없이 읽는다.
+      const channels = Array.from({ length: buf.numberOfChannels }, (_, i) => buf.getChannelData(i));
+      const length = channels[0].length;
+      bins = Math.min(bins, length);
       const peaks = new Float32Array(bins);
       for (let i = 0; i < bins; i++) {
         let max = 0;
-        const start = i * block;
-        const end = start + block;
-        for (let j = start; j < end; j++) {
-          const v = Math.abs(ch[j] || 0);
-          if (v > max) max = v;
+        const start = Math.floor(i * length / bins);
+        const end = Math.floor((i + 1) * length / bins);
+        for (const ch of channels) {
+          for (let j = start; j < end; j++) {
+            const v = Math.abs(ch[j]);
+            if (v > max) max = v;
+          }
         }
         peaks[i] = max;
       }
@@ -65,10 +88,13 @@
     }
 
     draw(progress) {
+      if (this._destroyed) return;
+      this._progress = Math.max(0, Math.min(1, progress || 0));
       const { canvas, ctx, peaks } = this;
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
+      if (!ctx || !w || !h) return;
       // 고해상도 디스플레이를 위해 캔버스 실제 픽셀 수를 맞춰준다.
       if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
         canvas.width = Math.floor(w * dpr);
@@ -84,16 +110,19 @@
       const baseColor = style.getPropertyValue("--wave-base").trim() || "rgba(255,255,255,0.18)";
       const playedColor = style.getPropertyValue("--wave-played").trim() || "#004cff";
 
-      const bars = peaks.length;
-      const gap = 2;
-      const barWidth = Math.max(1, (w - gap * (bars - 1)) / bars);
+      const bars = Math.min(peaks.length, Math.max(1, Math.floor(w / 3)));
+      const gap = bars > 1 ? 2 : 0;
+      const barWidth = (w - gap * (bars - 1)) / bars;
       for (let i = 0; i < bars; i++) {
+        let peak = 0;
+        for (let j = Math.floor(i * peaks.length / bars); j < Math.floor((i + 1) * peaks.length / bars); j++) {
+          peak = Math.max(peak, peaks[j]);
+        }
         // peak 가 0이어도 최소 두께를 줘서 막대 자리가 보이게 한다.
-        const peak = peaks[i] || 0.02;
-        const barHeight = Math.max(2, peak * h * 0.86);
+        const barHeight = Math.min(h, Math.max(2, peak * h * 0.86));
         const x = i * (barWidth + gap);
         const y = (h - barHeight) / 2;
-        const playedThreshold = progress * bars;
+        const playedThreshold = this._progress * bars;
         ctx.fillStyle = i < playedThreshold ? playedColor : baseColor;
         const r = Math.min(barWidth / 2, 3);
         roundRect(ctx, x, y, barWidth, barHeight, r);
@@ -101,7 +130,11 @@
     }
 
     destroy() {
-      if (this._raf) cancelAnimationFrame(this._raf);
+      this._destroyed = true;
+      this._version++;
+      if (this._resize) this._resize.disconnect();
+      this._closeContext(this._context);
+      this.peaks = null;
     }
   }
 

@@ -48,7 +48,11 @@
         playingA: "기준 샘플을 재생합니다.",
         playingB: "비교 샘플을 재생합니다.",
         seek: "샘플 재생 위치",
-        switchHint: "A/B를 눌러 바꿔 듣기",
+        switchHint: "키보드 A / B로 전환",
+        loop: "반복",
+        loopLabel: "샘플 반복 재생",
+        loopOn: "샘플을 반복 재생합니다.",
+        loopOff: "반복 재생을 껐습니다.",
         chartType: "차트 종류",
         spectrum: "주파수 분포",
         features: "특성 비교",
@@ -149,19 +153,11 @@
         cta: "분석 결과 확인하기",
       },
       loading: {
-        title: "소리 특성을 뽑고 있어요",
+        title: "비슷한 곡을 찾고 있어요",
         elapsed: (s) => `${s}초 지남`,
         late: "조금만 더 기다려 주세요. 큰 파일은 시간이 더 걸려요.",
         leaveWarn: "아직 분석 중이에요. 지금 나가면 처음부터 다시 해야 해요.",
-        steps: [
-          "librosa · 오디오 디코딩",
-          "RMS · BPM · 제로 크로싱",
-          "스펙트럼 중심 · 롤오프 · 대역폭",
-          "20차원 MFCC",
-          "StandardScaler · 표준화",
-          "cosine_similarity · 카탈로그 비교",
-          "닮은 이유 정리",
-        ],
+        steps: ["곡 길이와 파일 크기에 따라 시간이 걸릴 수 있어요."],
       },
       error: {
         title: "분석하지 못했어요.",
@@ -202,6 +198,8 @@
         copied: "복사했어요",
         restored: "공유받은 분석 결과를 열었어요.",
         shareUrlFailed: "공유 링크를 만들지 못했어요. 다시 시도해 주세요.",
+        shareFailed: "공유 창을 열지 못했어요. ‘공유 링크’로 복사해 주세요.",
+        playError: "이 파일을 재생하지 못했어요. 파일 형식을 확인해 주세요.",
         exportMenu: "내보내기",
         exportJson: "JSON 내려받기",
         exportCsv: "CSV 저장",
@@ -528,7 +526,11 @@
         playingA: "Playing the reference sample.",
         playingB: "Playing the comparison sample.",
         seek: "Sample playback position",
-        switchHint: "Press A/B to switch",
+        switchHint: "A / B keys to switch",
+        loop: "Loop",
+        loopLabel: "Loop the sample",
+        loopOn: "Sample looping is on.",
+        loopOff: "Sample looping is off.",
         chartType: "Chart type",
         spectrum: "Frequency spectrum",
         features: "Audio features",
@@ -629,19 +631,11 @@
         cta: "See the whole flow with a sample",
       },
       loading: {
-        title: "Extracting audio features",
+        title: "Finding similar tracks",
         elapsed: (s) => `${s}s elapsed`,
         late: "Hang tight — large files take a little longer.",
         leaveWarn: "Analysis is still running. Leaving now discards the result.",
-        steps: [
-          "librosa · decoding audio",
-          "RMS · BPM · zero crossings",
-          "Spectral centroid · rolloff · bandwidth",
-          "20-dim MFCC",
-          "StandardScaler · normalization",
-          "cosine_similarity · comparing the catalog",
-          "Working out why they match",
-        ],
+        steps: ["Longer tracks and larger files may take more time."],
       },
       error: {
         title: "Analysis failed.",
@@ -682,6 +676,8 @@
         copied: "Copied",
         restored: "Opened a shared analysis result.",
         shareUrlFailed: "Couldn't build a share link. Please try again.",
+        shareFailed: "Couldn't open sharing. Use Copy share link instead.",
+        playError: "Couldn't play this file. Check whether your browser supports its audio format.",
         exportMenu: "Export",
         exportJson: "Download JSON",
         exportCsv: "Save CSV",
@@ -1028,6 +1024,7 @@
     setLang(current === "ko" ? "en" : "ko");
   }
 
+  const normalizedHtml = new Map();
   function apply(root = document) {
     // data-i18n="키"  →  텍스트 콘텐츠로 주입.
     // data-i18n-html 속성이 함께 있으면 HTML 로 주입(서식 포함).
@@ -1035,9 +1032,14 @@
       const v = get(el.dataset.i18n);
       if (typeof v === "string") {
         if (el.dataset.i18nHtml !== undefined) {
-          el.innerHTML = v;
+          if (!normalizedHtml.has(v)) {
+            const template = document.createElement("template");
+            template.innerHTML = v;
+            normalizedHtml.set(v, template.innerHTML);
+          }
+          if (el.innerHTML !== normalizedHtml.get(v)) el.innerHTML = v;
         } else {
-          el.textContent = v;
+          if (el.textContent !== v) el.textContent = v;
         }
       }
     });
@@ -1047,7 +1049,7 @@
       spec.split(",").forEach((pair) => {
         const [attr, key] = pair.split(":").map((s) => s.trim());
         const v = get(key);
-        if (typeof v === "string") el.setAttribute(attr, v);
+        if (typeof v === "string" && el.getAttribute(attr) !== v) el.setAttribute(attr, v);
       });
     });
   }

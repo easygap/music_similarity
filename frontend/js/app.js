@@ -790,6 +790,7 @@
   let _lastFile = null;
   let _lastSeedHit = null;
   let _analysisInFlight = false;
+  let _shareData = null, _sharePromise = null, _shareUrl = "";
   // 분석 요청을 도중에 취소할 때 쓰는 AbortController. 사용자가 분석 중
   // 다른 파일을 새로 올리거나 "새 분석" 으로 돌아가면 이전 fetch 는 취소되어
   // 결과가 뒤섞이는 race 를 막는다.
@@ -837,8 +838,6 @@
         body: formData,
         signal: controller.signal,
       });
-      stopLoadingMessages();
-
       if (!res.ok) {
         if (res.status === 429) throw new Error(t("error.rateLimit"));
         const text = await safeJsonOrText(res);
@@ -849,16 +848,19 @@
       // 응답 도착 직전에 새 분석이 시작돼서 controller 가 바뀌었다면
       // 이 응답은 stale. 화면 갱신을 건너뛴다.
       if (_analysisAbortController !== controller) return;
+      stopLoadingMessages();
       _lastResults = data;
       addToHistory(data);
-      await setAudioPreview(file);
-      renderResults(data);
+      // 파형 준비는 별도로 진행한다. 추천 결과는 응답을 받는 즉시 보여준다.
+      setAudioPreview(file);
+      renderResults(data, /* preserveFile */ true);
       // 분석이 끝났으니 URL hash 에 결과를 자동으로 직렬화 — 새로고침 /
       // 북마크 만으로도 결과가 살아남는다. 실패는 무시 (선택적 기능).
       updateLocationHash(data).catch(() => {});
     } catch (err) {
       // AbortError 는 사용자가 의도적으로 cancel 한 것이라 에러 화면을 띄우지 않음.
       if (err && err.name === "AbortError") return;
+      if (_analysisAbortController !== controller) return;
       stopLoadingMessages();
       showError(err.message || String(err));
     } finally {
@@ -878,6 +880,8 @@
   }
 
   function showSkeletonResults() {
+    invalidateShare();
+    setAudioPreview(null);
     // 실제 결과가 도착하기 전에 같은 자리에 스켈레톤 카드 3장을 깔아둔다.
     // 결과가 도착하면 그대로 교체되므로 레이아웃이 튀지 않는다.
     resultsSection.classList.remove("hidden");
@@ -934,6 +938,7 @@
   let _loadingTimer = null;
   let _loadingStartedAt = 0;
   function startLoadingMessages() {
+    stopLoadingMessages();
     const steps = t("loading.steps") || ["…"];
     let i = 0;
     _loadingStartedAt = performance.now();
@@ -962,10 +967,24 @@
   // 업로드 음원 재생 (HTML5 audio + 파형)
   // ----------------------------------------------------------------------
   let _audioPreviewUrl = null;
+  let _audioPreviewFile = null;
   let _waveform = null;
   let _audioProgress = 0;
 
-  async function setAudioPreview(file) {
+  function setAudioPreview(file) {
+    if (file && file === _audioPreviewFile) {
+      audioPlayer.classList.remove("hidden");
+      return;
+    }
+    audioPreview.pause();
+    if (_waveform) _waveform.destroy();
+    _waveform = null;
+    _audioPreviewFile = file;
+    _audioProgress = 0;
+    if (seekSlider) {
+      seekSlider.value = "0";
+      seekSlider.setAttribute("aria-valuetext", "0:00 / 0:00");
+    }
     // 기존 blob URL 은 메모리 해제.
     if (_audioPreviewUrl) {
       URL.revokeObjectURL(_audioPreviewUrl);
@@ -973,7 +992,9 @@
     }
     if (!file) {
       audioPreview.removeAttribute("src");
+      audioPreview.load();
       audioPlayer.classList.add("hidden");
+      updateAudioTime();
       return;
     }
     _audioPreviewUrl = URL.createObjectURL(file);
@@ -983,11 +1004,8 @@
 
     if (window.SoundMatchVisualizers) {
       _waveform = new window.SoundMatchVisualizers.WaveformBar(waveformCanvas);
-      try {
-        await _waveform.load(file);
-      } catch {
-        // 디코딩 실패해도 페이지는 계속 동작해야 함. 파형만 비어있게 둔다.
-      }
+      _waveform.draw(0);
+      _waveform.load(file).catch(() => {});
     }
     updateAudioTime();
   }
@@ -1020,7 +1038,9 @@
 
   playBtn.addEventListener("click", () => {
     if (!audioPreview.src) return;
-    if (audioPreview.paused) audioPreview.play();
+    if (audioPreview.paused) audioPreview.play().catch((error) => {
+      if (error.name !== "AbortError") toast(t("results.playError"));
+    });
     else audioPreview.pause();
   });
 
@@ -1251,6 +1271,7 @@
   }
 
   function renderResults(data, preserveFile = false, options = {}) {
+    prepareShare(data);
     hideAll();
     resultsSection.classList.remove("hidden");
     // 새 결과를 그리면 키보드 selected 인덱스를 초기화. 사용자가 j 를 처음
@@ -1691,8 +1712,9 @@
     _lastResults = prev;
     _lastFile = prevFile;
     _lastSeedHit = null;
-    await setAudioPreview(prevFile);
+    setAudioPreview(prevFile);
     renderResults(prev, /* preserveFile */ true);
+    updateLocationHash(prev).catch(() => {});
     seedBackBtn.classList.add("hidden");
     return true;
   }
@@ -1720,13 +1742,13 @@
         `/api/analyze/by-catalog?top_n=${topN}&name=${encodeURIComponent(name)}`,
         { signal: controller.signal },
       );
-      stopLoadingMessages();
       if (!res.ok) {
         const text = await safeJsonOrText(res);
         throw new Error(text || `서버 오류 (${res.status})`);
       }
       const data = await res.json();
       if (_analysisAbortController !== controller) return;
+      stopLoadingMessages();
       // by-catalog 응답에는 filename / spectrogram / timing 등이 없다.
       // renderResults 가 기대하는 형태로 살짝 보강해서 그대로 재사용.
       const seedAdapted = Object.assign({}, data, {
@@ -1738,7 +1760,7 @@
       });
       _lastResults = seedAdapted;
       _lastFile = null;
-      await setAudioPreview(null);
+      setAudioPreview(null);
       renderResults(seedAdapted, /* preserveFile */ true);
       addToHistory(seedAdapted);
       updateLocationHash(seedAdapted).catch(() => {});
@@ -1822,6 +1844,8 @@
   // 초기화
   // ----------------------------------------------------------------------
   resetBtn.addEventListener("click", () => {
+    stopLoadingMessages();
+    invalidateShare();
     // 진행 중인 분석이 있으면 같이 cancel — 그 응답이 나중에 도착해서 빈
     // 화면에 결과가 갑자기 떠오르는 일을 막는다.
     if (_analysisAbortController) {
@@ -1914,13 +1938,33 @@
     return out;
   }
 
-  // 분석이 끝나면 결과를 URL hash 에 살짝 박아준다 — 새로고침이나 북마크로도
-  // 결과가 살아남게. URL 이 너무 길어지면(약 12KB+) 그냥 hash 갱신을 포기한다.
+  function invalidateShare() {
+    _shareData = null; _sharePromise = null; _shareUrl = "";
+    if (shareBtn) shareBtn.disabled = true;
+  }
+
+  function prepareShare(data) {
+    if (_shareData === data) return _sharePromise;
+    invalidateShare();
+    _shareData = data;
+    // 클릭 전에 링크를 준비한다. 모바일 공유 창은 클릭 직후에 열어야 한다.
+    _sharePromise = encodeForShare(data).then((token) => {
+      const url = token ? `${location.origin}${location.pathname}${location.search}#r=${token}` : "";
+      if (_shareData === data && _lastResults === data) {
+        _shareUrl = url;
+        if (shareBtn) shareBtn.disabled = !url;
+      }
+      return url;
+    });
+    return _sharePromise;
+  }
+
+  // 결과를 새로고침이나 북마크로 다시 연다. 초기화 뒤 끝난 압축 작업은 무시한다.
   async function updateLocationHash(data) {
     if (!data) return;
-    const token = await encodeForShare(data);
-    if (!token) return;
-    const newHash = `#r=${token}`;
+    const url = await prepareShare(data);
+    if (!url || _lastResults !== data || _shareData !== data) return;
+    const newHash = new URL(url).hash;
     // 6KB(~base64 8000자) 보다 길면 일부 모바일 브라우저가 거부하니 안전선.
     if (newHash.length > 8000) return;
     try {
@@ -1933,9 +1977,11 @@
   // 페이지 로드 시 hash 에 결과가 들어있으면 자동 복원.
   // 형식: #r=<base64url-gzip-json>
   async function tryRestoreFromHash() {
+    const originalHash = location.hash;
     const m = (location.hash || "").match(/^#r=(.+)$/);
     if (!m) return;
     const restored = await decodeFromShare(m[1]);
+    if (location.hash !== originalHash || _analysisInFlight || _lastResults) return;
     if (restored && Array.isArray(restored.results)) {
       _lastResults = restored;
       _lastFile = null;
@@ -1962,33 +2008,33 @@
       .slice(0, 3)
       .map((r) => `${r.rank}. ${r.title} – ${r.artist} (${r.similarity_percent.toFixed(1)}%)`)
       .join("\n");
-    return `SoundMatch · ${data.filename}\n\n${tracks}\n\n${location.origin}`;
+    return `SoundMatch · ${data.filename}\n\n${tracks}`;
   }
   if (navigator.share && shareBtn) {
     shareBtn.classList.remove("hidden");
     shareBtn.addEventListener("click", async () => {
-      if (!_lastResults) return;
+      if (!_lastResults || !_shareUrl || _analysisInFlight) return;
       try {
         await navigator.share({
           title: "SoundMatch · 음악 비교 결과",
           text: buildShareText(_lastResults),
-          url: location.origin,
+          url: _shareUrl,
         });
       } catch (e) {
         // 사용자가 공유 시트를 취소했을 때는 굳이 알림 띄우지 않는다.
-        if (e && e.name !== "AbortError") toast(t("results.copied"));
+        if (e && e.name !== "AbortError") toast(t("results.shareFailed"));
       }
     });
   }
 
   copyLinkBtn.addEventListener("click", async () => {
-    if (!_lastResults) return;
+    if (!_lastResults || _analysisInFlight) return;
     // 결과를 텍스트로 정리해 클립보드에 넣어준다 (Web Share API 가 없어도 동작).
-    const tracks = _lastResults.results
-      .slice(0, 3)
-      .map((r) => `${r.rank}. ${r.title} – ${r.artist} (${r.similarity_percent.toFixed(1)}%)`)
-      .join("\n");
-    const shareText = `SoundMatch · ${_lastResults.filename}\n\n${tracks}\n\n${location.origin}`;
+    const data = _lastResults;
+    const url = _shareUrl || await prepareShare(data);
+    if (_lastResults !== data || _analysisInFlight) return;
+    if (!url) { toast(t("results.shareUrlFailed")); return; }
+    const shareText = `${buildShareText(data)}\n\n${url}`;
     try {
       await navigator.clipboard.writeText(shareText);
       toast(t("results.copied"));
@@ -2001,13 +2047,14 @@
   // "공유 가능한 링크 복사" — 결과를 hash 에 담은 URL 을 클립보드에 넣어준다.
   if (copyShareUrlBtn) {
     copyShareUrlBtn.addEventListener("click", async () => {
-      if (!_lastResults) return;
-      const token = await encodeForShare(_lastResults);
-      if (!token) {
+      if (!_lastResults || _analysisInFlight) return;
+      const data = _lastResults;
+      const url = _shareUrl || await prepareShare(data);
+      if (_lastResults !== data || _analysisInFlight) return;
+      if (!url) {
         toast(t("results.shareUrlFailed"));
         return;
       }
-      const url = `${location.origin}/#r=${token}`;
       // URL 이 너무 길면(약 10KB+) 브라우저/주소창이 까다로워질 수 있어 경고만 한 번.
       if (url.length > 12000) {
         console.warn("Share URL is unusually long:", url.length);
@@ -2391,8 +2438,7 @@
       resetBtn.click();
     } else if (e.key === " " && !isTyping && resultsOpen && audioPreview.src) {
       e.preventDefault();
-      if (audioPreview.paused) audioPreview.play();
-      else audioPreview.pause();
+      playBtn.click();
     } else if (!isTyping && resultsOpen && (e.key === "j" || e.key === "ArrowDown")) {
       // 다음 hit 카드.
       e.preventDefault();

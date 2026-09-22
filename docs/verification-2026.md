@@ -13,21 +13,23 @@ Chrome 153 / Lighthouse 13.5.0. 모바일은 412×823, DPR 1.75, 4배 CPU 감속
 | --- | ---: | ---: | ---: |
 | 성능 점수 | 71 | **95** | **100** |
 | 접근성 / 권장사항 / SEO | 100 / 100 / 100 | 100 / 100 / 100 | 100 / 100 / 100 |
-| FCP | 3.84초 | **0.93초** | 0.31초 |
-| LCP | 4.30초 | **2.88초** | 0.65초 |
+| FCP | 3.84초 | **0.92초** | 0.27초 |
+| LCP | 4.30초 | **2.87초** | 0.63초 |
 | CLS | 0.1358 | **0.00034** | 0.00057 |
 | TBT | 0ms | 0ms | 0ms |
-| 초기 전송량 | 541,993B | **283,462B** | 283,462B |
-| 글꼴 전송 | 384,114B / 14회 | **152,777B / 2회** | 152,777B / 2회 |
+| 초기 전송량 | 541,993B | **286,143B** | 286,143B |
+| 글꼴 전송 | 384,114B / 14회 | **153,467B / 2회** | 153,467B / 2회 |
 
-최종 측정은 제목용 LINE Seed KR 서브셋과 주파수 지형의 선 잘림 보완을 포함한다.
+최종 측정은 파형·공유 오류 수정과 반복 재생·A/B 단축키·동시 재생 위치 표시를 포함한다.
+직전 버전의 모바일 점수도 95점, LCP는 2.88초였다. 첫 로딩 속도는 사실상 같은 수준이고 초기 전송량은 2,681B 늘었다.
+이번 응답성 개선은 추천 결과가 파형 디코딩을 기다리지 않는다는 점이다. 파형 준비를 멈춰 둔 브라우저 테스트에서도 추천 5곡이 먼저 표시됐다.
 모바일 LCP는 2.5초 목표를 조금 넘는다. TBT 0ms를 실제 사용자의 INP 0ms로 해석하지 않는다.
 
 [측정 설정·시각·수치 JSON](measurements-2026-09-22.json)
 
 ```bash
-npx lighthouse@13.5.0 http://127.0.0.1:8840/ --output=json --output-path=output/lighthouse-mobile-release.json --chrome-flags="--headless --no-sandbox"
-npx lighthouse@13.5.0 http://127.0.0.1:8840/ --preset=desktop --output=json --output-path=output/lighthouse-desktop-release.json --chrome-flags="--headless --no-sandbox"
+npx lighthouse@13.5.0 http://127.0.0.1:8840/ --output=json --output-path=output/lighthouse-mobile-audio.json --chrome-flags="--headless --no-sandbox"
+npx lighthouse@13.5.0 http://127.0.0.1:8840/ --preset=desktop --output=json --output-path=output/lighthouse-desktop-audio.json --chrome-flags="--headless --no-sandbox"
 ```
 
 ## 브라우저에서 확인한 동작
@@ -36,19 +38,32 @@ npx lighthouse@13.5.0 http://127.0.0.1:8840/ --preset=desktop --output=json --ou
 - 한국어·영어 전환, 라이트·다크 테마, 모션 감소 설정을 확인했다. 새 제목용 글꼴의 실제 로딩도 확인했다.
 - 초기 로딩의 WAV 요청은 **0건**이었다. 화면이 안정된 뒤 2초간 `requestAnimationFrame` 요청을 관찰한 결과 **0회**였다.
 - A 재생 → 3초 지점 이동 → B 전환에서 재생 위치가 이어지고 A는 멈췄다. 샘플 종류를 바꾸면 재생도 초기화됐다.
+- 샘플 영역에서 A·B 키로 전환했다. 반복을 켜고 끝부분으로 이동해 재생이 처음부터 이어지는 것을 확인했다. 재생 위치 슬라이더와 반복 버튼의 터치 높이는 40px이다.
+- 두 곡의 재생 위치가 함께 표시된다. 0.01초만 이동해도 표시선의 위치가 바뀌며, 듣고 있는 곡은 실선·다른 곡은 점선으로 구분된다. 시점 전환 중에도 두 선이 캔버스 안에 들어왔다.
 - 겹쳐 보기·시점 바꾸기, 주파수 분포·특성 막대 전환이 동작했다.
 - 주파수 지형의 불투명한 면을 없애 서로의 선을 가리지 않도록 했다. 320·390·768·878·1024·1440px에서 두 샘플과 시점·겹침 상태를 바꾸며 캔버스 좌표를 검사했고, 화면 밖으로 나간 선은 없었다. 시점 전환 애니메이션 중에도 같은 검사를 통과했다.
 - 자체 제작 WAV를 실제 `/api/analyze`에 제출해 HTTP 200과 추천 5곡을 받았다. 약 9초짜리 샘플의 특성 추출은 해당 실행에서 1.03초였다.
 - 추천 곡에서 이어 찾기, 즐겨찾기, 분석 기록에서 두 곡 비교, 첫 방문 샘플 비교와 A/B 교환을 확인했다.
 - JSON·CSV·SVG·PNG 네 형식을 실제로 저장했다. PNG가 기존 CSP에 막히던 문제를 수정한 뒤 정상 저장을 확인했다.
 - 공유 링크를 새로 로드해 결과를 복원했다. 샘플 결과의 주소는 약 2,400자이며, 비압축 형식의 이전 링크도 복원했다.
+- 모바일 공유 API에 전달되는 주소에도 분석 결과가 담겼고, 새 페이지에서 5곡이 복원됐다. 테스트에서는 공유 API를 대체해 전달값을 검사했으며 실제 메시지는 보내지 않았다. 공유 실패 안내도 확인했다.
+- 파형 디코딩을 의도적으로 늦춘 상태에서 결과를 먼저 표시하고, 업로드 음원 재생 → 초기화를 실행했다. 디코딩을 다시 진행시켜도 이전 결과·URL·소리가 되살아나지 않았다.
+- 분석 두 건의 응답 순서를 뒤집어도 최신 결과가 유지됐다. 진행 중 로딩 타이머는 하나, 완료 후에는 0개였다. 추천 곡에서 이어 찾기를 강제로 실패시켜 이전 결과와 업로드 음원이 복원되는 것도 확인했다.
 - 새 브라우저 컨텍스트에 서비스 워커를 설치한 뒤 네트워크를 끊어 메인·비교 화면을 다시 열었다. WAV는 사전 캐시에 들어가지 않는다.
 - 주요 기능 검증 중 브라우저 스크립트 오류는 없었다.
 
 ## 자동 검증
 
 `ruff check backend tests scripts preview_server.py`, 변경된 JavaScript의 `node --check`, pytest로 확인한다.
-최종 전체 실행에서 **382개 테스트가 모두 통과했다.**
+Python 테스트 **382개**와 Node 내장 테스트 러너로 실행하는 **오디오 화면 테스트 7개**를 사용한다.
+프런트엔드 테스트도 GitHub CI에 포함했다.
+
+```bash
+node --test tests/frontend/audio.test.cjs
+```
+
+오디오 화면 테스트는 좁은 파형의 잘림, 오른쪽 채널·마지막 샘플 누락, 중단한 디코딩의 늦은 완료,
+오디오 컨텍스트 정리, 정지한 파형의 화면 크기 변경을 확인한다.
 
 새 검증은 샘플 파일의 해시·파형·분석값·유사도가 실제 엔진과 일치하는지,
 텍스트 압축이 오디오의 206 Range 응답을 바꾸지 않는지,
@@ -56,3 +71,10 @@ npx lighthouse@13.5.0 http://127.0.0.1:8840/ --preset=desktop --output=json --ou
 
 테스트 중 Python 3.11의 기존 오디오 의존성에서 `aifc`·`audioop`·`sunau` 사용 중단 예고가 나온다.
 실물 iPhone·Android와 원격 배포 환경의 체감 속도는 이 로컬 검증에 포함되지 않았다.
+
+## 구현 시 확인한 자료
+
+- [MDN: Web Share API](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share) — 클릭 전에 결과 링크를 준비하고 클릭 직후 공유 창을 요청한다.
+- [MDN: HTMLMediaElement.play()](https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/play) — 재생 요청 실패와 사용자의 중단을 구분한다.
+- [MDN: loadedmetadata](https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/loadedmetadata_event) — 처음 불러온 음원의 재생 위치를 메타데이터 로드 후에도 맞춘다.
+- [web.dev: LCP 최적화](https://web.dev/articles/optimize-lcp) — 첫 화면 제목의 글꼴 요청을 우선하고, 같은 번역 문구를 다시 넣어 제목 DOM을 바꾸지 않도록 했다.

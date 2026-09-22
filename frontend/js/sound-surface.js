@@ -12,6 +12,8 @@
     let second = "tone", progress = 0, playing = false, channel = "a";
     let spread = 1, targetSpread = 1, angle = -.20, targetAngle = -.20;
     let lastTime = 0, rows = [], colors, scrollTilt = 0;
+    let ridges = { a: [], b: [] };
+    const amplitudes = new Map(tracks.map((track) => [track, track.surface.map((row) => row.map((value) => Math.pow(value / 255, 1.6)))]));
     let compact = false, cosine = 1, sine = 0;
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const readColors = () => {
@@ -24,10 +26,10 @@
       return [xx, zz * (.36 + scrollTilt) - amplitude * .96];
     }
     function pointsFor(track, time, side) {
-      const values = track.surface[time];
+      const values = amplitudes.get(track)[time];
       const xOffset = side * .60 * spread;
       const z = (time / (track.surface.length - 1) - .5) * 2.7 + side * .20 * spread;
-      const points = values.map((value, index) => project((index / (values.length - 1) - .5) * 2.9 + xOffset, z, Math.pow(value / 255, 1.6)));
+      const points = values.map((value, index) => project((index / (values.length - 1) - .5) * 2.9 + xOffset, z, value));
       return { points, z, from: project(-1.45 + xOffset, z, 0), to: project(1.45 + xOffset, z, 0), time, side };
     }
     function fitProjection(axis) {
@@ -70,15 +72,19 @@
       });
       rows.sort((a, b) => a.z - b.z);
       const axis = fitProjection([project(-1.8, -1.7, 0), project(-1.8, 1.8, 0), project(1.75, 1.8, 0)]);
+      ridges = {
+        a: rows.filter((row) => row.side < 0).sort((a, b) => a.time - b.time),
+        b: rows.filter((row) => row.side > 0).sort((a, b) => a.time - b.time),
+      };
       ctx.lineJoin = "round"; ctx.lineCap = "round";
       // 두 데이터의 경계도 연결한다. 불투명 면으로 다른 곡의 선을 덮지 않는다.
       [-1, 1].forEach((side) => {
-        const ridges = rows.filter((row) => row.side === side).sort((a, b) => a.time - b.time);
-        if (!ridges.length) return;
+        const edgeRows = ridges[side < 0 ? "a" : "b"];
+        if (!edgeRows.length) return;
         ctx.strokeStyle = side < 0 ? colors.a : colors.b;
         ctx.globalAlpha = .32; ctx.lineWidth = .7;
-        [0, ridges[0].points.length - 1].forEach((edge) => {
-          trace(ctx, ridges.map((row) => row.points[edge])); ctx.stroke();
+        [0, edgeRows[0].points.length - 1].forEach((edge) => {
+          trace(ctx, edgeRows.map((row) => row.points[edge])); ctx.stroke();
         });
       });
       // 좁은 화면에서 선이 뭉치지 않도록 표시 간격만 넓힌다. 재생 커서는 전체 데이터를 쓴다.
@@ -111,16 +117,28 @@
       if (!visible || !width) return;
       live.clearRect(0, 0, width, height);
       if (!playing && progress === 0) return;
-      const time = Math.round(clamp(progress, 0, 1) * (tracks[0].surface.length - 1));
-      const row = rows.find((candidate) => candidate.time === time && candidate.side === (channel === "a" ? -1 : 1));
-      if (!row) return;
-      trace(live, row.points);
-      live.strokeStyle = channel === "a" ? colors.a : colors.b;
-      live.lineWidth = 2.6;
-      live.stroke();
-      const first = row.points[0];
-      live.beginPath(); live.arc(first[0], first[1], 4, 0, Math.PI * 2);
-      live.fillStyle = live.strokeStyle; live.fill();
+      // 인접한 시간 행 사이를 보간한다. 재생 중인 곡은 굵은 실선, 다른 곡은 점선이다.
+      [channel === "a" ? "b" : "a", channel].forEach((key) => {
+        const sequence = ridges[key];
+        if (!sequence.length) return;
+        const time = clamp(progress, 0, 1) * (sequence.length - 1);
+        const index = Math.floor(time), blend = time - index;
+        const from = sequence[index], to = sequence[Math.min(index + 1, sequence.length - 1)];
+        const points = from.points.map((point, i) => [point[0] + (to.points[i][0] - point[0]) * blend, point[1] + (to.points[i][1] - point[1]) * blend]);
+        const current = key === channel;
+        trace(live, points);
+        live.strokeStyle = colors[key];
+        live.lineJoin = "round"; live.lineCap = "round";
+        live.lineWidth = current ? 2.8 : 1.3;
+        live.globalAlpha = current ? 1 : .7;
+        live.setLineDash(current ? [] : [4, 4]);
+        live.stroke();
+        live.setLineDash([]);
+        const first = points[0];
+        live.beginPath(); live.arc(first[0], first[1], current ? 4 : 2.5, 0, Math.PI * 2);
+        live.fillStyle = live.strokeStyle; live.fill();
+      });
+      live.globalAlpha = 1;
     }
     function animate(now) {
       raf = 0;

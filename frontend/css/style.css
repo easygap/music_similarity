@@ -787,7 +787,12 @@ main {
 .demo-playhead { position: absolute; inset: 0; background: var(--track); opacity: .10; transform: scaleX(0); transform-origin: left; pointer-events: none; }
 .demo-transport { display: flex; align-items: center; gap: 12px; margin: 12px 0 18px; font-size: 10px; color: var(--ink-mute); }
 .demo-transport > span { white-space: nowrap; }
-.demo-transport input { flex: 1; min-width: 32px; height: 24px; padding: 0; margin: 0; accent-color: var(--ink); cursor: pointer; }
+.demo-transport input { flex: 1; min-width: 32px; height: 40px; padding: 0; margin: 0; accent-color: var(--ink); cursor: pointer; }
+.demo-loop { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; flex-shrink: 0; padding: 0 10px; border: 1px solid var(--rule-strong); border-radius: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.demo-loop svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.demo-loop[aria-pressed="true"] { color: #004cff; background: var(--series-query); border-color: var(--series-query); }
+.demo-loop:focus-visible { outline: 2px solid var(--series-query); outline-offset: 3px; }
+.demo-loop:disabled { opacity: .5; cursor: default; }
 .demo-analysis { border-top: 1px solid var(--rule); padding-top: 13px; }
 .demo-analysis-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .demo-tabs { display: flex; gap: 14px; }

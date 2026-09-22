@@ -9,9 +9,11 @@
   const clamp = (x, low, high) => Math.min(high, Math.max(low, x));
   const audioA = $("#demo-audio-a"), audioB = $("#demo-audio-b");
   const seek = $("#demo-seek"), clock = $("#demo-time"), status = $("#demo-status");
+  const loopButton = $("#demo-loop");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let data, surface, variant = "tone", chart = "spectrum", active = null;
   let position = 0, frame = 0, visible = true, requestId = 0;
+  let playheads = [], clockLabel = "", cancelPendingSeek = () => {};
   const metrics = [
     { key: "tempo_bpm", label: "tempo", digits: 1, unit: " BPM" },
     { key: "energy_rms", label: "energy", digits: 3, unit: "" },
@@ -34,9 +36,13 @@
     if (active && Number.isFinite(active.currentTime)) position = active.currentTime;
     seek.value = position;
     const duration = trackA().duration;
-    seek.setAttribute("aria-valuetext", timeText(position) + " / " + timeText(Math.ceil(duration)));
-    clock.textContent = timeText(position) + " / " + timeText(Math.ceil(duration));
-    desk.querySelectorAll(".demo-playhead").forEach((head) => {
+    const label = timeText(position) + " / " + timeText(Math.ceil(duration));
+    if (label !== clockLabel) {
+      clockLabel = label;
+      seek.setAttribute("aria-valuetext", label);
+      clock.textContent = label;
+    }
+    playheads.forEach((head) => {
       head.style.transform = "scaleX(" + clamp(position / duration, 0, 1) + ")";
     });
     if (surface) surface.setProgress(position / duration, !!active && !active.paused, active === audioB ? "b" : "a");
@@ -61,6 +67,7 @@
   }
   function pause() {
     requestId++;
+    cancelPendingSeek();
     if (active) position = active.currentTime || 0;
     audioA.pause(); audioB.pause();
     cancelFrame(); syncButtons(); paintPosition();
@@ -70,15 +77,26 @@
     const audio = which === "a" ? audioA : audioB;
     if (active === audio && !audio.paused) { pause(); return; }
     const currentRequest = ++requestId;
+    cancelPendingSeek();
     if (active) position = active.currentTime || 0;
     audioA.pause(); audioB.pause();
     const track = which === "a" ? trackA() : trackB();
     if (audio.getAttribute("src") !== track.src) audio.src = track.src;
+    else if (audio.error) audio.load();
     if (position >= track.duration - .05) position = 0;
     active = audio;
     audio.volume = .75;
-    audio.currentTime = position;
     try {
+      const seekPosition = position;
+      // 일부 브라우저는 메타데이터를 읽기 전의 currentTime 설정을 무시한다.
+      if (!audio.readyState) {
+        const seekWhenReady = () => {
+          if (currentRequest === requestId) audio.currentTime = seekPosition;
+        };
+        audio.addEventListener("loadedmetadata", seekWhenReady, { once: true });
+        cancelPendingSeek = () => audio.removeEventListener("loadedmetadata", seekWhenReady);
+      }
+      audio.currentTime = seekPosition;
       await audio.play();
       if (currentRequest !== requestId) return;
       message(t(which === "a" ? "playingA" : "playingB"));
@@ -134,6 +152,7 @@
     if (!data) return;
     $("#demo-wave-a").innerHTML = waveform(trackA());
     $("#demo-wave-b").innerHTML = waveform(trackB());
+    playheads = Array.from(desk.querySelectorAll(".demo-playhead"));
     const nameKey = variant === "tone" ? "toneName" : "rhythmName";
     const subKey = variant === "tone" ? "toneSub" : "rhythmSub";
     const noteKey = variant === "tone" ? "toneNote" : "rhythmNote";
@@ -164,6 +183,20 @@
       desk.querySelectorAll("[data-demo-chart]").forEach((button) => button.setAttribute("aria-pressed", String(button === chartButton)));
       renderChart();
     }
+  });
+  loopButton.addEventListener("click", () => {
+    const loop = !audioA.loop;
+    audioA.loop = audioB.loop = loop;
+    loopButton.setAttribute("aria-pressed", String(loop));
+    message(t(loop ? "loopOn" : "loopOff"));
+  });
+  desk.addEventListener("keydown", (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing) return;
+    if (event.target.isContentEditable || event.target.closest("input, textarea, select")) return;
+    const key = event.key.toLowerCase();
+    if (key !== "a" && key !== "b") return;
+    event.preventDefault(); event.stopPropagation();
+    play(key);
   });
   seek.addEventListener("input", () => {
     position = Number(seek.value);
@@ -222,7 +255,11 @@
     if (window.SoundMatchSurface) surface = window.SoundMatchSurface(data.tracks);
     seek.max = trackA().duration;
     seek.disabled = false;
-    desk.querySelectorAll("[data-demo-play]").forEach((button) => { button.disabled = false; });
+    loopButton.disabled = false;
+    desk.querySelectorAll("[data-demo-play]").forEach((button) => {
+      button.disabled = false;
+      button.setAttribute("aria-keyshortcuts", button.dataset.demoPlay.toUpperCase());
+    });
     render();
   }).catch(() => {
     message(t("loadError"), true);
